@@ -44,10 +44,11 @@ graph LR
 
 | Layer | What | How | Time |
 |-------|------|-----|------|
-| **1. Infrastructure** | Azure Function, Key Vault, Storage, App Insights | `azd up` | ~15 min |
-| **2. Fabric + Power BI** | Workspace, Lakehouse, dashboard | Fabric portal (manual) | ~20 min |
-| **3. Self-Service Registration** | Registration form + approval flow | Microsoft Forms + Power Automate | ~30 min |
-| **4. First Data Form** | Register, test, validate | Self-service form or CLI | ~10 min |
+| **1. Fabric Platform** | Capacity, Workspace, Lakehouse | Bicep + PowerShell script | ~10 min |
+| **2. Azure Infrastructure** | Function App, Key Vault, Storage, App Insights | `azd up` | ~15 min |
+| **3. Data Pipeline** | Power Automate flow per form | Import template | ~10 min |
+| **4. Self-Service Registration** | Registration form + approval flow | Microsoft Forms + Power Automate | ~30 min |
+| **5. First Data Form** | Register, test, validate | Self-service form or CLI | ~10 min |
 
 > **Fallback:** If Layer 3 (self-service) isn't needed yet, you can register forms manually using the CLI. See [Fallback: Manual Registration](#fallback-manual-registration) at the bottom of this guide.
 
@@ -76,7 +77,7 @@ forms-to-fabric/
 
 ---
 
-## Step 2: Configure Environment Variables
+## Step 2: Configure Basic Environment Variables
 
 ### 2.1 Create a new `azd` environment
 
@@ -88,8 +89,6 @@ Replace `dev` with a meaningful name for your environment (e.g., `staging`, `pro
 
 ### 2.2 Set required variables
 
-Configure each variable using `azd env set`:
-
 ```bash
 # Azure region — choose a region that meets your data-residency requirements
 azd env set AZURE_LOCATION canadaeast
@@ -97,130 +96,36 @@ azd env set AZURE_LOCATION canadaeast
 # Target Azure subscription
 azd env set AZURE_SUBSCRIPTION_ID <your-subscription-id>
 
-# Microsoft Fabric workspace ID (see Step 4 if you don't have one yet)
-azd env set FABRIC_WORKSPACE_ID <your-workspace-guid>
-
-# Microsoft Fabric Lakehouse ID (see Step 4 if you don't have one yet)
-azd env set FABRIC_LAKEHOUSE_ID <your-lakehouse-guid>
-
 # Admin email address for error notifications
 azd env set ADMIN_EMAIL admin@yourdomain.com
 ```
 
-> **Note:** If you haven't created your Fabric workspace and Lakehouse yet, you can skip `FABRIC_WORKSPACE_ID` and `FABRIC_LAKEHOUSE_ID` for now, complete Step 4, then return here to set them before deploying.
-
-### 2.3 Verify your configuration
-
-```bash
-azd env get-values
-```
-
-Confirm that all variables are set correctly before proceeding.
-
 ---
 
-## Step 3: Deploy Infrastructure
+## Step 3: Set Up Fabric Workspace and Lakehouse
 
-### 3.1 Run the deployment
-
-```bash
-azd up
-```
-
-`azd up` performs three actions in sequence:
-
-1. **Package** — builds and packages the Python function app from `src/functions/`.
-2. **Provision** — deploys the Bicep templates in `infra/` to create Azure resources.
-3. **Deploy** — publishes the function app code to the newly provisioned Function App.
-
-```mermaid
-sequenceDiagram
-    participant Dev as Developer
-    participant AZD as azd CLI
-    participant AZ as Azure
-    participant FA as Function App
-
-    Dev->>AZD: azd up
-    AZD->>AZD: Package Python function app
-    AZD->>AZ: Provision resources (Bicep templates)
-    AZ-->>AZD: Resources created
-    AZD->>FA: Deploy function app code
-    FA-->>AZD: Deployment complete
-    AZD-->>Dev: Return Function App URL
-```
-
-### 3.2 Resources created
-
-The deployment provisions the following resources inside a new Resource Group:
-
-| Resource | Purpose |
-|---|---|
-| **Azure Function App** | Python function on a Consumption plan that processes form responses |
-| **Storage Account** | Backing store for the Function App and intermediate data |
-| **Application Insights** | Logging, tracing, and monitoring for the function |
-| **Key Vault** | Secure storage for secrets (Fabric credentials, function keys) |
-| **Managed Identity** | System-assigned identity used to authenticate to Fabric and Key Vault |
-
-```mermaid
-graph TB
-    subgraph RG["Resource Group"]
-        func["Function App<br/>(Python, Consumption)"]
-        sa["Storage Account"]
-        ai["Application Insights"]
-        kv["Key Vault"]
-        mi["Managed Identity"]
-    end
-
-    func -->|"Backing store"| sa
-    func -->|"Monitoring"| ai
-    func -->|"Secrets"| kv
-    func ---|"System-assigned"| mi
-    func -->|"OneLake API"| lh["Fabric Lakehouse"]
-```
-
-### 3.3 Capture deployment outputs
-
-After `azd up` completes, note the following outputs — you will need them in later steps:
-
-```
-FUNCTION_APP_URL=https://<your-function-app>.azurewebsites.net
-```
-
-Retrieve the function key for the `process_response` function:
-
-```bash
-# Using Azure CLI
-az functionapp keys list \
-  --name <your-function-app-name> \
-  --resource-group <your-resource-group> \
-  --query "functionKeys.default" -o tsv
-```
-
-Save the **Function App URL** and **function key** — you will need both when configuring the Power Automate flow.
-
----
-
-## Step 4: Set Up Fabric Workspace and Lakehouse
+> **Do this before deploying infrastructure** — you need the workspace and Lakehouse IDs for the Function App configuration.
 
 ### Option A (Recommended): Automated setup
 
 A PowerShell script creates the workspace and Lakehouse via the Fabric REST API. It is idempotent — safe to run multiple times.
 
 ```bash
-# 1. Make sure you are logged in to Azure CLI
+# 1. Log in to Azure CLI
 az login
 
 # 2. If you need a NEW Fabric capacity (skip if your org already has one):
-#    The capacity is provisioned automatically by `azd up` via Bicep.
-#    After deployment, grab the capacity ID from the azd output:
-#    FABRIC_CAPACITY_ID=$(az deployment group show \
-#      --resource-group <rg> --name fabricCapacity \
-#      --query properties.outputs.capacityId.value -o tsv)
+#    Edit infra/parameters/dev.bicepparam to set fabricCapacityName and fabricAdminMembers,
+#    then provision it:
+az deployment group create \
+  --resource-group <your-rg> \
+  --template-file infra/modules/fabric-capacity.bicep \
+  --parameters capacityName=forms-to-fabric-dev skuName=F2 adminMembers='["you@yourdomain.com"]'
 
 # 3. Create the workspace and Lakehouse:
 pwsh scripts/Setup-FabricWorkspace.ps1 -CapacityId "<capacity-id>"
 
-# Omit -CapacityId if the workspace should use the default capacity:
+# Omit -CapacityId if the workspace should use the default/existing capacity:
 # pwsh scripts/Setup-FabricWorkspace.ps1
 ```
 
@@ -229,14 +134,12 @@ The script will:
 - Find or create the workspace **Forms to Fabric Analytics**
 - Assign the Fabric capacity (if `-CapacityId` is provided)
 - Find or create the Lakehouse **forms_lakehouse**
-- Grant the Function App managed identity **Contributor** access (if `FUNCTION_APP_PRINCIPAL_ID` is set)
 
-At the end it prints the workspace and Lakehouse IDs. Set them in your azd environment and redeploy:
+At the end it prints the workspace and Lakehouse IDs. **Set them now:**
 
 ```bash
 azd env set FABRIC_WORKSPACE_ID <workspace-id>
 azd env set FABRIC_LAKEHOUSE_ID <lakehouse-id>
-azd deploy
 ```
 
 ### Option B: Manual setup (fallback)
@@ -257,7 +160,7 @@ If you prefer to set things up by hand, or if the automated script is not availa
 2. Name it `forms_lakehouse`.
 3. Click **Create**.
 
-#### 4.3 Note the workspace and Lakehouse IDs
+#### 3.3 Note the workspace and Lakehouse IDs
 
 Both IDs are GUIDs found in the browser URL when you are inside the Lakehouse:
 
@@ -265,20 +168,51 @@ Both IDs are GUIDs found in the browser URL when you are inside the Lakehouse:
 https://app.fabric.microsoft.com/groups/<WORKSPACE_ID>/lakehouses/<LAKEHOUSE_ID>
 ```
 
-If you deferred setting these in Step 2, go back and set them now:
+Set them in your environment:
 
 ```bash
 azd env set FABRIC_WORKSPACE_ID <workspace-guid>
 azd env set FABRIC_LAKEHOUSE_ID <lakehouse-guid>
 ```
 
-Then re-deploy the function app to pick up the new configuration:
+---
+
+## Step 4: Deploy Infrastructure
+
+Now that Fabric is ready and the IDs are configured, deploy the Azure resources and Function App.
+
+### 4.1 Verify your configuration
 
 ```bash
-azd deploy
+azd env get-values
 ```
 
-#### 4.4 Grant the Function App access
+Confirm `AZURE_LOCATION`, `AZURE_SUBSCRIPTION_ID`, `FABRIC_WORKSPACE_ID`, and `FABRIC_LAKEHOUSE_ID` are all set.
+
+### 4.2 Run the deployment
+
+```bash
+azd up
+```
+
+`azd up` performs three actions in sequence:
+
+1. **Package** — builds and packages the Python function app from `src/functions/`.
+2. **Provision** — deploys the Bicep templates in `infra/` to create Azure resources (and Fabric capacity if configured).
+3. **Deploy** — publishes the function app code to the newly provisioned Function App.
+
+### 4.3 Resources created
+
+| Resource | Purpose |
+|---|---|
+| **Azure Function App** | Python function on a Consumption plan that processes form responses |
+| **Storage Account** | Backing store for the Function App and intermediate data |
+| **Application Insights** | Logging, tracing, and monitoring for the function |
+| **Key Vault** | Secure storage for secrets (Fabric credentials, function keys) |
+| **Managed Identity** | System-assigned identity used to authenticate to Fabric and Key Vault |
+| **Fabric Capacity** | *(Optional)* Created if `fabricCapacityName` is set in parameters |
+
+### 4.4 Grant the Function App access to Fabric
 
 The Azure Function authenticates to Fabric using its system-assigned managed identity. You must grant this identity access to the workspace:
 
@@ -288,7 +222,26 @@ The Azure Function authenticates to Fabric using its system-assigned managed ide
 4. Assign the **Contributor** role.
 5. Click **Add**.
 
-#### 4.5 Initial tables
+### 4.5 Capture deployment outputs
+
+After `azd up` completes, note the Function App URL:
+
+```
+FUNCTION_APP_URL=https://<your-function-app>.azurewebsites.net
+```
+
+Retrieve the function key:
+
+```bash
+az functionapp keys list \
+  --name <your-function-app-name> \
+  --resource-group <your-resource-group> \
+  --query "functionKeys.default" -o tsv
+```
+
+Save the **Function App URL** and **function key** — you need both for the Power Automate flow.
+
+### 4.6 Initial tables
 
 You do **not** need to create tables manually. The `process_response` function automatically creates the required raw and curated tables in the Lakehouse on first run.
 

@@ -9,7 +9,7 @@ param tags = {
 }
 
 // Option A: Create a new Fabric capacity for dev
-param fabricCapacityName = 'forms-to-fabric-dev'
+param fabricCapacityName = 'formstofabricdev'
 param fabricAdminMembers = ['your-admin@yourdomain.com']
 
 // Option B: Use an existing capacity (uncomment and set, remove Option A params)

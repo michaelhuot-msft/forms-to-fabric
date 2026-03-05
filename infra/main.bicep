@@ -19,7 +19,7 @@ param onelakeEndpoint string = 'https://onelake.dfs.fabric.microsoft.com'
 @description('Path inside the storage container where the form-registry configuration is stored.')
 param formRegistryPath string = 'form-registry/registry.json'
 
-@description('Name of the Fabric capacity to create. Leave empty to skip capacity provisioning (use existingFabricCapacityId instead).')
+@description('Name of the Fabric capacity to create. Alphanumeric only, no hyphens. Leave empty to skip capacity provisioning (use existingFabricCapacityId instead).')
 param fabricCapacityName string = ''
 
 @description('Resource ID of an existing Fabric capacity. Use this if your organization already has a capacity. Leave empty to create a new one.')

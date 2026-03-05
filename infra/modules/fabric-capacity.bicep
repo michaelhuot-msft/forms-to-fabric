@@ -2,7 +2,9 @@
 // Fabric Capacity module
 // ──────────────────────────────────────────────
 
-@description('Name of the Fabric capacity.')
+@description('Name of the Fabric capacity. Alphanumeric only, no hyphens or special characters.')
+@minLength(3)
+@maxLength(63)
 param capacityName string
 
 @description('Azure region. Defaults to the resource group location when deployed via main.bicep.')

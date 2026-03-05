@@ -2,8 +2,8 @@
 // Key Vault module – Standard SKU with soft-delete & purge protection
 // ──────────────────────────────────────────────
 
-@description('Environment name used in resource naming.')
-param environmentName string
+@description('Name of the Key Vault. Must be globally unique.')
+param keyVaultName string
 
 @description('Azure region for all resources.')
 param location string
@@ -25,7 +25,7 @@ param currentTime string = utcNow()
 // ──────────────────────────────────────────────
 
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
-  name: 'kv-forms-${environmentName}'
+  name: keyVaultName
   location: location
   tags: tags
   properties: {
@@ -75,7 +75,7 @@ resource functionAppKeySecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
 // ──────────────────────────────────────────────
 
 resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
-  name: 'diag-kv-forms-${environmentName}'
+  name: 'diag-${keyVaultName}'
   scope: keyVault
   properties: {
     workspaceId: logAnalyticsWorkspaceId

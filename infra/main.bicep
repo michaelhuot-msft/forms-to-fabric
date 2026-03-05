@@ -36,7 +36,7 @@ param fabricAdminMembers array = []
 // Variables
 // ──────────────────────────────────────────────
 
-var keyVaultName = 'kv-forms-${environmentName}'
+var keyVaultName = 'kv-forms-${take(uniqueString(resourceGroup().id), 8)}'
 
 // ──────────────────────────────────────────────
 // Modules
@@ -90,7 +90,7 @@ module fabricCapacity 'modules/fabric-capacity.bicep' = if (!empty(fabricCapacit
 module keyVault 'modules/key-vault.bicep' = {
   name: 'keyVault'
   params: {
-    environmentName: environmentName
+    keyVaultName: keyVaultName
     location: location
     tags: tags
     functionAppPrincipalId: functionApp.outputs.principalId

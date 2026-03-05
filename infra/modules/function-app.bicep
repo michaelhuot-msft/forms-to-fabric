@@ -37,6 +37,9 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing 
   name: storageAccountName
 }
 
+// Function App names are globally unique. Add a hash suffix.
+var suffix = take(uniqueString(resourceGroup().id), 6)
+
 // ──────────────────────────────────────────────
 // Consumption plan (Y1)
 // ──────────────────────────────────────────────
@@ -60,7 +63,7 @@ resource hostingPlan 'Microsoft.Web/serverfarms@2023-12-01' = {
 // ──────────────────────────────────────────────
 
 resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
-  name: 'func-forms-${environmentName}'
+  name: 'func-forms-${environmentName}-${suffix}'
   location: location
   tags: tags
   kind: 'functionapp,linux'
@@ -93,7 +96,7 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         }
         {
           name: 'WEBSITE_CONTENTSHARE'
-          value: 'func-forms-${environmentName}'
+          value: 'func-forms-${environmentName}-${suffix}'
         }
         {
           name: 'APPINSIGHTS_INSTRUMENTATIONKEY'

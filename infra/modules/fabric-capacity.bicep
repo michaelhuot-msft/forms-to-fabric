@@ -5,8 +5,8 @@
 @description('Name of the Fabric capacity.')
 param capacityName string
 
-@description('Azure region.')
-param location string
+@description('Azure region. Defaults to the resource group location when deployed via main.bicep.')
+param location string = resourceGroup().location
 
 @description('Fabric SKU.')
 @allowed(['F2', 'F4', 'F8', 'F16', 'F32', 'F64'])

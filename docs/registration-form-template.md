@@ -93,25 +93,20 @@ Then build the flow:
 2. Name it: "Forms to Fabric — Registration Intake"
 3. Trigger: **When a new response is submitted** → select "Register Your Form for Analytics"
 4. **+ New step** → **Get response details** → same form, Response Id from trigger
-5. **+ New step** → **HTTP** — paste the Method, URI, and Headers from the script output
-6. For the **Body**, type this skeleton then use **Dynamic content** (⚡) to fill each value:
+5. **+ New step** → **HTTP** — paste the Method, URI, Headers, and Body from the script output
 
+The body is the same for all forms:
 ```
 {
-  "form_url": "",
-  "description": "",
-  "has_phi": ""
+  "form_id": "<YOUR-FORM-ID>",
+  "raw_response": @{outputs('Get_response_details')?['body']}
 }
 ```
 
-- Click inside `"form_url"` quotes → Dynamic content → select **"Paste your form's share link"**
-- Click inside `"description"` quotes → Dynamic content → select **"Briefly describe..."**
-- Click inside `"has_phi"` quotes → Dynamic content → select **"Does this form collect..."**
-
-7. **+ New step** → **Condition** → `Status code` is not equal to `200`
+6. **+ New step** → **Condition** → `Status code` is not equal to `200`
    - **If yes**: Send error email to admin
    - **If no**: Leave empty
-8. Save and enable
+7. Save and enable
 
 > **Tip:** The Function App URL and key are from `Post-Deploy.ps1` output (Step 3 of the setup guide). The function key is also stored in Key Vault.
 

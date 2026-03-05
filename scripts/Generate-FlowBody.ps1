@@ -93,42 +93,21 @@ if (-not $FunctionKey) {
 # ── Generate the body ────────────────────────────────────────────────────────
 
 if ($Registration) {
-    # Registration form — fixed 3 questions, calls /api/register-form
+    # Registration form — calls /api/register-form
     $endpoint = "$FunctionAppUrl/api/register-form"
-    $json = @"
+} else {
+    # Data collection form — calls /api/process-response
+    $endpoint = "$FunctionAppUrl/api/process-response"
+}
+
+# Both modes use the same raw_response passthrough body
+$json = @"
 {
-  "form_url": "@{outputs('Get_response_details')?['body/r1']}",
-  "description": "@{outputs('Get_response_details')?['body/r2']}",
-  "has_phi": "@{outputs('Get_response_details')?['body/r3']}"
+  "form_id": "$FormId",
+  "raw_response": @{outputs('Get_response_details')?['body']}
 }
 "@
-} else {
-    # Data collection form — variable questions, calls /api/process-response
-    $endpoint = "$FunctionAppUrl/api/process-response"
 
-    Write-Host "`nThe 'Get response details' action returns each answer as r1, r2, r3, etc." -ForegroundColor White
-    $questionCount = Read-Host "How many questions does your form have?"
-    $questionCount = [int]$questionCount
-
-    $answers = @()
-    for ($i = 1; $i -le $questionCount; $i++) {
-        $qId = "r$i"
-        $qTitle = Read-Host "  Question $i title"
-        $answers += @{
-            question_id = $qId
-            question    = $qTitle
-            answer      = "@{outputs('Get_response_details')?['body/$qId']}"
-        }
-    }
-
-    $body = [ordered]@{
-        form_id          = $FormId
-        response_id      = "@{triggerOutputs()?['body/responseId']}"
-        submitted_at     = "@{utcNow()}"
-        respondent_email = "@{outputs('Get_response_details')?['body/responder']}"
-        answers          = $answers
-    }
-    $json = $body | ConvertTo-Json -Depth 5
 }
 
 # ── Output ───────────────────────────────────────────────────────────────────

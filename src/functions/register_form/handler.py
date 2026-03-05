@@ -49,8 +49,30 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json",
         )
 
-    form_url = body.get("form_url")
-    has_phi_raw = body.get("has_phi")
+    # Support raw_response passthrough (same pattern as process-response)
+    raw_response = body.get("raw_response")
+    if raw_response and isinstance(raw_response, dict):
+        # Extract the 3 registration fields from raw Forms response
+        # Fields are in order: form_url, description, has_phi
+        metadata_keys = {
+            "responder",
+            "submitDate",
+            "responseId",
+            "@odata.context",
+            "@odata.etag",
+        }
+        field_values = []
+        for key, value in raw_response.items():
+            if key in metadata_keys or key.startswith("@"):
+                continue
+            field_values.append(str(value) if value is not None else "")
+
+        form_url = field_values[0] if len(field_values) > 0 else ""
+        # field_values[1] is description (logged but not used for registration logic)
+        has_phi_raw = field_values[2] if len(field_values) > 2 else "No"
+    else:
+        form_url = body.get("form_url")
+        has_phi_raw = body.get("has_phi")
 
     if not form_url:
         return func.HttpResponse(

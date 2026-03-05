@@ -98,10 +98,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Azure CLI
-        uses: azure/cli@v2
-        with:
-          inlineScript: az bicep version
+      - name: Install Bicep CLI
+        run: az bicep install
 
       - name: Lint Bicep templates
         run: az bicep build --file infra/main.bicep --stdout > /dev/null

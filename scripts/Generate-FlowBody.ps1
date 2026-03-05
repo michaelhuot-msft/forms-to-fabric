@@ -37,16 +37,12 @@ if (-not $FormId -and -not $FormUrl) {
 }
 
 if (-not $FormId) {
-    # Extract id= parameter from URL
-    $uri = [System.Uri]$FormUrl
-    $query = [System.Web.HttpUtility]::ParseQueryString($uri.Query)
-    $FormId = $query["id"]
-
-    if (-not $FormId) {
-        # Try /r/ short link pattern
-        if ($FormUrl -match "/r/([A-Za-z0-9_-]+)") {
-            $FormId = $Matches[1]
-        }
+    # Extract id= parameter from URL using regex (no System.Web dependency)
+    if ($FormUrl -match "[?&]id=([^&]+)") {
+        $FormId = $Matches[1]
+    }
+    elseif ($FormUrl -match "/r/([A-Za-z0-9_-]+)") {
+        $FormId = $Matches[1]
     }
 
     if (-not $FormId) {
@@ -61,18 +57,16 @@ Write-Host "Form ID: $FormId" -ForegroundColor Green
 # ── Resolve Function App URL ─────────────────────────────────────────────────
 
 if (-not $FunctionAppUrl) {
-    $FunctionAppUrl = azd env get-value FUNCTION_APP_URL 2>$null
+    try { $FunctionAppUrl = azd env get-value FUNCTION_APP_URL 2>$null } catch {}
     if (-not $FunctionAppUrl) {
-        # Try to find from resource group
-        $rg = "rg-forms-to-fabric-dev"
-        $funcName = az functionapp list --resource-group $rg --query "[0].defaultHostName" -o tsv 2>$null
-        if ($funcName) {
-            $FunctionAppUrl = "https://$funcName"
-        }
+        try {
+            $rg = "rg-forms-to-fabric-dev"
+            $funcName = az functionapp list --resource-group $rg --query "[0].defaultHostName" -o tsv 2>$null
+            if ($funcName) { $FunctionAppUrl = "https://$funcName" }
+        } catch {}
     }
     if (-not $FunctionAppUrl) {
-        $FunctionAppUrl = "https://<your-function-app>.azurewebsites.net"
-        Write-Host "Could not auto-detect Function App URL — using placeholder." -ForegroundColor Yellow
+        $FunctionAppUrl = Read-Host "Enter your Function App URL (e.g., https://func-forms-dev-abc123.azurewebsites.net)"
     }
 }
 
@@ -80,33 +74,9 @@ if (-not $FunctionKey) {
     $FunctionKey = "<your-function-key>"
 }
 
-# ── Fetch form questions from Graph API ──────────────────────────────────────
-
-Write-Host "Fetching form questions from Microsoft Graph API..." -ForegroundColor Cyan
-
-$token = az account get-access-token --resource "https://graph.microsoft.com" --query "accessToken" -o tsv 2>$null
-$questions = $null
-
-if ($token) {
-    $headers = @{
-        "Authorization" = "Bearer $token"
-        "Accept" = "application/json"
-    }
-
-    try {
-        $response = Invoke-RestMethod -Uri "https://graph.microsoft.com/v1.0/me/onlineMeetings" -Headers $headers -Method GET 2>$null
-    } catch {}
-
-    # Try to get form questions — this may fail if the Graph Forms API isn't available
-    try {
-        $formData = Invoke-RestMethod -Uri "https://graph.microsoft.com/v1.0/me/drive/root" -Headers $headers -Method GET 2>$null
-    } catch {}
-}
-
 # ── Generate the body ────────────────────────────────────────────────────────
 
-# Since the Graph Forms API for question listing may not be available,
-# generate a template with r1, r2, r3... placeholders based on what
+# Power Automate's "Get response details" returns each answer with an ID
 # Power Automate's "Get response details" returns.
 
 Write-Host "`nThe 'Get response details' action returns each answer with an ID like r1, r2, r3, etc." -ForegroundColor White

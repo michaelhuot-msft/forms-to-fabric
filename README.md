@@ -1,3 +1,5 @@
+> **Note:** This is a proof-of-concept reference implementation, not a supported product. See [Disclaimer](#disclaimer) below.
+
 # Forms to Fabric
 
 A solution that enables clinicians to create questionnaires using Microsoft Forms and automatically pipelines response data into Microsoft Fabric for analytics and reporting.
@@ -80,6 +82,12 @@ forms-solution/
 2. Make your changes
 3. Run tests: `cd src/functions && python -m pytest ../../tests/`
 4. Submit a pull request
+
+## Disclaimer
+
+This repository is a **proof-of-concept and reference implementation** provided AS-IS under the MIT License. It is not supported by Microsoft, the repository authors, or any other party. No SLAs, warranties, or support commitments are provided. Organizations deploying this solution are responsible for their own security reviews, compliance validation, and ongoing maintenance.
+
+See [DISCLAIMER.md](DISCLAIMER.md) for full details.
 
 ## License
 

@@ -96,6 +96,8 @@ gantt
 
 ## Success Metrics
 
+> **Note:** The targets below are **suggested starting points**. Your organization should adjust these based on your specific requirements and risk tolerance.
+
 | Metric | Target | Measurement Method |
 |--------|--------|--------------------|
 | Pipeline latency | < 5 minutes end-to-end | Application Insights timestamps |
@@ -132,6 +134,8 @@ gantt
 - Support ticket analysis
 
 ## Go/No-Go Criteria for Broader Rollout
+
+> **Note:** These criteria are **examples**. Your organization's compliance and IT leadership should define the actual go/no-go criteria for your deployment.
 
 ### Go Criteria (all must be met)
 

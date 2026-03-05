@@ -133,7 +133,7 @@ Decisions are numbered sequentially (D-001, D-002, …). Each entry records what
 |-------|--------|
 | **Decision** | Maintain as a public, reusable template repository with no client-identifying information |
 | **Date** | 2025-07 |
-| **Context** | The solution is designed as a shareable accelerator that any organization can fork and customize. Keeping the repo free of client names, URLs, and environment-specific secrets makes it safe to publish openly and reuse across engagements. |
+| **Context** | The solution is designed as a shareable accelerator that any organization can fork and customize. Keeping the repo free of client names, URLs, and environment-specific secrets makes it safe to publish openly and reuse across engagements. The repository is published as a public proof-of-concept / reference implementation with no support commitments. |
 | **Alternatives considered** | Client-specific repo with environment branches; monorepo with per-client folders |
 | **How to change later** | If a specific deployment needs private customizations, fork the repo into a private repository. Environment-specific values live in `config/` files and environment variables — populate those config files without changing the shared codebase. |
 

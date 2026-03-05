@@ -25,13 +25,13 @@
 Three key points with simple icons:
 
 1. 📝 **You create a form** using Microsoft Forms — a tool you already have
-2. 🔄 **Responses flow automatically** to our secure analytics platform
+2. 🔄 **Responses flow automatically** to a secure analytics platform
 3. 📊 **You view results** in a visual dashboard anytime you want
 
-Bottom of slide: *"No technical skills required. We handle the behind-the-scenes work for you."*
+Bottom of slide: *"No technical skills required. The system handles the behind-the-scenes work for you."*
 
 ### Speaker Notes
-> Here's the big picture in three bullet points. First, you create a form using Microsoft Forms — it's a tool that's already included in your Microsoft 365 account, so there's nothing new to install. Second, once we connect your form to our system, every response is automatically and securely sent to our analytics platform. Third, you can view your results anytime in a Power BI dashboard — it's like a live report that updates itself. The key takeaway here is that you don't need any technical skills. You focus on creating great questions, and we handle everything else.
+> Here's the big picture in three bullet points. First, you create a form using Microsoft Forms — it's a tool that's already included in your Microsoft 365 account, so there's nothing new to install. Second, once we connect your form to the system, every response is automatically and securely sent to the analytics platform. Third, you can view your results anytime in a Power BI dashboard — it's like a live report that updates itself. The key takeaway here is that you don't need any technical skills. You focus on creating great questions, and the system handles everything else.
 
 ---
 
@@ -91,12 +91,12 @@ Self-service registration — no emails, no tickets:
 
 **What happens next:**
 - **No patient info** → Your form is connected instantly! Check your email for confirmation.
-- **Has patient info** → Our IT team will review it (1–2 business days). You'll get an email when it's ready.
+- **Has patient info** → Your organization's IT team will review it (1–2 business days). You'll get an email when it's ready.
 
 `[Screenshot: Where to find the Share button and copy the form link]`
 
 ### Speaker Notes
-> Once your form is ready, you need to register it — this is a one-time step. Go to our registration form, paste in your form's share link, add a quick description if you want, and answer one question: does your form collect patient information? Then hit Submit. If there's no patient info, your form gets connected automatically — you'll get an email confirmation right away. If it does have patient info, our IT team will review it and get back to you within a day or two. Either way, you never need to do this step again for that form.
+> Once your form is ready, you need to register it — this is a one-time step. Go to our registration form, paste in your form's share link, add a quick description if you want, and answer one question: does your form collect patient information? Then hit Submit. If there's no patient info, your form gets connected automatically — you'll get an email confirmation right away. If it does have patient info, your organization's IT team will review it and get back to you within a day or two. Either way, you never need to do this step again for that form.
 
 ---
 
@@ -131,13 +131,13 @@ Four key protections with lock icons:
 
 - 🔒 **Automatic de-identification** — Patient names, dates of birth, and other sensitive fields are automatically masked
 - 🔒 **Controlled access** — Only authorized people can see the dashboard
-- 🔒 **Secure storage** — All data stays within our organization's systems
-- 🔒 **Audit trail** — We track who views the data
+- 🔒 **Secure storage** — All data stays within your organization's systems
+- 🔒 **Audit trail** — The system tracks who views the data
 
-*"You told us which fields are sensitive when you registered. We protect them automatically from that point on."*
+*"You told us which fields are sensitive when you registered. The system protects them automatically from that point on."*
 
 ### Speaker Notes
-> I know patient privacy is a top concern, and it should be. Here's how we protect it. When you register your form, you tell us which fields contain patient information. Our system automatically de-identifies that data — meaning it masks or removes those details so they can't be linked back to individual patients in the dashboard. Only people you've specifically authorized can see the results at all, and we keep a record of who views the data. All data stays within our organization's systems. If you ever have concerns, our compliance team is always available to answer questions.
+> I know patient privacy is a top concern, and it should be. Here's how it's protected. When you register your form, you indicate which fields contain patient information. The system automatically de-identifies that data — meaning it masks or removes those details so they can't be linked back to individual patients in the dashboard. Only people you've specifically authorized can see the results at all, and the system keeps a record of who views the data. All data stays within your organization's systems. If you ever have concerns, your organization's compliance team is always available to answer questions.
 
 ---
 
@@ -173,7 +173,7 @@ Quick Q&A:
 | What if something looks wrong? | Contact support right away. |
 
 ### Speaker Notes
-> Let me quickly cover some common questions we hear. Yes, you can edit your form after it's registered — just let IT know if you add or remove questions so we can update the dashboard. Responses show up within a few minutes. Only authorized people can see your data. Forms works on phones and tablets. You can share editing access with colleagues using the collaboration feature. And if anything ever looks wrong in your dashboard, contact support right away and we'll sort it out.
+> Let me quickly cover some common questions we hear. Yes, you can edit your form after it's registered — just let IT know if you add or remove questions so they can update the dashboard. Responses show up within a few minutes. Only authorized people can see your data. Forms works on phones and tablets. You can share editing access with colleagues using the collaboration feature. And if anything ever looks wrong in your dashboard, contact support right away and they'll sort it out.
 
 ---
 
@@ -194,8 +194,10 @@ How to get help:
 
 *"Thank you! Any questions?"*
 
+*Replace placeholder contact information with your organization's actual support details before presenting.*
+
 ### Speaker Notes
-> That's everything you need to know to get started. Here's our contact information if you need help at any point. I'd encourage you to create your first form today — go to forms.microsoft.com and give it a try. When it's ready, email us the link and we'll get your dashboard set up within a day or two. We also have a detailed written guide available [share the link] that covers everything we talked about today and more. Thank you for your time! Does anyone have any questions?
+> That's everything you need to know to get started. Here's the contact information — make sure to update it with your organization's actual details. I'd encourage you to create your first form today — go to forms.microsoft.com and give it a try. When it's ready, register it and your IT team will set everything up within a day or two. There is also a detailed written guide available [share the link] that covers everything we talked about today and more. Thank you for your time! Does anyone have any questions?
 
 ---
 

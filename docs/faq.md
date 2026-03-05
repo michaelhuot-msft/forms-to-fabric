@@ -23,13 +23,13 @@ All of this happens automatically. You don't need to move or export any data you
 
 Only people who have been specifically authorized — that means you and anyone else you and IT have approved. No one outside your authorized list can see your form's data.
 
-If you want to add or remove someone's access, contact IT at **[IT-support-email@organization.com]**.
+If you want to add or remove someone's access, contact your organization's IT team at **[your-it-support-email]**.
 
 ---
 
 ### Is patient information protected?
 
-Yes, absolutely. When you register your form, you tell us which fields contain sensitive patient information (like names, dates of birth, or medical record numbers). Our system automatically de-identifies that information — meaning it removes or masks those details so they can't be linked back to individual patients in the dashboard.
+Yes, absolutely. When you register your form, you tell us which fields contain sensitive patient information (like names, dates of birth, or medical record numbers). The system automatically de-identifies that information — meaning it removes or masks those details so they can't be linked back to individual patients in the dashboard.
 
 Only specifically authorized users with the right permissions can see the original, unmasked data.
 
@@ -46,7 +46,7 @@ Responses typically show up in your Power BI dashboard within **a few minutes** 
 Yes, you can make changes to your form anytime:
 
 - **Small changes** (fixing a typo, updating a question's wording, reordering questions) — go ahead, no need to tell anyone
-- **Bigger changes** (adding new questions, removing questions, changing question types) — please let IT know at **[IT-support-email@organization.com]** so we can update your dashboard to match
+- **Bigger changes** (adding new questions, removing questions, changing question types) — please let IT know at **[your-it-support-email]** so we can update your dashboard to match
 
 ---
 
@@ -139,13 +139,13 @@ Go to the **[registration form link placeholder]** and fill out the short regist
 It depends on whether your form collects patient information:
 
 - **No patient info** → your form is connected **instantly**. You'll get an email confirmation right away, and responses will start appearing in your dashboard within minutes.
-- **Has patient info** → our IT team will review it and set it up within **1–2 business days**. You'll get an email when it's ready.
+- **Has patient info** → your organization's IT team will review it and set it up within **1–2 business days**. You'll get an email when it's ready.
 
 ---
 
 ### What if I forgot to say my form has patient info?
 
-No worries — just contact IT at **[IT-support-email@organization.com]** and let them know. They can update the settings and make sure your patient data is properly protected. It's a quick fix on their end.
+No worries — just contact your organization's IT team at **[your-it-support-email]** and let them know. They can update the settings and make sure your patient data is properly protected. It's a quick fix on their end.
 
 ---
 
@@ -224,7 +224,7 @@ If responses aren't appearing in the Power BI dashboard, check these in order:
 5. **Review logs** — Check the pipeline logs for specific error messages
 6. **Test with a new response** — Submit a test response and trace it through each step of the pipeline
 
-If you can't resolve the issue, refer to the [admin guide](admin-guide.md) or contact the platform engineering team at **[engineering-support-email@organization.com]**.
+If you can't resolve the issue, refer to the [admin guide](admin-guide.md) or contact your organization's platform engineering team at **[your-engineering-email]**.
 
 ---
 

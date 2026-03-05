@@ -83,7 +83,7 @@ That's it! No email required.
 ### What Happens Next
 
 - **If your form does NOT collect patient info** → it's connected automatically! You'll get an email confirmation within seconds, and responses will start flowing to your dashboard right away.
-- **If your form DOES collect patient info** → our IT team will review it and set it up within **1–2 business days**. This extra step makes sure all sensitive data is properly protected. You'll get an email when it's ready.
+- **If your form DOES collect patient info** → your organization's IT team will review it and set it up within **1–2 business days**. This extra step makes sure all sensitive data is properly protected. You'll get an email when it's ready.
 
 ---
 
@@ -143,14 +143,14 @@ You can filter the data by date, by specific answers, or by other criteria. Just
 
 ## What About Patient Privacy?
 
-We take patient privacy very seriously. Here's how your data is protected:
+Patient privacy is a top priority. Here's how your data is protected:
 
 - 🔒 **Sensitive fields are automatically protected** — any fields you identified as containing patient information (names, dates of birth, etc.) are automatically de-identified (made anonymous) before they reach the dashboard
 - 🔒 **Only authorized people can see full data** — only people you and IT specifically approve can access the dashboard
-- 🔒 **Data stays within our organization** — all data is stored securely on our organization's systems, never on external servers
-- 🔒 **Access is logged** — we keep a record of who views the data
+- 🔒 **Data stays within your organization** — all data is stored securely on your organization's systems, never on external servers
+- 🔒 **Access is logged** — the system keeps a record of who views the data
 
-If you have concerns about patient privacy, please contact our compliance team at **[compliance-email@organization.com]**.
+If you have concerns about patient privacy, please contact your organization's compliance team at **[compliance-email@organization.com]**.
 
 ### How Your Data Is Protected
 
@@ -176,7 +176,7 @@ graph LR
 > Only the people you and IT have authorized. No one else can access your dashboard.
 
 **What if something looks wrong in the dashboard?**
-> Contact our support team right away at **[support-email@organization.com]** or call **[support-phone-number]**. We'll investigate and fix it.
+> Contact your organization's support team right away at **[support-email@organization.com]** or call **[support-phone-number]**. They will investigate and resolve it.
 
 **Can I download the data?**
 > Yes — Power BI lets you export data to Excel. Ask IT if you need help with this.
@@ -188,11 +188,13 @@ graph LR
 
 ## Need Help?
 
-We're here to help! Reach out to us anytime:
+Contact your organization's support team:
 
 - 📧 **Email:** [support-email@organization.com]
 - 📞 **Phone:** [support-phone-number]
 - 💬 **Teams:** [support-Teams-channel-link]
 - 🕐 **Hours:** Monday–Friday, [support-hours]
+
+> *Replace the placeholder contact information above with your organization's actual support details.*
 
 For urgent issues related to patient data, contact **[compliance-email@organization.com]** directly.

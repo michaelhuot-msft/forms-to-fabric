@@ -176,22 +176,23 @@ Or use self-service registration if Step 6 is set up.
 
 ### 4.3 Create the Power Automate flow
 
-This flow triggers on each form submission and sends the response to the Azure Function.
+First, run the helper script to get your exact HTTP action values:
+
+```powershell
+pwsh scripts/Generate-FlowBody.ps1 -FormUrl "https://forms.office.com/..."
+```
+
+This outputs the URI, headers (including function key), and body — ready to copy-paste.
+
+Then build the flow:
 
 1. Go to [flow.microsoft.com](https://flow.microsoft.com) → **+ Create** → **Automated cloud flow**
 2. Name it (e.g., "Forms to Fabric — My Survey")
 3. Trigger: **When a new response is submitted** (Microsoft Forms) → select your form
 4. **+ New step** → **Get response details** (Microsoft Forms) → same form, set Response Id to the dynamic value `Response Id` from the trigger
-5. **+ New step** → **HTTP** with:
+5. **+ New step** → **HTTP** — paste Method, URI, Headers, and Body from the script output
 
-| Field | Value |
-|---|---|
-| Method | `POST` |
-| URI | Function App URL from `Post-Deploy.ps1` + `/api/process-response` |
-| Headers | `Content-Type` : `application/json` |
-| Headers | `x-functions-key` : function key from `Post-Deploy.ps1` |
-
-For the **Body**, paste this simple template — it sends the entire form response to the function:
+The body for all forms is the same:
 
 ```
 {
@@ -200,16 +201,12 @@ For the **Body**, paste this simple template — it sends the entire form respon
 }
 ```
 
-Replace `<YOUR-FORM-ID>` with your form's ID (from `manage_registry.py list`). The `raw_response` uses a single Dynamic content expression that forwards everything — **no per-question mapping needed**.
-
-> **Note:** The Azure Function automatically extracts answers from the raw response using the field configuration in the form registry. You register the form once (Step 4.2), and the function knows how to parse any response.
+The function extracts answers automatically — **no per-question mapping needed**.
 
 6. **+ New step** → **Condition** → `Status code` is not equal to `200`
    - **If yes**: Add **Send an email (V2)** to notify your admin of the error
    - **If no**: Leave empty (success)
 7. **Save** and enable the flow
-
-> **Tip:** For production, store the function key in Key Vault and use the Key Vault connector to retrieve it at runtime. See `power-automate/flow-template-keyvault.json`.
 
 ### 4.4 Test end-to-end
 

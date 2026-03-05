@@ -23,6 +23,36 @@ Before you begin, ensure you have the following:
 
 ---
 
+## What You're Deploying
+
+This solution has three layers, deployed in order:
+
+```mermaid
+graph LR
+    subgraph "Layer 1: Infrastructure"
+        AZ[Azure Function App<br/>Key Vault, Storage, App Insights]
+    end
+    subgraph "Layer 2: Data Pipeline"
+        PA1[Power Automate Flow<br/>per data form] --> AZ
+        AZ --> FL[Fabric Lakehouse]
+        FL --> PBI[Power BI Dashboard]
+    end
+    subgraph "Layer 3: Self-Service Registration"
+        RF[Registration Form<br/>3 questions] --> PA2[Registration Flow] --> AZ
+    end
+```
+
+| Layer | What | How | Time |
+|-------|------|-----|------|
+| **1. Infrastructure** | Azure Function, Key Vault, Storage, App Insights | `azd up` | ~15 min |
+| **2. Fabric + Power BI** | Workspace, Lakehouse, dashboard | Fabric portal (manual) | ~20 min |
+| **3. Self-Service Registration** | Registration form + approval flow | Microsoft Forms + Power Automate | ~30 min |
+| **4. First Data Form** | Register, test, validate | Self-service form or CLI | ~10 min |
+
+> **Fallback:** If Layer 3 (self-service) isn't needed yet, you can register forms manually using the CLI. See [Fallback: Manual Registration](#fallback-manual-registration) at the bottom of this guide.
+
+---
+
 ## Step 1: Clone the Repository
 
 ```bash
@@ -442,6 +472,43 @@ az webapp log tail --name <your-function-app-name> --resource-group <your-resour
 
 ---
 
+## Step 9: Set Up Self-Service Registration (Optional but Recommended)
+
+Self-service registration lets clinicians register their own forms by filling out a simple 3-question form. Non-PHI forms are activated automatically; PHI forms go to IT for review.
+
+### 9.1 Create the registration form
+
+Follow the instructions in [Registration Form Template](registration-form-template.md) to create a "Register Your Form for Analytics" form in Microsoft Forms with these 3 questions:
+
+1. "Paste your form's share link" (Text, required)
+2. "Briefly describe what this form is for" (Text, optional)
+3. "Does this form collect any patient information?" (Choice: Yes / No)
+
+### 9.2 Create the registration Power Automate flow
+
+1. Go to [Power Automate](https://flow.microsoft.com) → **+ Create** → **Automated cloud flow**.
+2. Use the template at `power-automate/registration-flow-template.json` as a reference.
+3. Configure:
+   - **Trigger**: "When a new response is submitted" → select your registration form
+   - **HTTP action**: POST to `https://<your-function-app>.azurewebsites.net/api/register-form`
+   - **Key Vault**: Use the Key Vault connector to retrieve the function key (same as data flows)
+4. Configure the notification actions:
+   - **Active (non-PHI)**: Send confirmation email to the submitter
+   - **Pending review (PHI)**: Send Teams adaptive card to your IT channel
+5. Save and test by submitting a test registration.
+
+### 9.3 Test the registration flow
+
+1. Open the registration form and submit a test entry with a real form URL.
+2. Check Power Automate flow run history for success.
+3. Verify the form appears in the registry: `python scripts/manage_registry.py list`
+4. If non-PHI: verify status is "active" and test a data submission.
+5. If PHI: verify IT received a Teams notification, then classify fields and activate.
+
+> **See also:** [Admin Guide — Self-Service Registration](admin-guide.md) for ongoing management of the registration workflow.
+
+---
+
 ## Troubleshooting
 
 ```mermaid
@@ -468,8 +535,52 @@ flowchart TD
 
 ---
 
+## Fallback: Manual Registration (v2)
+
+If self-service registration (Step 9) is not set up, or if you need to register a form manually, the CLI provides a complete fallback path:
+
+### Register a form via CLI
+
+```bash
+# From a URL (recommended)
+python scripts/manage_registry.py add-form \
+  --form-url "https://forms.office.com/Pages/DesignPageV2.aspx?id=abc123"
+
+# Add fields
+python scripts/manage_registry.py add-field \
+  --form-id "abc123" \
+  --question-id "q1" \
+  --field-name "patient_name" \
+  --contains-phi \
+  --deid-method "redact"
+
+# Validate
+python scripts/manage_registry.py validate
+```
+
+Forms registered via CLI are set to "active" immediately — no approval workflow required.
+
+### Create a data pipeline flow manually
+
+1. Use the template at `power-automate/flow-template-keyvault.json`
+2. Or generate one: `GET https://<function-app>/api/generate-flow?form_id=<id>`
+3. Import into Power Automate and configure connections
+
+### When to use manual registration
+
+- Self-service registration form is not yet deployed
+- Power Automate registration flow is down
+- You need to register a form with custom field mappings
+- Bulk registration of multiple forms at once
+
+> **All v2 CLI commands, endpoints, and flow templates remain fully functional alongside v3 self-service.** They can be used interchangeably — a form registered via CLI works identically to one registered via self-service.
+
+---
+
 ## Next Steps
 
 - **[Admin Guide](admin-guide.md)** — Day-to-day operations, monitoring, key rotation, and scaling guidance.
+- **[Admin Guide — Self-Service Registration](admin-guide.md)** — Managing the registration workflow, approvals, and PHI review.
+- **[Registration Form Template](registration-form-template.md)** — Step-by-step instructions for creating the self-service registration form.
 - **[Architecture Overview](architecture.md)** — Detailed architecture diagrams, data flow, and design decisions.
 - **[Pilot Program Guide](pilot-program.md)** — Planning and executing a pilot rollout with a clinical department.

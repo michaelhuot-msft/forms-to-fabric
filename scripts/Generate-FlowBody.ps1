@@ -55,24 +55,39 @@ if (-not $FormId) {
 
 Write-Host "Form ID: $FormId" -ForegroundColor Green
 
-# ── Resolve Function App URL ─────────────────────────────────────────────────
+# ── Resolve Function App URL and Key ──────────────────────────────────────────
 
-if (-not $FunctionAppUrl) {
-    try { $FunctionAppUrl = azd env get-value FUNCTION_APP_URL 2>$null } catch {}
-    if (-not $FunctionAppUrl) {
-        try {
-            $rg = "rg-forms-to-fabric-dev"
-            $funcName = az functionapp list --resource-group $rg --query "[0].defaultHostName" -o tsv 2>$null
-            if ($funcName) { $FunctionAppUrl = "https://$funcName" }
-        } catch {}
-    }
-    if (-not $FunctionAppUrl) {
-        $FunctionAppUrl = Read-Host "Enter your Function App URL (e.g., https://func-forms-dev-abc123.azurewebsites.net)"
+if (-not $FunctionAppUrl -or -not $FunctionKey) {
+    # Try to find the Function App from the resource group
+    $rg = "rg-forms-to-fabric-dev"
+    $funcAppName = $null
+
+    try {
+        $funcAppName = az functionapp list --resource-group $rg --query "[0].name" -o tsv 2>$null
+    } catch {}
+
+    if ($funcAppName) {
+        if (-not $FunctionAppUrl) {
+            $hostName = az functionapp show --name $funcAppName --resource-group $rg --query "defaultHostName" -o tsv 2>$null
+            if ($hostName) {
+                $FunctionAppUrl = "https://$hostName"
+                Write-Host "Function App: $FunctionAppUrl" -ForegroundColor Green
+            }
+        }
+        if (-not $FunctionKey) {
+            $FunctionKey = az functionapp keys list --name $funcAppName --resource-group $rg --query "functionKeys.default" -o tsv 2>$null
+            if ($FunctionKey) {
+                Write-Host "Function Key: (retrieved)" -ForegroundColor Green
+            }
+        }
     }
 }
 
+if (-not $FunctionAppUrl) {
+    $FunctionAppUrl = Read-Host "Enter your Function App URL (e.g., https://func-forms-dev-abc123.azurewebsites.net)"
+}
 if (-not $FunctionKey) {
-    $FunctionKey = "<your-function-key>"
+    $FunctionKey = Read-Host "Enter your function key (from Azure portal or Key Vault)"
 }
 
 # ── Generate the body ────────────────────────────────────────────────────────
@@ -140,7 +155,7 @@ Write-Host "`nAlso saved to: $outPath" -ForegroundColor Green
 
 Write-Host "`nSteps in Power Automate:" -ForegroundColor Yellow
 Write-Host "  1. In the HTTP action, set Method = POST" -ForegroundColor White
-Write-Host "  2. Set URI = $FunctionAppUrl/api/process-response" -ForegroundColor White
+Write-Host "  2. Set URI = $endpoint" -ForegroundColor White
 Write-Host "  3. Add header: Content-Type = application/json" -ForegroundColor White
 Write-Host "  4. Add header: x-functions-key = $FunctionKey" -ForegroundColor White
 Write-Host "  5. Paste the body JSON above into the Body field" -ForegroundColor White

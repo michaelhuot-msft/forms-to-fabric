@@ -53,6 +53,7 @@ See [docs/setup-guide.md](docs/setup-guide.md) for detailed deployment instructi
 | [Setup Guide](docs/setup-guide.md) | DevOps | Step-by-step deployment instructions |
 | [FAQ](docs/faq.md) | Everyone | Common questions and answers |
 | [Automation Gaps](docs/automation-gaps.md) | IT / DevOps | Admin burden assessment and remediation |
+| [POC Checklist](docs/poc-checklist.md) | Anyone | Reusable checklist for building POC/reference projects |
 
 ## Project Structure
 

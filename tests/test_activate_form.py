@@ -7,7 +7,6 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "functions"))
 
@@ -33,9 +32,7 @@ def _make_registry(tmp_path: Path, forms: list) -> Path:
     config_dir = tmp_path / "config"
     config_dir.mkdir(exist_ok=True)
     registry_path = config_dir / "form-registry.json"
-    registry_path.write_text(
-        json.dumps({"forms": forms}, indent=2), encoding="utf-8"
-    )
+    registry_path.write_text(json.dumps({"forms": forms}, indent=2), encoding="utf-8")
     return registry_path
 
 
@@ -74,7 +71,9 @@ class TestActivateForm:
         req = _make_request({"form_id": "test-123"})
 
         with (
-            patch("activate_form.handler._registry_path", return_value=str(registry_path)),
+            patch(
+                "activate_form.handler._registry_path", return_value=str(registry_path)
+            ),
             patch("activate_form.handler.invalidate_cache"),
         ):
             resp = handle_activate_form(req)
@@ -83,7 +82,10 @@ class TestActivateForm:
         result = json.loads(resp.get_body())
         assert result["status"] == "active"
         assert result["form_id"] == "test-123"
-        assert "activated" in result["message"].lower() or "active" in result["message"].lower()
+        assert (
+            "activated" in result["message"].lower()
+            or "active" in result["message"].lower()
+        )
 
         # Verify registry was updated on disk
         registry = json.loads(registry_path.read_text(encoding="utf-8"))
@@ -102,7 +104,9 @@ class TestActivateForm:
         registry_path = _make_registry(tmp_path, forms)
         req = _make_request({"form_id": "test-123"})
 
-        with patch("activate_form.handler._registry_path", return_value=str(registry_path)):
+        with patch(
+            "activate_form.handler._registry_path", return_value=str(registry_path)
+        ):
             resp = handle_activate_form(req)
 
         assert resp.status_code == 200
@@ -144,7 +148,9 @@ class TestActivateForm:
         registry_path = _make_registry(tmp_path, forms)
         req = _make_request({"form_id": "test-123"})
 
-        with patch("activate_form.handler._registry_path", return_value=str(registry_path)):
+        with patch(
+            "activate_form.handler._registry_path", return_value=str(registry_path)
+        ):
             resp = handle_activate_form(req)
 
         assert resp.status_code == 400
@@ -164,7 +170,9 @@ class TestActivateForm:
         registry_path = _make_registry(tmp_path, [])
         req = _make_request({"form_id": "nonexistent"})
 
-        with patch("activate_form.handler._registry_path", return_value=str(registry_path)):
+        with patch(
+            "activate_form.handler._registry_path", return_value=str(registry_path)
+        ):
             resp = handle_activate_form(req)
 
         assert resp.status_code == 404

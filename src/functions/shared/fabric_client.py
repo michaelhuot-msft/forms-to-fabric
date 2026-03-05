@@ -36,7 +36,9 @@ def _get_access_token() -> str:
     return token.token
 
 
-def _request_with_retry(method: str, url: str, headers: dict[str, str]) -> dict[str, Any]:
+def _request_with_retry(
+    method: str, url: str, headers: dict[str, str]
+) -> dict[str, Any]:
     """Execute an HTTP request with retry logic for rate-limiting (429) responses.
 
     Args:

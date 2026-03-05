@@ -56,7 +56,9 @@ def registry_dir(tmp_path: Path) -> Path:
     registry_path.write_text(json.dumps(VALID_REGISTRY, indent=2), encoding="utf-8")
 
     # Copy schema from repo
-    schema_src = Path(__file__).resolve().parent.parent / "config" / "form-registry.schema.json"
+    schema_src = (
+        Path(__file__).resolve().parent.parent / "config" / "form-registry.schema.json"
+    )
     schema_dst = config_dir / "form-registry.schema.json"
     schema_dst.write_text(schema_src.read_text(encoding="utf-8"), encoding="utf-8")
 
@@ -74,8 +76,10 @@ def schema_path(base: Path) -> Path:
 def run_cli(base: Path, argv: list[str]) -> int:
     """Run the CLI with --registry and --schema pointed at the temp dir."""
     full_argv = [
-        "--registry", str(registry_path(base)),
-        "--schema", str(schema_path(base)),
+        "--registry",
+        str(registry_path(base)),
+        "--schema",
+        str(schema_path(base)),
         *argv,
     ]
     return cli.main(full_argv)
@@ -111,12 +115,18 @@ class TestValidate:
 
 class TestAddForm:
     def test_add_form_with_id(self, registry_dir: Path) -> None:
-        rc = run_cli(registry_dir, [
-            "add-form",
-            "--form-id", "new-form-002",
-            "--form-name", "New Form",
-            "--target-table", "new_table",
-        ])
+        rc = run_cli(
+            registry_dir,
+            [
+                "add-form",
+                "--form-id",
+                "new-form-002",
+                "--form-name",
+                "New Form",
+                "--target-table",
+                "new_table",
+            ],
+        )
         assert rc == 0
 
         data = json.loads(registry_path(registry_dir).read_text(encoding="utf-8"))
@@ -128,11 +138,16 @@ class TestAddForm:
         assert new_form["fields"] == []
 
     def test_add_form_with_url(self, registry_dir: Path) -> None:
-        rc = run_cli(registry_dir, [
-            "add-form",
-            "--form-url", "https://forms.office.com/Pages/DesignPageV2.aspx?id=url-form-003&origin=lprLink",
-            "--target-table", "url_table",
-        ])
+        rc = run_cli(
+            registry_dir,
+            [
+                "add-form",
+                "--form-url",
+                "https://forms.office.com/Pages/DesignPageV2.aspx?id=url-form-003&origin=lprLink",
+                "--target-table",
+                "url_table",
+            ],
+        )
         assert rc == 0
 
         data = json.loads(registry_path(registry_dir).read_text(encoding="utf-8"))
@@ -143,10 +158,14 @@ class TestAddForm:
 
     def test_add_form_url_only(self, registry_dir: Path) -> None:
         """Just a URL — target_table and form_name are both derived."""
-        rc = run_cli(registry_dir, [
-            "add-form",
-            "--form-url", "https://forms.office.com/Pages/DesignPageV2.aspx?id=minimal-form-004",
-        ])
+        rc = run_cli(
+            registry_dir,
+            [
+                "add-form",
+                "--form-url",
+                "https://forms.office.com/Pages/DesignPageV2.aspx?id=minimal-form-004",
+            ],
+        )
         assert rc == 0
 
         data = json.loads(registry_path(registry_dir).read_text(encoding="utf-8"))
@@ -156,32 +175,50 @@ class TestAddForm:
         assert new_form["target_table"] == "minimal_form_004"
 
     def test_add_form_bad_url(self, registry_dir: Path) -> None:
-        rc = run_cli(registry_dir, [
-            "add-form",
-            "--form-url", "https://example.com/not-a-form",
-            "--target-table", "bad_table",
-        ])
+        rc = run_cli(
+            registry_dir,
+            [
+                "add-form",
+                "--form-url",
+                "https://example.com/not-a-form",
+                "--target-table",
+                "bad_table",
+            ],
+        )
         assert rc == 1
 
     def test_add_form_duplicate(self, registry_dir: Path) -> None:
-        rc = run_cli(registry_dir, [
-            "add-form",
-            "--form-id", "test-form-001",
-            "--form-name", "Duplicate",
-            "--target-table", "dup_table",
-        ])
+        rc = run_cli(
+            registry_dir,
+            [
+                "add-form",
+                "--form-id",
+                "test-form-001",
+                "--form-name",
+                "Duplicate",
+                "--target-table",
+                "dup_table",
+            ],
+        )
         assert rc == 1
 
 
 class TestAddField:
     def test_add_field(self, registry_dir: Path) -> None:
-        rc = run_cli(registry_dir, [
-            "add-field",
-            "--form-id", "test-form-001",
-            "--question-id", "q3",
-            "--field-name", "new_field",
-            "--deid-method", "none",
-        ])
+        rc = run_cli(
+            registry_dir,
+            [
+                "add-field",
+                "--form-id",
+                "test-form-001",
+                "--question-id",
+                "q3",
+                "--field-name",
+                "new_field",
+                "--deid-method",
+                "none",
+            ],
+        )
         assert rc == 0
 
         data = json.loads(registry_path(registry_dir).read_text(encoding="utf-8"))
@@ -190,48 +227,76 @@ class TestAddField:
         assert "q3" in qids
 
     def test_add_field_phi_requires_deid(self, registry_dir: Path) -> None:
-        rc = run_cli(registry_dir, [
-            "add-field",
-            "--form-id", "test-form-001",
-            "--question-id", "q_phi",
-            "--field-name", "phi_field",
-            "--contains-phi",
-            "--deid-method", "none",
-        ])
+        rc = run_cli(
+            registry_dir,
+            [
+                "add-field",
+                "--form-id",
+                "test-form-001",
+                "--question-id",
+                "q_phi",
+                "--field-name",
+                "phi_field",
+                "--contains-phi",
+                "--deid-method",
+                "none",
+            ],
+        )
         assert rc == 1
 
     def test_add_field_with_phi_and_deid(self, registry_dir: Path) -> None:
-        rc = run_cli(registry_dir, [
-            "add-field",
-            "--form-id", "test-form-001",
-            "--question-id", "q_phi",
-            "--field-name", "phi_field",
-            "--contains-phi",
-            "--deid-method", "redact",
-        ])
+        rc = run_cli(
+            registry_dir,
+            [
+                "add-field",
+                "--form-id",
+                "test-form-001",
+                "--question-id",
+                "q_phi",
+                "--field-name",
+                "phi_field",
+                "--contains-phi",
+                "--deid-method",
+                "redact",
+            ],
+        )
         assert rc == 0
 
     def test_add_field_nonexistent_form(self, registry_dir: Path) -> None:
-        rc = run_cli(registry_dir, [
-            "add-field",
-            "--form-id", "no-such-form",
-            "--question-id", "q1",
-            "--field-name", "field",
-        ])
+        rc = run_cli(
+            registry_dir,
+            [
+                "add-field",
+                "--form-id",
+                "no-such-form",
+                "--question-id",
+                "q1",
+                "--field-name",
+                "field",
+            ],
+        )
         assert rc == 1
 
     def test_add_field_duplicate_question_id(self, registry_dir: Path) -> None:
-        rc = run_cli(registry_dir, [
-            "add-field",
-            "--form-id", "test-form-001",
-            "--question-id", "q1",
-            "--field-name", "duplicate_field",
-        ])
+        rc = run_cli(
+            registry_dir,
+            [
+                "add-field",
+                "--form-id",
+                "test-form-001",
+                "--question-id",
+                "q1",
+                "--field-name",
+                "duplicate_field",
+            ],
+        )
         assert rc == 1
 
 
 class TestListForms:
-    def test_list_forms(self, registry_dir: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_list_forms(
+        self, registry_dir: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
         rc = run_cli(registry_dir, ["list"])
         assert rc == 0
 
@@ -241,7 +306,7 @@ class TestListForms:
         assert "test_table" in output
         # Should show field count of 2
         lines = output.strip().split("\n")
-        data_line = [l for l in lines if "test-form-001" in l][0]
+        data_line = [line for line in lines if "test-form-001" in line][0]
         # 2 fields total, 1 PHI field
         assert "2" in data_line
         assert "1" in data_line
@@ -249,11 +314,15 @@ class TestListForms:
 
 class TestRemoveForm:
     def test_remove_form(self, registry_dir: Path) -> None:
-        rc = run_cli(registry_dir, [
-            "remove-form",
-            "--form-id", "test-form-001",
-            "--yes",
-        ])
+        rc = run_cli(
+            registry_dir,
+            [
+                "remove-form",
+                "--form-id",
+                "test-form-001",
+                "--yes",
+            ],
+        )
         assert rc == 0
 
         data = json.loads(registry_path(registry_dir).read_text(encoding="utf-8"))
@@ -261,9 +330,13 @@ class TestRemoveForm:
         assert "test-form-001" not in ids
 
     def test_remove_form_nonexistent(self, registry_dir: Path) -> None:
-        rc = run_cli(registry_dir, [
-            "remove-form",
-            "--form-id", "no-such-form",
-            "--yes",
-        ])
+        rc = run_cli(
+            registry_dir,
+            [
+                "remove-form",
+                "--form-id",
+                "no-such-form",
+                "--yes",
+            ],
+        )
         assert rc == 1

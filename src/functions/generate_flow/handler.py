@@ -42,7 +42,9 @@ def _build_flow_definition(
                         },
                     },
                     "method": "get",
-                    "path": "/trigger/api/forms/@{encodeURIComponent('" + form_config.form_id + "')}/response",
+                    "path": "/trigger/api/forms/@{encodeURIComponent('"
+                    + form_config.form_id
+                    + "')}/response",
                 },
                 "splitOn": "@triggerBody()",
                 "recurrence": {
@@ -89,7 +91,7 @@ def _build_flow_definition(
                         },
                     },
                     "method": "get",
-                    "path": f"/secrets/@{{encodeURIComponent('function-app-key')}}/value",
+                    "path": "/secrets/@{encodeURIComponent('function-app-key')}/value",
                 },
             },
             "HTTP_POST_to_Azure_Function": {
@@ -185,14 +187,21 @@ def handle_generate_flow(req: func.HttpRequest) -> func.HttpResponse:
     form_id = req.params.get("form_id")
     if not form_id:
         return func.HttpResponse(
-            json.dumps({"status": "error", "message": "Missing required query parameter: form_id"}),
+            json.dumps(
+                {
+                    "status": "error",
+                    "message": "Missing required query parameter: form_id",
+                }
+            ),
             status_code=400,
             mimetype="application/json",
         )
 
     function_app_url = req.params.get(
         "function_app_url",
-        os.environ.get("FUNCTION_APP_URL", "https://<your-function-app>.azurewebsites.net"),
+        os.environ.get(
+            "FUNCTION_APP_URL", "https://<your-function-app>.azurewebsites.net"
+        ),
     )
     key_vault_name = req.params.get(
         "key_vault_name",
@@ -203,7 +212,12 @@ def handle_generate_flow(req: func.HttpRequest) -> func.HttpResponse:
         definition = generate_flow_definition(form_id, function_app_url, key_vault_name)
     except KeyError:
         return func.HttpResponse(
-            json.dumps({"status": "error", "message": f"Form '{form_id}' not found in registry"}),
+            json.dumps(
+                {
+                    "status": "error",
+                    "message": f"Form '{form_id}' not found in registry",
+                }
+            ),
             status_code=404,
             mimetype="application/json",
         )

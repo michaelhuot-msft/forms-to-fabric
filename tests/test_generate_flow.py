@@ -47,7 +47,9 @@ class TestGenerateFlowDefinition:
 
     @patch("generate_flow.handler.get_form_config", return_value=_SAMPLE_CONFIG)
     def test_generates_valid_flow(self, _mock_cfg: MagicMock) -> None:
-        result = generate_flow_definition("patient-satisfaction-001", _FUNC_URL, _KV_NAME)
+        result = generate_flow_definition(
+            "patient-satisfaction-001", _FUNC_URL, _KV_NAME
+        )
 
         assert "$schema" in result
         assert "contentVersion" in result
@@ -62,7 +64,9 @@ class TestGenerateFlowDefinition:
 
     @patch("generate_flow.handler.get_form_config", return_value=_SAMPLE_CONFIG)
     def test_flow_has_keyvault_step(self, _mock_cfg: MagicMock) -> None:
-        result = generate_flow_definition("patient-satisfaction-001", _FUNC_URL, _KV_NAME)
+        result = generate_flow_definition(
+            "patient-satisfaction-001", _FUNC_URL, _KV_NAME
+        )
         actions = result["actions"]
 
         assert "Get_secret" in actions
@@ -72,7 +76,9 @@ class TestGenerateFlowDefinition:
 
     @patch("generate_flow.handler.get_form_config", return_value=_SAMPLE_CONFIG)
     def test_flow_body_has_form_id(self, _mock_cfg: MagicMock) -> None:
-        result = generate_flow_definition("patient-satisfaction-001", _FUNC_URL, _KV_NAME)
+        result = generate_flow_definition(
+            "patient-satisfaction-001", _FUNC_URL, _KV_NAME
+        )
         http_action = result["actions"]["HTTP_POST_to_Azure_Function"]
         body = http_action["inputs"]["body"]
 

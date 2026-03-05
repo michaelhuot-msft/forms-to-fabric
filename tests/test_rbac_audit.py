@@ -1,15 +1,12 @@
 """Tests for the RBAC audit of Fabric workspace access."""
 
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "functions"))
 
-from shared.models import RbacAuditReport, RbacViolation  # noqa: E402
 from audit_rbac.handler import audit_workspace_access  # noqa: E402
 
 

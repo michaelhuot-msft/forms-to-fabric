@@ -8,12 +8,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from scripts.rotate_function_key import main, rotate
+from scripts.rotate_function_key import rotate
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _mock_credential():
     return MagicMock(name="DefaultAzureCredential")
@@ -37,15 +38,17 @@ def _mock_host_keys(existing: dict[str, str] | None = None):
 # Tests
 # ---------------------------------------------------------------------------
 
+
 class TestDryRun:
     """--dry-run must not create keys or secrets."""
 
     @patch("scripts.rotate_function_key.SecretClient")
     @patch("scripts.rotate_function_key.WebSiteManagementClient")
-    @patch("scripts.rotate_function_key.SubscriptionClient", return_value=_mock_subscription())
-    def test_dry_run_does_not_modify(
-        self, mock_sub_cls, mock_web_cls, mock_secret_cls
-    ):
+    @patch(
+        "scripts.rotate_function_key.SubscriptionClient",
+        return_value=_mock_subscription(),
+    )
+    def test_dry_run_does_not_modify(self, mock_sub_cls, mock_web_cls, mock_secret_cls):
         mock_web = mock_web_cls.return_value
         mock_web.web_apps.list_host_keys.return_value = _mock_host_keys()
 
@@ -66,10 +69,11 @@ class TestKeyStored:
 
     @patch("scripts.rotate_function_key.SecretClient")
     @patch("scripts.rotate_function_key.WebSiteManagementClient")
-    @patch("scripts.rotate_function_key.SubscriptionClient", return_value=_mock_subscription())
-    def test_new_key_stored_in_vault(
-        self, mock_sub_cls, mock_web_cls, mock_secret_cls
-    ):
+    @patch(
+        "scripts.rotate_function_key.SubscriptionClient",
+        return_value=_mock_subscription(),
+    )
+    def test_new_key_stored_in_vault(self, mock_sub_cls, mock_web_cls, mock_secret_cls):
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         new_key_name = f"power-automate-{today}"
 
@@ -103,10 +107,11 @@ class TestKeyNaming:
 
     @patch("scripts.rotate_function_key.SecretClient")
     @patch("scripts.rotate_function_key.WebSiteManagementClient")
-    @patch("scripts.rotate_function_key.SubscriptionClient", return_value=_mock_subscription())
-    def test_key_name_includes_date(
-        self, mock_sub_cls, mock_web_cls, mock_secret_cls
-    ):
+    @patch(
+        "scripts.rotate_function_key.SubscriptionClient",
+        return_value=_mock_subscription(),
+    )
+    def test_key_name_includes_date(self, mock_sub_cls, mock_web_cls, mock_secret_cls):
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         expected_name = f"power-automate-{today}"
 
@@ -135,7 +140,10 @@ class TestErrorHandling:
 
     @patch("scripts.rotate_function_key.SecretClient")
     @patch("scripts.rotate_function_key.WebSiteManagementClient")
-    @patch("scripts.rotate_function_key.SubscriptionClient", return_value=_mock_subscription())
+    @patch(
+        "scripts.rotate_function_key.SubscriptionClient",
+        return_value=_mock_subscription(),
+    )
     def test_missing_function_app_error(
         self, mock_sub_cls, mock_web_cls, mock_secret_cls
     ):

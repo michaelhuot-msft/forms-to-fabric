@@ -5,7 +5,6 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "functions"))
 
@@ -91,7 +90,9 @@ class TestHandleFormResponse:
         body = json.loads(resp.get_body())
         assert "empty" in body["message"].lower()
 
-    @patch("process_response.handler.write_to_lakehouse", return_value="mock/path.parquet")
+    @patch(
+        "process_response.handler.write_to_lakehouse", return_value="mock/path.parquet"
+    )
     @patch("process_response.handler.get_form_config", return_value=_SAMPLE_CONFIG)
     def test_valid_payload_success(
         self, _mock_cfg: MagicMock, _mock_write: MagicMock
@@ -145,7 +146,9 @@ class TestHandleFormResponse:
         assert body["status"] == "error"
         assert "inactive" in body["message"]
 
-    @patch("process_response.handler.write_to_lakehouse", return_value="mock/path.parquet")
+    @patch(
+        "process_response.handler.write_to_lakehouse", return_value="mock/path.parquet"
+    )
     @patch("process_response.handler.get_form_config")
     def test_unregistered_field_in_raw_only(
         self, mock_cfg: MagicMock, _mock_write: MagicMock
@@ -169,7 +172,11 @@ class TestHandleFormResponse:
             **_VALID_PAYLOAD,
             "answers": [
                 {"question_id": "q1", "question": "Patient Name", "answer": "John Doe"},
-                {"question_id": "q99", "question": "Extra Field", "answer": "extra_value"},
+                {
+                    "question_id": "q99",
+                    "question": "Extra Field",
+                    "answer": "extra_value",
+                },
             ],
         }
         resp = handle_form_response(_make_request(payload))
@@ -177,8 +184,16 @@ class TestHandleFormResponse:
 
         # Inspect the write_to_lakehouse calls
         calls = _mock_write.call_args_list
-        raw_call = [c for c in calls if c.kwargs.get("layer") == "raw" or (c.args and "raw" in str(c))]
-        curated_call = [c for c in calls if c.kwargs.get("layer") == "curated" or (c.args and "curated" in str(c))]
+        raw_call = [
+            c
+            for c in calls
+            if c.kwargs.get("layer") == "raw" or (c.args and "raw" in str(c))
+        ]
+        curated_call = [
+            c
+            for c in calls
+            if c.kwargs.get("layer") == "curated" or (c.args and "curated" in str(c))
+        ]
 
         # Raw layer should have both fields (q1 and q99)
         raw_data = raw_call[0].kwargs["data"]

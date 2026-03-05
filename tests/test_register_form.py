@@ -7,7 +7,6 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "functions"))
 
@@ -25,7 +24,9 @@ SAMPLE_QUESTIONS = [
     {"id": "q3", "title": "Satisfaction Rating", "type": "rating"},
 ]
 
-VALID_FORM_URL = "https://forms.office.com/Pages/DesignPageV2.aspx?id=abc123&origin=shell"
+VALID_FORM_URL = (
+    "https://forms.office.com/Pages/DesignPageV2.aspx?id=abc123&origin=shell"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -62,12 +63,12 @@ class TestRegisterForm:
     def test_register_non_phi_form(self, tmp_path: Path) -> None:
         registry_path = _make_registry(tmp_path)
 
-        req = _make_request(
-            {"form_url": VALID_FORM_URL, "has_phi": False}
-        )
+        req = _make_request({"form_url": VALID_FORM_URL, "has_phi": False})
 
         with (
-            patch("register_form.handler._registry_path", return_value=str(registry_path)),
+            patch(
+                "register_form.handler._registry_path", return_value=str(registry_path)
+            ),
             patch("register_form.handler.get_form_config", return_value=None),
             patch("register_form.handler.GraphClient") as MockGraph,
         ):
@@ -94,12 +95,12 @@ class TestRegisterForm:
     def test_register_phi_form(self, tmp_path: Path) -> None:
         registry_path = _make_registry(tmp_path)
 
-        req = _make_request(
-            {"form_url": VALID_FORM_URL, "has_phi": True}
-        )
+        req = _make_request({"form_url": VALID_FORM_URL, "has_phi": True})
 
         with (
-            patch("register_form.handler._registry_path", return_value=str(registry_path)),
+            patch(
+                "register_form.handler._registry_path", return_value=str(registry_path)
+            ),
             patch("register_form.handler.get_form_config", return_value=None),
             patch("register_form.handler.GraphClient") as MockGraph,
         ):
@@ -117,13 +118,15 @@ class TestRegisterForm:
         registry_path = _make_registry(tmp_path)
         existing_config = MagicMock()
 
-        req = _make_request(
-            {"form_url": VALID_FORM_URL, "has_phi": False}
-        )
+        req = _make_request({"form_url": VALID_FORM_URL, "has_phi": False})
 
         with (
-            patch("register_form.handler._registry_path", return_value=str(registry_path)),
-            patch("register_form.handler.get_form_config", return_value=existing_config),
+            patch(
+                "register_form.handler._registry_path", return_value=str(registry_path)
+            ),
+            patch(
+                "register_form.handler.get_form_config", return_value=existing_config
+            ),
         ):
             resp = handle_register_form(req)
 
@@ -145,7 +148,9 @@ class TestRegisterForm:
             {"form_url": "https://example.com/not-a-form", "has_phi": False}
         )
 
-        with patch("register_form.handler._registry_path", return_value=str(registry_path)):
+        with patch(
+            "register_form.handler._registry_path", return_value=str(registry_path)
+        ):
             resp = handle_register_form(req)
 
         assert resp.status_code == 400
@@ -157,12 +162,12 @@ class TestRegisterForm:
 
         registry_path = _make_registry(tmp_path)
 
-        req = _make_request(
-            {"form_url": VALID_FORM_URL, "has_phi": False}
-        )
+        req = _make_request({"form_url": VALID_FORM_URL, "has_phi": False})
 
         with (
-            patch("register_form.handler._registry_path", return_value=str(registry_path)),
+            patch(
+                "register_form.handler._registry_path", return_value=str(registry_path)
+            ),
             patch("register_form.handler.get_form_config", return_value=None),
             patch("register_form.handler.GraphClient") as MockGraph,
         ):

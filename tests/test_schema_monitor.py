@@ -14,14 +14,15 @@ _functions_dir = str(Path(__file__).resolve().parent.parent / "src" / "functions
 if _functions_dir not in sys.path:
     sys.path.insert(0, _functions_dir)
 
-from shared.graph_client import FormNotFoundError, GraphClient
-from shared.models import FieldConfig, FormConfig, SchemaChange, SchemaChangeReport
-from monitor_schema.handler import _compare_schema, check_all_forms, send_alert
+from shared.graph_client import FormNotFoundError, GraphClient  # noqa: E402
+from shared.models import FieldConfig, FormConfig, SchemaChange, SchemaChangeReport  # noqa: E402
+from monitor_schema.handler import _compare_schema, check_all_forms, send_alert  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_form_config(
     form_id: str = "test-form",
@@ -51,6 +52,7 @@ def _make_live_questions(items: list[tuple[str, str]]) -> list[dict[str, str]]:
 # _compare_schema unit tests
 # ---------------------------------------------------------------------------
 
+
 class TestCompareSchema:
     """Direct unit tests for the comparison logic."""
 
@@ -66,11 +68,13 @@ class TestCompareSchema:
     def test_added_question(self) -> None:
         """A question present in live but absent from registry is 'added'."""
         config = _make_form_config()
-        live = _make_live_questions([
-            ("q1", "Name"),
-            ("q2", "Age"),
-            ("q3", "Email"),
-        ])
+        live = _make_live_questions(
+            [
+                ("q1", "Name"),
+                ("q2", "Age"),
+                ("q3", "Email"),
+            ]
+        )
 
         changes = _compare_schema(config, live)
 
@@ -107,10 +111,12 @@ class TestCompareSchema:
     def test_multiple_changes(self) -> None:
         """Multiple change types can appear in a single comparison."""
         config = _make_form_config()
-        live = _make_live_questions([
-            ("q1", "Full Name"),   # renamed
-            ("q3", "Department"),  # added  (q2 is missing → removed)
-        ])
+        live = _make_live_questions(
+            [
+                ("q1", "Full Name"),  # renamed
+                ("q3", "Department"),  # added  (q2 is missing → removed)
+            ]
+        )
 
         changes = _compare_schema(config, live)
 
@@ -123,6 +129,7 @@ class TestCompareSchema:
 # check_all_forms integration tests (mocked Graph client + config)
 # ---------------------------------------------------------------------------
 
+
 class TestCheckAllForms:
     """Integration tests for check_all_forms with a mocked Graph client."""
 
@@ -132,11 +139,13 @@ class TestCheckAllForms:
         mock_configs.return_value = {config.form_id: config}
 
         mock_client = MagicMock(spec=GraphClient)
-        mock_client.get_form_questions.return_value = _make_live_questions([
-            ("q1", "Name"),
-            ("q2", "Age"),
-            ("q3", "New Question"),
-        ])
+        mock_client.get_form_questions.return_value = _make_live_questions(
+            [
+                ("q1", "Name"),
+                ("q2", "Age"),
+                ("q3", "New Question"),
+            ]
+        )
 
         reports = check_all_forms(client=mock_client)
 
@@ -152,9 +161,11 @@ class TestCheckAllForms:
         mock_configs.return_value = {config.form_id: config}
 
         mock_client = MagicMock(spec=GraphClient)
-        mock_client.get_form_questions.return_value = _make_live_questions([
-            ("q1", "Name"),
-        ])
+        mock_client.get_form_questions.return_value = _make_live_questions(
+            [
+                ("q1", "Name"),
+            ]
+        )
 
         reports = check_all_forms(client=mock_client)
 
@@ -170,10 +181,12 @@ class TestCheckAllForms:
         mock_configs.return_value = {config.form_id: config}
 
         mock_client = MagicMock(spec=GraphClient)
-        mock_client.get_form_questions.return_value = _make_live_questions([
-            ("q1", "Patient Full Name"),
-            ("q2", "Age"),
-        ])
+        mock_client.get_form_questions.return_value = _make_live_questions(
+            [
+                ("q1", "Patient Full Name"),
+                ("q2", "Age"),
+            ]
+        )
 
         reports = check_all_forms(client=mock_client)
 
@@ -190,10 +203,12 @@ class TestCheckAllForms:
         mock_configs.return_value = {config.form_id: config}
 
         mock_client = MagicMock(spec=GraphClient)
-        mock_client.get_form_questions.return_value = _make_live_questions([
-            ("q1", "Name"),
-            ("q2", "Age"),
-        ])
+        mock_client.get_form_questions.return_value = _make_live_questions(
+            [
+                ("q1", "Name"),
+                ("q2", "Age"),
+            ]
+        )
 
         reports = check_all_forms(client=mock_client)
 
@@ -220,6 +235,7 @@ class TestCheckAllForms:
 # ---------------------------------------------------------------------------
 # send_alert tests
 # ---------------------------------------------------------------------------
+
 
 class TestSendAlert:
     """Tests for the send_alert logging/notification path."""

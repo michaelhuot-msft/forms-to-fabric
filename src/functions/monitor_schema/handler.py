@@ -174,13 +174,11 @@ def send_alert(reports: list[SchemaChangeReport]) -> None:
         for change in report.changes:
             if change.change_type == "added":
                 change_summaries.append(
-                    f"  + ADDED   question '{change.question_id}': "
-                    f"'{change.new_value}'"
+                    f"  + ADDED   question '{change.question_id}': '{change.new_value}'"
                 )
             elif change.change_type == "removed":
                 change_summaries.append(
-                    f"  - REMOVED question '{change.question_id}': "
-                    f"'{change.old_value}'"
+                    f"  - REMOVED question '{change.question_id}': '{change.old_value}'"
                 )
             elif change.change_type == "renamed":
                 change_summaries.append(

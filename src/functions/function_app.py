@@ -49,6 +49,7 @@ def audit_rbac(timer: func.TimerRequest) -> None:
 def generate_flow(req: func.HttpRequest) -> func.HttpResponse:
     """Generate a Power Automate flow definition for a registered form."""
     from generate_flow.handler import handle_generate_flow
+
     return handle_generate_flow(req)
 
 
@@ -56,6 +57,7 @@ def generate_flow(req: func.HttpRequest) -> func.HttpResponse:
 def register_form(req: func.HttpRequest) -> func.HttpResponse:
     """Register a new form for pipeline processing."""
     from register_form.handler import handle_register_form
+
     return handle_register_form(req)
 
 
@@ -63,4 +65,5 @@ def register_form(req: func.HttpRequest) -> func.HttpResponse:
 def activate_form(req: func.HttpRequest) -> func.HttpResponse:
     """Activate a form after IT review."""
     from activate_form.handler import handle_activate_form
+
     return handle_activate_form(req)

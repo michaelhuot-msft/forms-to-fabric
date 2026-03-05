@@ -21,25 +21,17 @@ flowchart LR
 
 ### Recommended: Use the Registry CLI
 
-The `manage_registry.py` CLI tool provides a validated, error-proof way to manage form registrations. It prevents common mistakes like JSON syntax errors, duplicate form IDs, and missing de-identification settings.
+The `manage_registry.py` CLI tool provides a validated, error-proof way to manage form registrations. The clinician sends you their form link — you paste it in and you're done.
 
-**Step 1 — Get the form ID from the clinician's URL:**
-
-The clinician sends you their form link. Extract the form ID:
-
-```bash
-python scripts/manage_registry.py lookup-id "https://forms.office.com/Pages/DesignPageV2.aspx?id=abc123-def456&..."
-# Output: Form ID: abc123-def456
-```
-
-**Step 2 — Register the form:**
+**Register a form (just the URL and table name):**
 
 ```bash
 python scripts/manage_registry.py add-form \
-  --form-id "abc123-def456" \
-  --form-name "Patient Satisfaction Survey" \
+  --form-url "https://forms.office.com/Pages/DesignPageV2.aspx?id=abc123-def456&origin=lprLink" \
   --target-table "patient_satisfaction"
 ```
+
+The form ID is extracted from the URL automatically, and the form name is fetched from Microsoft Forms. If the API is unreachable, the form ID is used as the name.
 
 **Add fields to the form:**
 

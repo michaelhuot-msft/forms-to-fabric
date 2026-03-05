@@ -41,6 +41,42 @@ def save_registry(data: dict, path: Path) -> None:
         f.write("\n")
 
 
+def extract_form_id(url: str) -> str | None:
+    """Extract a form ID from a Microsoft Forms URL.
+
+    Supports:
+      - https://forms.office.com/Pages/DesignPageV2.aspx?id=<ID>&...
+      - https://forms.office.com/Pages/ResponsePage.aspx?id=<ID>&...
+      - https://forms.office.com/r/<ID>
+      - https://forms.microsoft.com/r/<ID>
+
+    Returns None if the URL doesn't match any known pattern.
+    """
+    parsed = urlparse(url)
+    qs = parse_qs(parsed.query)
+    if "id" in qs:
+        return qs["id"][0]
+    match = re.search(r"/r/([A-Za-z0-9_-]+)", parsed.path)
+    if match:
+        return match.group(1)
+    return None
+
+
+def fetch_form_name(form_id: str) -> str | None:
+    """Try to fetch the form title from Microsoft Graph API.
+
+    Returns None if the API is unreachable or auth is unavailable
+    (e.g. running locally without Azure credentials).
+    """
+    try:
+        from src.functions.shared.graph_client import GraphClient
+        client = GraphClient()
+        meta = client.get_form_metadata(form_id)
+        return meta.get("title") or None
+    except Exception:
+        return None
+
+
 def find_form(registry: dict, form_id: str) -> dict | None:
     """Return the form entry matching *form_id*, or None."""
     for form in registry.get("forms", []):
@@ -270,20 +306,52 @@ def cmd_add_form(args: argparse.Namespace) -> int:
         print(f"ERROR: {exc}")
         return 1
 
-    if find_form(registry, args.form_id):
-        print(f"ERROR: form_id '{args.form_id}' already exists")
+    # Resolve form_id: from --form-url or --form-id
+    form_id: str | None = getattr(args, "form_id", None)
+    form_url: str | None = getattr(args, "form_url", None)
+
+    if form_url:
+        form_id = extract_form_id(form_url)
+        if not form_id:
+            print("ERROR: Could not extract a form ID from this URL.")
+            print()
+            print("Expected URL formats:")
+            print("  https://forms.office.com/Pages/DesignPageV2.aspx?id=<FORM_ID>&...")
+            print("  https://forms.office.com/r/<FORM_ID>")
+            print()
+            print("Tip: Open the form in edit mode and copy the URL from your browser.")
+            return 1
+        print(f"Extracted form ID: {form_id}")
+
+    if not form_id:
+        print("ERROR: provide --form-url or --form-id")
         return 1
 
+    if find_form(registry, form_id):
+        print(f"ERROR: form_id '{form_id}' already exists")
+        return 1
+
+    # Resolve form_name: explicit flag > Graph API > form_id fallback
+    form_name = getattr(args, "form_name", None)
+    if not form_name:
+        print("Fetching form name from Microsoft Graph API...")
+        form_name = fetch_form_name(form_id)
+        if form_name:
+            print(f"Form name: {form_name}")
+        else:
+            form_name = form_id
+            print(f"Could not reach Graph API — using form ID as name: {form_name}")
+
     new_form = {
-        "form_id": args.form_id,
-        "form_name": args.form_name,
+        "form_id": form_id,
+        "form_name": form_name,
         "target_table": args.target_table,
         "fields": [],
     }
 
     registry["forms"].append(new_form)
     save_registry(registry, registry_path)
-    print(f"Added form '{args.form_id}'")
+    print(f"Added form '{form_id}' → table '{args.target_table}'")
     return 0
 
 
@@ -445,10 +513,23 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("list", help="List all registered forms")
 
     # add-form
-    add_form = subparsers.add_parser("add-form", help="Add a new form entry")
-    add_form.add_argument("--form-id", required=True, help="Form ID (GUID from the Forms URL — run 'lookup-id' to extract it)")
-    add_form.add_argument("--form-name", required=True, help="Human-readable form name")
-    add_form.add_argument("--target-table", required=True, help="Target table name")
+    add_form = subparsers.add_parser(
+        "add-form",
+        help="Register a new form (paste the URL the clinician sent you)",
+    )
+    add_form.add_argument(
+        "--form-url",
+        help="Microsoft Forms URL — the form ID and name are extracted automatically",
+    )
+    add_form.add_argument(
+        "--form-id",
+        help="Form ID override (use instead of --form-url if you already have the GUID)",
+    )
+    add_form.add_argument(
+        "--form-name",
+        help="Display name override (auto-fetched from Forms API if omitted)",
+    )
+    add_form.add_argument("--target-table", required=True, help="Lakehouse table name (lowercase, underscores)")
 
     # add-field
     add_field = subparsers.add_parser("add-field", help="Add a field to an existing form")

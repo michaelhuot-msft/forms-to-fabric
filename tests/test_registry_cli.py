@@ -109,7 +109,7 @@ class TestValidate:
 
 
 class TestAddForm:
-    def test_add_form(self, registry_dir: Path) -> None:
+    def test_add_form_with_id(self, registry_dir: Path) -> None:
         rc = run_cli(registry_dir, [
             "add-form",
             "--form-id", "new-form-002",
@@ -125,6 +125,28 @@ class TestAddForm:
         # New form should have empty fields list
         new_form = [f for f in data["forms"] if f["form_id"] == "new-form-002"][0]
         assert new_form["fields"] == []
+
+    def test_add_form_with_url(self, registry_dir: Path) -> None:
+        rc = run_cli(registry_dir, [
+            "add-form",
+            "--form-url", "https://forms.office.com/Pages/DesignPageV2.aspx?id=url-form-003&origin=lprLink",
+            "--target-table", "url_table",
+        ])
+        assert rc == 0
+
+        data = json.loads(registry_path(registry_dir).read_text(encoding="utf-8"))
+        new_form = [f for f in data["forms"] if f["form_id"] == "url-form-003"][0]
+        assert new_form["target_table"] == "url_table"
+        # form_name defaults to form_id when Graph API is unavailable
+        assert new_form["form_name"] == "url-form-003"
+
+    def test_add_form_bad_url(self, registry_dir: Path) -> None:
+        rc = run_cli(registry_dir, [
+            "add-form",
+            "--form-url", "https://example.com/not-a-form",
+            "--target-table", "bad_table",
+        ])
+        assert rc == 1
 
     def test_add_form_duplicate(self, registry_dir: Path) -> None:
         rc = run_cli(registry_dir, [

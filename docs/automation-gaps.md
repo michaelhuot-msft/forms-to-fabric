@@ -1,14 +1,101 @@
-# Automation Gaps — Assessment & Remediation Plan
+# Administrative Overhead — Assessment & Remediation
 
 > **Generated:** 2026-03-05
-> **Status:** Active — remediation in progress
+> **Status:** ✅ All remediations implemented
 > **Severity Scale:** P0 (critical, immediate risk), P1 (high, significant burden), P2 (medium, nice-to-have)
 
 ---
 
 ## Executive Summary
 
-The Forms-to-Fabric pipeline requires **~90 minutes of admin work per new form** and **~50–65 hours/year** for 5 forms in production. We identified **32 manual touchpoints** across onboarding, maintenance, user management, and troubleshooting. Five gaps carry the highest risk and administrative burden:
+An assessment of the Forms-to-Fabric pipeline identified **32 manual touchpoints** across four operational domains. Before remediation, the solution required **~90 minutes of admin work per new form** and **~50–65 hours/year** for 5 forms in production. After implementing automated solutions for the top 5 gaps, projected admin burden drops to **~15 minutes per form** and **~10–15 hours/year**.
+
+---
+
+## Full Administrative Touchpoint Inventory
+
+### Domain 1: Onboarding a New Form (12 touchpoints)
+
+| # | Step | Actor | Skill Level | Est. Time | Automated? | Risk |
+|---|------|-------|-------------|-----------|------------|------|
+| 1 | Extract Form ID from Forms URL | Clinician/Admin | Non-technical | 2 min | ✅ Graph API | Low |
+| 2 | Create entry in form-registry.json | IT Admin | Semi-technical | 10 min | ✅ `manage_registry.py add-form` | ~~Medium~~ → Low |
+| 3 | Map question IDs to fields | IT Admin | Semi-technical | 15 min | ✅ `manage_registry.py add-field` | ~~High~~ → Low |
+| 4 | Classify field sensitivity levels | Privacy Officer | Semi-technical | 10–20 min | ⚠️ Guided by decision tree | Critical — human judgment needed |
+| 5 | Select de-identification method | Privacy Officer/Admin | Semi-technical | 5–10 min | ⚠️ Decision tree in admin guide | High — PHI exposure if wrong |
+| 6 | Deploy config via `azd deploy` | DevOps/IT Admin | Developer | 3 min | ✅ CI/CD auto-deploys on push | ~~Medium~~ → Low |
+| 7 | Commit to Git | IT Admin | Developer | 2 min | ✅ Standard Git workflow | Low |
+| 8 | Create Power Automate flow | IT Admin | Semi-technical | 15 min | ✅ `generate-flow` endpoint → import | ~~Medium~~ → Low |
+| 9 | Retrieve & insert function key | IT Admin | Semi-technical | 3 min | ✅ Key Vault connector (auto) | ~~High~~ → Eliminated |
+| 10 | Add "Get response details" action | IT Admin | Semi-technical | 5 min | ✅ Included in generated flow | ~~Medium~~ → Eliminated |
+| 11 | Configure error notification email | IT Admin | Non-technical | 2 min | ✅ Included in generated flow | Low |
+| 12 | Submit test response & validate | Clinician/Admin | Non-technical | 10 min | ⚠️ Still manual (E2E test) | Medium |
+
+**Before remediation:** ~90 min/form · **After remediation:** ~15 min/form (steps 4, 5, 12 remain manual)
+
+### Domain 2: Ongoing Maintenance (10 touchpoints)
+
+| # | Task | Frequency | Est. Time | Automated? | Risk |
+|---|------|-----------|-----------|------------|------|
+| 1 | Rotate function app host key | 90 days | 10 min | ✅ `rotate_function_key.py` + Key Vault | ~~High~~ → Low |
+| 2 | Rotate service principal secret | 90 days | 10 min | ⚠️ Manual (Azure AD) | High |
+| 3 | Review Application Insights alerts | Daily | 5 min | ⚠️ Automated alerts, triage manual | High |
+| 4 | Monitor Fabric capacity usage | Weekly | 5 min | ⚠️ Auto-alert possible | Medium |
+| 5 | Check Power Automate flow run history | Weekly | 5 min | ⚠️ Alerting exists, review manual | High |
+| 6 | Handle schema changes (form modifications) | Ad hoc | 30–60 min | ✅ `monitor_schema` detects automatically | ~~Critical~~ → Medium |
+| 7 | Update form-registry.json for schema changes | Ad hoc | 15 min | ✅ `manage_registry.py` validates | ~~Critical~~ → Low |
+| 8 | Redeploy after schema changes | Ad hoc | 3 min | ✅ CI/CD | ~~High~~ → Low |
+| 9 | Manage access to Raw vs. Curated layers | As needed | 5 min | ✅ `audit_rbac` detects violations | ~~Critical~~ → Low |
+| 10 | Investigate failed executions | As needed | 15–30 min | ⚠️ KQL queries speed up diagnosis | High |
+
+### Domain 3: User Management (6 touchpoints)
+
+| # | Step | Frequency | Est. Time | Automated? | Risk |
+|---|------|-----------|-----------|------------|------|
+| 1 | Grant workspace access to department | Per department | 3 min | ⚠️ Manual (Fabric portal) | High — wrong role = PHI exposure |
+| 2 | Assign Contributor role to Function App identity | Once per deploy | 5 min | ✅ Bicep template | ~~Critical~~ → Eliminated |
+| 3 | Assign Viewer role to clinicians | Per user | 2 min | ⚠️ Could use Azure AD groups | Low |
+| 4 | Assign Contributor role to report creators | Per person | 2 min | ⚠️ Could use Azure AD groups | Low |
+| 5 | Restrict Raw layer access to IT Admins only | Per workspace | 5 min | ✅ `audit_rbac` verifies daily | ~~Critical~~ → Low |
+| 6 | Update error notification email | When contact changes | 2 min | ⚠️ Manual | Low |
+
+### Domain 4: Troubleshooting (4 scenarios)
+
+| Scenario | Diagnostic Steps | Est. Time | Automated? |
+|----------|------------------|-----------|------------|
+| Flow fails with 401 Unauthorized | Check Key Vault secret → rotate key → flows auto-update | 5 min | ✅ Key Vault connector eliminates this |
+| Data not in Lakehouse | Check PA run history → App Insights → managed identity → registry | 20–30 min | ⚠️ KQL queries + troubleshooting flowchart help |
+| De-identification not applied | Review registry config → App Insights → curated layer → redeploy | 15 min | ⚠️ Manual investigation |
+| Function timeout (504) | Check payload size → execution duration → upgrade plan | 30 min–2 hrs | ⚠️ Metrics visible, decision manual |
+
+---
+
+## Annual Administrative Burden Summary
+
+| Metric | Before Remediation | After Remediation | Δ |
+|--------|-------------------|-------------------|---|
+| **New form onboarding** | ~90 min | ~15 min | **−83%** |
+| **Annual admin hours (5 forms)** | 50–65 hrs | 10–15 hrs | **−75%** |
+| **Schema change detection** | None (silent failures) | Automated every 6 hrs | **Risk eliminated** |
+| **RBAC compliance** | Manual, unverified | Audited daily at 8 AM | **Risk eliminated** |
+| **Key rotation impact** | All flows break | Zero downtime | **Outage eliminated** |
+| **Registry edit errors** | Common (hand-edited JSON) | Near-zero (CLI validated) | **Risk eliminated** |
+
+### Remaining Manual Effort (cannot be automated)
+
+These steps require human judgment and will always be manual:
+
+1. **Sensitivity classification** — Deciding which fields contain PHI requires clinical/privacy expertise
+2. **De-identification method selection** — Choosing hash vs. redact vs. generalize depends on use case
+3. **End-to-end validation** — Submitting a test response and visually verifying dashboard output
+4. **Service principal rotation** — Azure AD credential management
+5. **Troubleshooting diagnosis** — Interpreting errors requires human judgment (though KQL queries accelerate this)
+
+---
+
+## Remediation Implementation Details
+
+All five automation gaps have been **implemented, tested, and documented**:
 
 | # | Gap | Severity | Risk | Annual Impact (5 forms) |
 |---|-----|----------|------|------------------------|
@@ -157,18 +244,20 @@ Function keys are rotated every 90 days (security policy). After rotation:
 
 ## Implementation Priority
 
-```
-Phase 1 (Immediate — P0):
-  ├── Schema Change Detector (Gap 1)
-  └── RBAC Audit Function (Gap 2)
+All phases are **complete**:
 
-Phase 2 (Next Sprint — P1):
-  ├── Registry Management CLI (Gap 5) — unblocks safer form onboarding
-  ├── Key Rotation Automation (Gap 4) — prevents outages
-  └── Flow Provisioning Helper (Gap 3) — reduces onboarding time
+```
+Phase 1 (P0) ✅ DONE:
+  ├── Schema Change Detector (Gap 1) — monitor_schema function
+  └── RBAC Audit Function (Gap 2) — audit_rbac function
+
+Phase 2 (P1) ✅ DONE:
+  ├── Registry Management CLI (Gap 5) — scripts/manage_registry.py
+  ├── Key Rotation Automation (Gap 4) — scripts/rotate_function_key.py + Key Vault connector
+  └── Flow Provisioning Helper (Gap 3) — generate-flow endpoint
 ```
 
-## Expected Impact After Remediation
+## Impact After Remediation
 
 | Metric | Before | After | Improvement |
 |--------|--------|-------|-------------|

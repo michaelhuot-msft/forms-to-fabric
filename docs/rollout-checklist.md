@@ -15,7 +15,7 @@ graph LR
     style B fill:#dbeafe,stroke:#2563eb
     style C fill:#e0f2fe,stroke:#0284c7
     style D fill:#ccfbf1,stroke:#0d9488
-    style E fill:#fef9c3,stroke:#ca8a04
+    style E fill:#fff3bf,stroke:#ca8a04
     style F fill:#dcfce7,stroke:#16a34a
     style G fill:#f3e8ff,stroke:#9333ea
 ```

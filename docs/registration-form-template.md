@@ -108,10 +108,10 @@ flowchart TD
     H --> I[IT activates form]
     I --> J[Status: active]
 
-    style A fill:#4472C4,color:#fff
-    style E fill:#70AD47,color:#fff
-    style J fill:#70AD47,color:#fff
-    style F fill:#FFC000,color:#000
+    style A fill:#dbeafe,color:#1e1e1e
+    style E fill:#d3f9d8,color:#1e1e1e
+    style J fill:#d3f9d8,color:#1e1e1e
+    style F fill:#fff3bf,color:#1e1e1e
 ```
 
 ### Flow Details

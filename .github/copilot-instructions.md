@@ -26,13 +26,15 @@ All PRs must pass CI before merge. The CI pipeline validates:
 
 Do **not** use `<br>` or literal `\n` inside Mermaid node labels — they render inconsistently across GitHub, VS Code preview, and other Markdown renderers. Instead, use short single-line labels or split content across multiple connected nodes.
 
-```mermaid
-%% BAD — \n may not render
-A["Source system\nReferral Event"]
+## Diagram Accessibility (WCAG 2.1 AA)
 
-%% GOOD — separate nodes
-A[Source system] -.-> A2[Referral Event]
-```
+All diagrams (Mermaid and Excalidraw) must meet WCAG 2.1 AA standards:
+
+- **Color contrast** — Text and meaningful graphical elements must have a contrast ratio of at least **4.5:1** against their background. Use dark stroke colors (`#1e1e1e`) on light fills. Avoid white text on medium-toned backgrounds.
+- **Don't rely on color alone** — Convey meaning with labels, shapes, or patterns in addition to color.
+- **Alt text** — When embedding diagram images (PNG/SVG exports), always include descriptive `alt` text.
+- **Readable font sizes** — Use a minimum font size of 12px in Excalidraw diagrams.
+- **Safe Mermaid style combos** — Use `fill:#dbeafe,color:#1e1e1e` (light fill, dark text), not `fill:#4472C4,color:#fff` (fails contrast).
 
 ## Architecture
 

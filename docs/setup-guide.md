@@ -179,21 +179,31 @@ Or use self-service registration if Step 6 is set up.
 This flow triggers on each form submission and sends the response to the Azure Function.
 
 1. Go to [flow.microsoft.com](https://flow.microsoft.com) → **+ Create** → **Automated cloud flow**
-2. Trigger: **When a new response is submitted** (Microsoft Forms) → select the form you just registered
-3. Action: **Get response details** → same form, Response Id from trigger
-4. Action: **HTTP POST** to your Function App:
+2. Name it (e.g., "Forms to Fabric — My Survey")
+3. Trigger: **When a new response is submitted** (Microsoft Forms) → select your form
+4. **+ New step** → **Get response details** (Microsoft Forms) → same form, set Response Id to the dynamic value `Response Id` from the trigger
+5. **+ New step** → **HTTP** — use the helper script to generate the config:
+
+```powershell
+pwsh scripts/Generate-FlowBody.ps1 -FormUrl "https://forms.office.com/..."
+```
+
+The script asks for your question titles and outputs the complete HTTP action config (URI, headers, body JSON) ready to paste into Power Automate.
 
 | Field | Value |
 |---|---|
 | Method | `POST` |
-| URI | `https://<function-app>.azurewebsites.net/api/process-response?code=<function-key>` |
-| Headers | `Content-Type: application/json` |
-| Body | See template in `power-automate/flow-template.json` |
+| URI | `https://<your-function-app>.azurewebsites.net/api/process-response` |
+| Headers | `Content-Type` : `application/json` |
+| Headers | `x-functions-key` : `<your-function-key>` |
+| Body | Output from `Generate-FlowBody.ps1` (also saved to `power-automate-body.json`) |
 
-5. Add a **Condition** → if HTTP status ≠ 200 → send error email to admin
-6. Save and enable
+6. **+ New step** → **Condition** → `Status code` is not equal to `200`
+   - **If yes**: Add **Send an email (V2)** to notify your admin of the error
+   - **If no**: Leave empty (success)
+7. **Save** and enable the flow
 
-> **Tip:** For production, use `power-automate/flow-template-keyvault.json` which reads the function key from Key Vault at runtime — zero-downtime key rotation.
+> **Tip:** For production, store the function key in Key Vault and use the Key Vault connector to retrieve it at runtime. See `power-automate/flow-template-keyvault.json`.
 
 ### 4.4 Test end-to-end
 

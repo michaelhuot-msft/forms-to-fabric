@@ -87,6 +87,14 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
           value: '~4'
         }
         {
+          name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
+          value: 'true'
+        }
+        {
+          name: 'ENABLE_ORYX_BUILD'
+          value: 'true'
+        }
+        {
           // Use managed identity for storage — no shared keys needed
           name: 'AzureWebJobsStorage__accountName'
           value: storageAccount.name

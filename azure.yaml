@@ -6,4 +6,3 @@ services:
     project: ./src/functions
     language: python
     host: function
-    module: process_response

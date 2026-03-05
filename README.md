@@ -35,7 +35,7 @@ graph LR
 ```bash
 # Clone and deploy
 git clone <repo-url>
-cd forms-solution
+cd forms-to-fabric
 azd up
 ```
 

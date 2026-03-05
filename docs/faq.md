@@ -159,7 +159,7 @@ To connect a new Microsoft Form to the pipeline:
 
 1. Get the **form URL** from the clinician (they can find it by clicking "Share" in Microsoft Forms)
 2. Identify which **fields contain sensitive patient information** (the clinician should tell you this)
-3. Follow the registration process documented in the [admin setup guide](admin-setup-guide.md)
+3. Follow the registration process documented in the [admin guide](admin-guide.md)
 4. Configure the data flow and de-identification rules
 5. Set up the Power BI dashboard or add the form's data to an existing dashboard
 6. Confirm the **access permissions** — who should be able to view the dashboard
@@ -174,7 +174,7 @@ Typical turnaround time: **1–2 business days**.
 De-identification rules determine which fields are masked or removed before data reaches the dashboard. To configure them:
 
 1. Review the list of sensitive fields provided by the clinician
-2. Open the pipeline configuration (see the [admin setup guide](admin-setup-guide.md) for details)
+2. Open the pipeline configuration (see the [admin guide](admin-guide.md) for details)
 3. Map each sensitive field to a de-identification method:
    - **Masking** — replaces values with asterisks or generic text (e.g., "Jane Doe" → "****")
    - **Hashing** — converts values to anonymous codes that can still be used for counting unique entries
@@ -224,7 +224,7 @@ If responses aren't appearing in the Power BI dashboard, check these in order:
 5. **Review logs** — Check the pipeline logs for specific error messages
 6. **Test with a new response** — Submit a test response and trace it through each step of the pipeline
 
-If you can't resolve the issue, refer to the [troubleshooting guide](troubleshooting.md) or contact the platform engineering team at **[engineering-support-email@organization.com]**.
+If you can't resolve the issue, refer to the [admin guide](admin-guide.md) or contact the platform engineering team at **[engineering-support-email@organization.com]**.
 
 ---
 
@@ -236,7 +236,7 @@ If you can't resolve the issue, refer to the [troubleshooting guide](troubleshoo
 - Power BI access (included with most Microsoft 365 enterprise licenses)
 
 **For the pipeline infrastructure:**
-- Microsoft Fabric capacity (see the [infrastructure guide](../infra/README.md) for details)
+- Microsoft Fabric capacity (see the [setup guide](setup-guide.md) for details)
 - Power Automate premium connectors (for the Forms to Fabric data flow)
 - Appropriate Microsoft Entra ID (formerly Azure Active Directory) permissions for service accounts
 
@@ -253,7 +253,7 @@ The system uses multiple layers of security:
 - **Audit logging** — all access to data is logged for compliance and auditing purposes
 - **Data residency** — all data remains within the organization's Microsoft 365 tenant and configured geographic region
 
-For full security documentation, refer to the [security and compliance guide](security-compliance.md).
+For full security documentation, refer to the [architecture documentation](architecture.md).
 
 ---
 

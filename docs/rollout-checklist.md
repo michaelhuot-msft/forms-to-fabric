@@ -42,6 +42,7 @@ graph LR
 ## Form Setup
 
 - [ ] Forms created in Microsoft Forms (by clinician or IT)
+> **Tip:** For non-PHI forms, clinicians can self-register via the registration form — no IT setup needed. See [Registration Form Template](registration-form-template.md).
 - [ ] Forms tested with sample data
 - [ ] Form IDs collected and documented
 - [ ] Field-level sensitivity classification completed
@@ -103,5 +104,5 @@ graph LR
 ---
 
 *Template version: 1.0*
-*Last updated: 2025-07-15*
+*Last updated: 2026-03-05*
 *See [setup-guide.md](setup-guide.md) for technical deployment steps and [admin-guide.md](admin-guide.md) for configuration details.*

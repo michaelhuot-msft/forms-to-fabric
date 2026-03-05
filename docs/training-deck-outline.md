@@ -42,18 +42,18 @@ Visual flowchart with four connected steps:
 
 ```mermaid
 graph LR
-    A["📝 Create Form (5 minutes)"] --> B["📋 Register (one-time)"]
+    A["📝 Create Form (5 minutes)"] --> B["📋 Register (one-time form)"]
     B --> C["✉️ Collect Responses (automatic)"]
     C --> D["📊 View Dashboard (anytime)"]
 ```
 
 - **Create Form** — Build your questionnaire in Microsoft Forms
-- **Register** — Send us the form link (one-time setup)
+- **Register** — Fill out a quick registration form (one-time setup)
 - **Collect Responses** — Share your form; responses flow in automatically
 - **View Dashboard** — See your results in Power BI
 
 ### Speaker Notes
-> Here's your entire workflow in four steps. Step one, you create your form — that takes just a few minutes. Step two, you register it with us by sending an email — this is a one-time thing. Step three, you share your form and start collecting responses. These flow into the system automatically; you don't need to do anything. Step four, you go to Power BI whenever you want and look at your results in a nice, visual dashboard. Let's now walk through each of these steps.
+> Here's your entire workflow in four steps. Step one, you create your form — that takes just a few minutes. Step two, you register it by filling out a quick form — takes about a minute. This is a one-time thing. Step three, you share your form and start collecting responses. These flow into the system automatically; you don't need to do anything. Step four, you go to Power BI whenever you want and look at your results in a nice, visual dashboard. Let's now walk through each of these steps.
 
 ---
 
@@ -81,21 +81,22 @@ Step-by-step with screenshots:
 ## Slide 5: Registering Your Form
 
 ### Content
-What to send and who to contact:
+Self-service registration — no emails, no tickets:
 
-**Send an email to [IT-support-email@organization.com] with:**
+1. Go to **[registration form link]**
+2. Paste your form's share link
+3. Tell us what the form is for (optional)
+4. Answer: **"Does this form collect patient information?"** — Yes or No
+5. Click **Submit** — that's it!
 
-1. ✅ Your form's share link
-2. ✅ The name of your form
-3. ✅ Which questions contain patient information
-4. ✅ Who should have access to the results
-
-**Turnaround time:** 1–2 business days
+**What happens next:**
+- **No patient info** → Your form is connected instantly! Check your email for confirmation.
+- **Has patient info** → Our IT team will review it (1–2 business days). You'll get an email when it's ready.
 
 `[Screenshot: Where to find the Share button and copy the form link]`
 
 ### Speaker Notes
-> Once your form is ready, you need to register it with us — this is a one-time step. Just send an email to our IT support team with four things: the link to your form, its name, which questions contain sensitive patient information like names or dates of birth, and who should be able to see the dashboard. We'll set everything up and email you back when it's ready, usually within a day or two. After that, you never need to do this step again for that form.
+> Once your form is ready, you need to register it — this is a one-time step. Go to our registration form, paste in your form's share link, add a quick description if you want, and answer one question: does your form collect patient information? Then hit Submit. If there's no patient info, your form gets connected automatically — you'll get an email confirmation right away. If it does have patient info, our IT team will review it and get back to you within a day or two. Either way, you never need to do this step again for that form.
 
 ---
 

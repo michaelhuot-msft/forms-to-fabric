@@ -1,7 +1,7 @@
 # Forms to Fabric — Architecture
 
 > **Audience:** IT Leadership, Security, and Compliance Teams
-> **Last Updated:** 2025-07-15
+> **Last Updated:** 2026-03-05
 
 
 ---

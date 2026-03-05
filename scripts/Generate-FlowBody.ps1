@@ -23,7 +23,8 @@ param(
     [string]$FormUrl = "",
     [string]$FormId = "",
     [string]$FunctionAppUrl = "",
-    [string]$FunctionKey = ""
+    [string]$FunctionKey = "",
+    [switch]$Registration
 )
 
 $ErrorActionPreference = "Stop"
@@ -76,39 +77,44 @@ if (-not $FunctionKey) {
 
 # ── Generate the body ────────────────────────────────────────────────────────
 
-# Power Automate's "Get response details" returns each answer with an ID
-# Power Automate's "Get response details" returns.
+if ($Registration) {
+    # Registration form — fixed 3 questions, calls /api/register-form
+    $endpoint = "$FunctionAppUrl/api/register-form"
+    $json = @"
+{
+  "form_url": "@{outputs('Get_response_details')?['body/r1']}",
+  "description": "@{outputs('Get_response_details')?['body/r2']}",
+  "has_phi": @{if(equals(outputs('Get_response_details')?['body/r3'], 'Yes'), true, false)}
+}
+"@
+} else {
+    # Data collection form — variable questions, calls /api/process-response
+    $endpoint = "$FunctionAppUrl/api/process-response"
 
-Write-Host "`nThe 'Get response details' action returns each answer with an ID like r1, r2, r3, etc." -ForegroundColor White
-Write-Host "How many questions does your form have?" -ForegroundColor Cyan
+    Write-Host "`nThe 'Get response details' action returns each answer as r1, r2, r3, etc." -ForegroundColor White
+    $questionCount = Read-Host "How many questions does your form have?"
+    $questionCount = [int]$questionCount
 
-$questionCount = Read-Host "Number of questions"
-$questionCount = [int]$questionCount
-
-Write-Host ""
-
-# Build answers array
-$answers = @()
-for ($i = 1; $i -le $questionCount; $i++) {
-    $qId = "r$i"
-    $qTitle = Read-Host "Question $i title (e.g., 'Patient Name', 'Satisfaction Rating')"
-    $answers += @{
-        question_id = $qId
-        question = $qTitle
-        answer = "@{outputs('Get_response_details')?['body/$qId']}"
+    $answers = @()
+    for ($i = 1; $i -le $questionCount; $i++) {
+        $qId = "r$i"
+        $qTitle = Read-Host "  Question $i title"
+        $answers += @{
+            question_id = $qId
+            question    = $qTitle
+            answer      = "@{outputs('Get_response_details')?['body/$qId']}"
+        }
     }
-}
 
-# Build the full body
-$body = [ordered]@{
-    form_id = $FormId
-    response_id = "@{triggerOutputs()?['body/responseId']}"
-    submitted_at = "@{utcNow()}"
-    respondent_email = "@{outputs('Get_response_details')?['body/responder']}"
-    answers = $answers
+    $body = [ordered]@{
+        form_id          = $FormId
+        response_id      = "@{triggerOutputs()?['body/responseId']}"
+        submitted_at     = "@{utcNow()}"
+        respondent_email = "@{outputs('Get_response_details')?['body/responder']}"
+        answers          = $answers
+    }
+    $json = $body | ConvertTo-Json -Depth 5
 }
-
-$json = $body | ConvertTo-Json -Depth 5
 
 # ── Output ───────────────────────────────────────────────────────────────────
 
@@ -117,7 +123,7 @@ Write-Host "  HTTP Action Configuration" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 
 Write-Host "`nMethod: POST" -ForegroundColor White
-Write-Host "URI:    $FunctionAppUrl/api/process-response" -ForegroundColor White
+Write-Host "URI:    $endpoint" -ForegroundColor White
 Write-Host "`nHeaders:" -ForegroundColor White
 Write-Host "  Content-Type:    application/json" -ForegroundColor White
 Write-Host "  x-functions-key: $FunctionKey" -ForegroundColor White

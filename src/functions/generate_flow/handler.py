@@ -145,7 +145,7 @@ def _build_flow_definition(
                             "path": "/v2/Mail",
                             "body": {
                                 "To": "admin@contoso.com",
-                                "Subject": f"Forms-to-Fabric Pipeline Error — {form_config.form_name}",
+                                "Subject": f"Forms to Fabric Error — {form_config.form_name}",
                                 "Body": (
                                     "<p><strong>Pipeline Error</strong></p>"
                                     f"<p>Form: {form_config.form_name} ({form_config.form_id})</p>"

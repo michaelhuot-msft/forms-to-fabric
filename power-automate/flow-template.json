@@ -1,17 +1,17 @@
 {
   "_documentation": {
-    "description": "Reference template for the Forms-to-Fabric Power Automate flow. Admins should use this as a guide to manually recreate the flow in Power Automate. This is NOT an importable flow definition.",
+    "description": "Reference template for the Forms to Fabric Power Automate flow. Admins should use this as a guide to manually recreate the flow in Power Automate. This is NOT an importable flow definition.",
     "version": "1.0.0",
     "last_updated": "2025-01-15",
     "notes": [
-      "This flow is part of a healthcare Forms-to-Fabric pipeline.",
+      "This flow is part of a healthcare Forms to Fabric pipeline.",
       "Clinicians submit responses via Microsoft Forms; this flow triggers processing through an Azure Function that de-identifies PHI before landing data in Fabric Lakehouse.",
       "All PHI handling and de-identification is performed server-side by the Azure Function — the flow itself only transports data.",
       "Ensure the Azure Function URL and key are obtained from azd deployment outputs before configuring the flow.",
       "Power BI reports downstream consume the Lakehouse tables populated by this pipeline."
     ]
   },
-  "flow_name": "Forms-to-Fabric: Process Response",
+  "flow_name": "Forms to Fabric: Process Response",
   "trigger": {
     "type": "When a new response is submitted",
     "connector": "Microsoft Forms",
@@ -81,8 +81,8 @@
         "_comment": "Sends a failure alert to the configured admin. The email includes the HTTP status code and response body to aid debugging. Ensure the ADMIN_NOTIFICATION_EMAIL environment variable is set to a monitored mailbox.",
         "inputs": {
           "to": "@{environment_variables.ADMIN_NOTIFICATION_EMAIL}",
-          "subject": "Forms-to-Fabric Pipeline Error: Response @{triggerOutputs()?['body/responseId']}",
-          "body": "<p><strong>Forms-to-Fabric Pipeline Error</strong></p><p>A form response failed to process.</p><p><strong>Form ID:</strong> @{triggerOutputs()?['body/formId']}</p><p><strong>Response ID:</strong> @{triggerOutputs()?['body/responseId']}</p><p><strong>Timestamp:</strong> @{utcNow()}</p><p><strong>HTTP Status Code:</strong> @{outputs('Call_Azure_Function')?['statusCode']}</p><p><strong>Error Details:</strong></p><pre>@{body('Call_Azure_Function')}</pre><p>Please investigate in the Azure portal and resubmit if necessary.</p>",
+          "subject": "Forms to Fabric Error: Response @{triggerOutputs()?['body/responseId']}",
+          "body": "<p><strong>Forms to Fabric Error</strong></p><p>A form response failed to process.</p><p><strong>Form ID:</strong> @{triggerOutputs()?['body/formId']}</p><p><strong>Response ID:</strong> @{triggerOutputs()?['body/responseId']}</p><p><strong>Timestamp:</strong> @{utcNow()}</p><p><strong>HTTP Status Code:</strong> @{outputs('Call_Azure_Function')?['statusCode']}</p><p><strong>Error Details:</strong></p><pre>@{body('Call_Azure_Function')}</pre><p>Please investigate in the Azure portal and resubmit if necessary.</p>",
           "importance": "High"
         }
       },

@@ -8,7 +8,7 @@
 
 ## Purpose
 
-This log captures every significant design decision made during the Forms-to-Fabric Pipeline project. It serves two purposes:
+This log captures every significant design decision made during the Forms to Fabric project. It serves two purposes:
 
 1. **Validation** — The customer can review each decision, confirm it matches their expectations, and flag anything that needs revisiting.
 2. **Future reference** — When someone asks "why did we do it this way?", this document has the answer.

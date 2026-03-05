@@ -1,6 +1,6 @@
-# Forms-to-Fabric Pipeline — Setup Guide
+# Forms to Fabric — Setup Guide
 
-This guide walks you through deploying the complete Forms-to-Fabric pipeline, from infrastructure provisioning to end-to-end validation. It is intended for DevOps engineers and IT administrators responsible for standing up the solution in an Azure + Microsoft Fabric environment.
+This guide walks you through deploying the complete Forms to Fabric pipeline, from infrastructure provisioning to end-to-end validation. It is intended for DevOps engineers and IT administrators responsible for standing up the solution in an Azure + Microsoft Fabric environment.
 
 ---
 

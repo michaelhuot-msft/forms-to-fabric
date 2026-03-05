@@ -1,4 +1,4 @@
-"""Core HTTP handler for the Forms-to-Fabric pipeline.
+"""Core HTTP handler for the Forms to Fabric pipeline.
 
 Receives POST requests from Power Automate, validates the payload,
 optionally de-identifies PHI fields, and writes results to OneLake.

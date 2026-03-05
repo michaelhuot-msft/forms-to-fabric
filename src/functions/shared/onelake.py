@@ -1,4 +1,4 @@
-"""OneLake (ADLS Gen2) writer for the Forms-to-Fabric pipeline."""
+"""OneLake (ADLS Gen2) writer for the Forms to Fabric pipeline."""
 
 from __future__ import annotations
 

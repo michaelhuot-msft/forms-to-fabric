@@ -1,4 +1,4 @@
-# Forms-to-Fabric Pipeline — Architecture
+# Forms to Fabric — Architecture
 
 > **Audience:** IT Leadership, Security, and Compliance Teams
 > **Last Updated:** 2025-07-15
@@ -8,7 +8,7 @@
 
 ## System Overview
 
-The Forms-to-Fabric pipeline enables clinicians to submit structured data through Microsoft Forms, which is automatically processed, de-identified, and delivered to a Microsoft Fabric Lakehouse for analytics and reporting. The pipeline is fully contained within the Microsoft cloud ecosystem, requires no third-party services, and enforces a two-layer data model that separates protected health information (PHI) from reporting-ready data.
+The Forms to Fabric pipeline enables clinicians to submit structured data through Microsoft Forms, which is automatically processed, de-identified, and delivered to a Microsoft Fabric Lakehouse for analytics and reporting. The pipeline is fully contained within the Microsoft cloud ecosystem, requires no third-party services, and enforces a two-layer data model that separates protected health information (PHI) from reporting-ready data.
 
 All infrastructure is defined as code using Bicep and deployed via the Azure Developer CLI (`azd`). Secrets are managed through Azure Key Vault, and observability is provided by Application Insights.
 

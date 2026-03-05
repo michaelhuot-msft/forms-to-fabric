@@ -1,4 +1,4 @@
-# Forms-to-Fabric Pipeline
+# Forms to Fabric
 
 A solution that enables clinicians to create questionnaires using Microsoft Forms and automatically pipelines response data into Microsoft Fabric for analytics and reporting.
 

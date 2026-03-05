@@ -1,6 +1,6 @@
-# Forms-to-Fabric Pipeline — Department Onboarding Checklist
+# Forms to Fabric — Department Onboarding Checklist
 
-This checklist is a template for onboarding a new department to the Forms-to-Fabric pipeline. Copy this checklist for each department and track completion.
+This checklist is a template for onboarding a new department to the Forms to Fabric pipeline. Copy this checklist for each department and track completion.
 
 ```mermaid
 graph LR

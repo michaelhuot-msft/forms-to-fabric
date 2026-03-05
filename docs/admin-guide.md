@@ -1,8 +1,8 @@
-# Forms-to-Fabric Pipeline — Administration Guide
+# Forms to Fabric — Administration Guide
 
 ## Overview
 
-This guide covers day-to-day administration of the Healthcare Forms-to-Fabric pipeline. As an admin, your responsibilities include registering new Microsoft Forms, configuring de-identification rules for PHI, managing Fabric workspace access, monitoring pipeline health, handling schema changes, rotating secrets, and planning for backup and recovery.
+This guide covers day-to-day administration of the Healthcare Forms to Fabric pipeline. As an admin, your responsibilities include registering new Microsoft Forms, configuring de-identification rules for PHI, managing Fabric workspace access, monitoring pipeline health, handling schema changes, rotating secrets, and planning for backup and recovery.
 
 The pipeline flow is: **Microsoft Forms → Power Automate → Azure Function (`src/functions/process_response`) → Microsoft Fabric Lakehouse**. Configuration lives in `config/form-registry.json`, shared modules (de-identification, Fabric client) are in `src/functions/shared/`, and infrastructure is defined as Bicep templates in `infra/`.
 

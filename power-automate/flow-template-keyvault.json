@@ -1,6 +1,6 @@
 {
   "_documentation": {
-    "description": "Key Vault-integrated Power Automate flow template for Forms-to-Fabric. Unlike the basic template (flow-template.json), this version reads the Azure Function key from Key Vault at runtime. When keys are rotated, flows automatically use the new key with zero downtime — no manual flow edits required.",
+    "description": "Key Vault-integrated Power Automate flow template for Forms to Fabric. Unlike the basic template (flow-template.json), this version reads the Azure Function key from Key Vault at runtime. When keys are rotated, flows automatically use the new key with zero downtime — no manual flow edits required.",
     "version": "2.0.0",
     "last_updated": "2025-07-14",
     "key_vault_integration": [
@@ -10,14 +10,14 @@
       "No flow re-deployment or manual editing is needed after key rotation."
     ],
     "notes": [
-      "This flow is part of a healthcare Forms-to-Fabric pipeline.",
+      "This flow is part of a healthcare Forms to Fabric pipeline.",
       "Clinicians submit responses via Microsoft Forms; this flow triggers processing through an Azure Function that de-identifies PHI before landing data in Fabric Lakehouse.",
       "All PHI handling and de-identification is performed server-side by the Azure Function — the flow itself only transports data.",
       "The Azure Key Vault connector requires a premium Power Automate license.",
       "Ensure the Key Vault access policy grants the Power Automate connection identity GET permission on secrets."
     ]
   },
-  "flow_name": "Forms-to-Fabric: Process Response (Key Vault)",
+  "flow_name": "Forms to Fabric: Process Response (Key Vault)",
   "trigger": {
     "type": "When a new response is submitted",
     "connector": "Microsoft Forms",
@@ -107,8 +107,8 @@
         "_comment": "Sends a failure alert to the configured admin. The email includes the HTTP status code and response body to aid debugging. Ensure the ADMIN_NOTIFICATION_EMAIL parameter is set to a monitored mailbox.",
         "inputs": {
           "to": "@{parameters('ADMIN_NOTIFICATION_EMAIL')}",
-          "subject": "Forms-to-Fabric Pipeline Error: Response @{triggerOutputs()?['body/responseId']}",
-          "body": "<p><strong>Forms-to-Fabric Pipeline Error</strong></p><p>A form response failed to process.</p><p><strong>Form ID:</strong> @{triggerOutputs()?['body/formId']}</p><p><strong>Response ID:</strong> @{triggerOutputs()?['body/responseId']}</p><p><strong>Timestamp:</strong> @{utcNow()}</p><p><strong>HTTP Status Code:</strong> @{outputs('Call_Azure_Function')?['statusCode']}</p><p><strong>Error Details:</strong></p><pre>@{body('Call_Azure_Function')}</pre><p>Please investigate in the Azure portal and resubmit if necessary.</p>",
+          "subject": "Forms to Fabric Error: Response @{triggerOutputs()?['body/responseId']}",
+          "body": "<p><strong>Forms to Fabric Error</strong></p><p>A form response failed to process.</p><p><strong>Form ID:</strong> @{triggerOutputs()?['body/formId']}</p><p><strong>Response ID:</strong> @{triggerOutputs()?['body/responseId']}</p><p><strong>Timestamp:</strong> @{utcNow()}</p><p><strong>HTTP Status Code:</strong> @{outputs('Call_Azure_Function')?['statusCode']}</p><p><strong>Error Details:</strong></p><pre>@{body('Call_Azure_Function')}</pre><p>Please investigate in the Azure portal and resubmit if necessary.</p>",
           "importance": "High"
         }
       },

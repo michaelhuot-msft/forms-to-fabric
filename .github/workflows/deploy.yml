@@ -1,5 +1,5 @@
 # ============================================================================
-# Healthcare Forms-to-Fabric Pipeline — CI/CD
+# Healthcare Forms to Fabric — CI/CD
 # ============================================================================
 #
 # This workflow runs on every push and PR targeting `main`:
@@ -23,7 +23,7 @@
 #        AZURE_LOCATION         – Azure region (e.g. "eastus")
 # ============================================================================
 
-name: Deploy Forms-to-Fabric Pipeline
+name: Deploy Forms to Fabric
 
 on:
   push:

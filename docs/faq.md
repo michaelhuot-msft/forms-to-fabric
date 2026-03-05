@@ -237,7 +237,7 @@ If you can't resolve the issue, refer to the [troubleshooting guide](troubleshoo
 
 **For the pipeline infrastructure:**
 - Microsoft Fabric capacity (see the [infrastructure guide](../infra/README.md) for details)
-- Power Automate premium connectors (for the Forms-to-Fabric data flow)
+- Power Automate premium connectors (for the Forms to Fabric data flow)
 - Appropriate Microsoft Entra ID (formerly Azure Active Directory) permissions for service accounts
 
 ---

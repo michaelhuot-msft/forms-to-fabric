@@ -1,4 +1,4 @@
-# Contributing to Forms-to-Fabric Pipeline
+# Contributing to Forms to Fabric
 
 Thank you for your interest in contributing! This guide explains how to get involved.
 

@@ -1,4 +1,4 @@
-"""Pydantic models for the Forms-to-Fabric pipeline."""
+"""Pydantic models for the Forms to Fabric pipeline."""
 
 from __future__ import annotations
 

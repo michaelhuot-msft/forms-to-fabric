@@ -71,7 +71,8 @@ forms-to-fabric/
 │   ├── manage_registry.py      # Form registry management
 │   ├── rotate_function_key.py  # Key rotation automation
 │   ├── Setup-Environment.ps1   # One-command environment setup
-│   └── Setup-FabricWorkspace.ps1  # Fabric workspace provisioning
+│   ├── Setup-FabricWorkspace.ps1  # Fabric workspace provisioning
+│   └── Post-Deploy.ps1         # Post-deploy: Fabric access + key storage
 ├── config/             # Form registry configuration + JSON schema
 ├── power-automate/     # Power Automate flow templates
 ├── power-bi/           # Power BI report templates

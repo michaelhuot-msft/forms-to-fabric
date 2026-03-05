@@ -129,7 +129,18 @@ azd up
 
 This packages the Python function app, provisions Azure resources via Bicep, and deploys the code.
 
-**Resources created:**
+Then run the post-deploy script to grant Fabric access and store the function key:
+
+```powershell
+pwsh scripts/Post-Deploy.ps1
+```
+
+This automatically:
+- Grants the Function App managed identity **Contributor** access to your Fabric workspace
+- Retrieves the function key and stores it in Key Vault
+- Prints the Function App URL (needed for the Power Automate flow)
+
+**Resources created by `azd up`:**
 
 | Resource | Purpose |
 |---|---|
@@ -138,26 +149,6 @@ This packages the Python function app, provisions Azure resources via Bicep, and
 | Application Insights | Monitoring and diagnostics |
 | Key Vault | Secrets management |
 | Managed Identity | Authenticates to Fabric and Key Vault |
-
-**After deployment, grant the Function App access to Fabric:**
-
-1. Open the Fabric portal → your workspace → Settings → Manage access
-2. Add the Function App name (it appears as an enterprise application)
-3. Assign the **Contributor** role
-
-**Capture the Function App URL and key:**
-
-```powershell
-# Function App URL is shown in azd output
-
-# Get the function key
-az functionapp keys list `
-  --name <function-app-name> `
-  --resource-group <resource-group> `
-  --query "functionKeys.default" -o tsv
-```
-
-Save both — you need them for the Power Automate flow.
 
 ---
 

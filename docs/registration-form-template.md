@@ -79,22 +79,23 @@ Once the form is saved in Microsoft Forms, complete these steps to connect it to
 
 ### Step 2 — Create the Power Automate Flow
 
+First, run the helper script to get your exact HTTP action values:
+
+```powershell
+pwsh scripts/Generate-FlowBody.ps1 -Registration
+```
+
+This outputs the URI, headers (including your function key), and body — ready to copy-paste.
+
+Then build the flow:
+
 1. Go to [flow.microsoft.com](https://flow.microsoft.com) → **+ Create** → **Automated cloud flow**
 2. Name it: "Forms to Fabric — Registration Intake"
 3. Trigger: **When a new response is submitted** → select "Register Your Form for Analytics"
 4. **+ New step** → **Get response details** → same form, Response Id from trigger
-5. **+ New step** → **HTTP** with:
+5. **+ New step** → **HTTP** — paste the Method, URI, and Headers from the script output
+6. For the **Body**, type this skeleton then use **Dynamic content** (⚡) to fill each value:
 
-| Field | Value |
-|---|---|
-| Method | `POST` |
-| URI | `https://<your-function-app>.azurewebsites.net/api/register-form` (from `Post-Deploy.ps1` output) |
-| Headers | `Content-Type` : `application/json` |
-| Headers | `x-functions-key` : from `Post-Deploy.ps1` output or `Generate-FlowBody.ps1 -Registration` |
-
-**Body** — build using Dynamic content (do NOT type field IDs manually):
-
-1. Set the Body to:
 ```
 {
   "form_url": "",
@@ -103,16 +104,14 @@ Once the form is saved in Microsoft Forms, complete these steps to connect it to
 }
 ```
 
-2. Place your cursor inside the quotes for `form_url`, click **Dynamic content** (⚡), and select the answer for "Paste your form's share link"
-3. Do the same for `description` → select "Briefly describe what this form is for"
-4. Do the same for `has_phi` → select "Does this form collect any patient information?"
+- Click inside `"form_url"` quotes → Dynamic content → select **"Paste your form's share link"**
+- Click inside `"description"` quotes → Dynamic content → select **"Briefly describe..."**
+- Click inside `"has_phi"` quotes → Dynamic content → select **"Does this form collect..."**
 
-Power Automate inserts the correct field references automatically. The actual field IDs are long hashes (like `rdbe4a47c...`) — you never need to type them.
-
-6. **+ New step** → **Condition** → `Status code` is not equal to `200`
+7. **+ New step** → **Condition** → `Status code` is not equal to `200`
    - **If yes**: Send error email to admin
-   - **If no**: Leave empty (the Azure Function handles notifications)
-7. Save and enable
+   - **If no**: Leave empty
+8. Save and enable
 
 > **Tip:** The Function App URL and key are from `Post-Deploy.ps1` output (Step 3 of the setup guide). The function key is also stored in Key Vault.
 

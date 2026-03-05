@@ -187,30 +187,22 @@ This flow triggers on each form submission and sends the response to the Azure F
 | Field | Value |
 |---|---|
 | Method | `POST` |
-| URI | Function App URL from `Post-Deploy.ps1` output + `/api/process-response` |
+| URI | Function App URL from `Post-Deploy.ps1` + `/api/process-response` |
 | Headers | `Content-Type` : `application/json` |
-| Headers | `x-functions-key` : function key from `Post-Deploy.ps1` output |
+| Headers | `x-functions-key` : function key from `Post-Deploy.ps1` |
 
-For the **Body**, build it using Dynamic content:
+For the **Body**, paste this simple template — it sends the entire form response to the function:
 
 ```
 {
   "form_id": "<YOUR-FORM-ID>",
-  "response_id": "",
-  "submitted_at": "",
-  "respondent_email": "",
-  "answers": [
-    {"question_id": "q1", "question": "Question 1", "answer": ""},
-    {"question_id": "q2", "question": "Question 2", "answer": ""}
-  ]
+  "raw_response": @{outputs('Get_response_details')?['body']}
 }
 ```
 
-For `response_id`, click **Dynamic content** (⚡) → select **Response Id** from the trigger.
-For `respondent_email`, select **Responder** from Get response details.
-For each `answer`, select the matching question answer from Get response details.
+Replace `<YOUR-FORM-ID>` with your form's ID (from `manage_registry.py list`). The `raw_response` uses a single Dynamic content expression that forwards everything — **no per-question mapping needed**.
 
-> **Note:** Microsoft Forms field IDs are long hashes (like `rdbe4a47c...`), not `r1`/`r2`. Always use the Dynamic content picker — never type field IDs manually.
+> **Note:** The Azure Function automatically extracts answers from the raw response using the field configuration in the form registry. You register the form once (Step 4.2), and the function knows how to parse any response.
 
 6. **+ New step** → **Condition** → `Status code` is not equal to `200`
    - **If yes**: Add **Send an email (V2)** to notify your admin of the error

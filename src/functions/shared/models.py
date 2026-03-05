@@ -17,13 +17,23 @@ class Answer(BaseModel):
 
 
 class FormResponse(BaseModel):
-    """Incoming payload from Power Automate containing a Microsoft Forms response."""
+    """Incoming payload from Power Automate containing a Microsoft Forms response.
+
+    Supports two formats:
+    1. Structured: form_id + answers array (legacy)
+    2. Raw passthrough: form_id + raw_response (entire 'Get response details' body)
+    """
 
     form_id: str
-    response_id: str
-    submitted_at: datetime
-    respondent_email: str
-    answers: list[Answer]
+    response_id: str = ""
+    submitted_at: Optional[datetime] = None
+    respondent_email: str = ""
+    answers: list[Answer] = []
+    raw_response: Optional[dict] = Field(
+        default=None,
+        description="Raw 'Get response details' output from Power Automate. "
+        "If provided, answers are extracted automatically using the form registry.",
+    )
 
 
 class FieldConfig(BaseModel):

@@ -7,6 +7,7 @@ optionally de-identifies PHI fields, and writes results to OneLake.
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import Any
 
 import azure.functions as func
@@ -14,7 +15,7 @@ from pydantic import ValidationError
 
 from shared.config import get_form_config
 from shared.deid import apply_deid
-from shared.models import FormResponse, ProcessingResult
+from shared.models import Answer, FormResponse, ProcessingResult
 from shared.onelake import write_to_lakehouse
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,52 @@ def handle_form_response(req: func.HttpRequest) -> func.HttpResponse:
             f"Payload validation failed: {exc.error_count()} error(s) — {exc.errors()}",
             status_code=400,
         )
+
+    # --- Lookup form configuration --------------------------------------------
+    form_config = get_form_config(form_response.form_id)
+    if form_config is None:
+        return _error_response(
+            f"Unknown form_id: {form_response.form_id}",
+            status_code=404,
+            form_id=form_response.form_id,
+            response_id=form_response.response_id,
+        )
+
+    # --- Extract answers from raw response if provided ------------------------
+    if form_response.raw_response and not form_response.answers:
+        raw = form_response.raw_response
+        # Extract metadata from the raw Forms response
+        form_response.respondent_email = raw.get("responder", "")
+        form_response.submitted_at = form_response.submitted_at or datetime.utcnow()
+        if not form_response.response_id:
+            form_response.response_id = raw.get("responseId", f"raw-{id(raw)}")
+
+        # Build answers from all fields that aren't metadata
+        metadata_keys = {
+            "responder",
+            "submitDate",
+            "responseId",
+            "@odata.context",
+            "@odata.etag",
+        }
+        answers = []
+        for key, value in raw.items():
+            if key in metadata_keys or key.startswith("@"):
+                continue
+            # Find matching field config by question_id
+            field_name = key
+            for fc in form_config.fields:
+                if fc.question_id == key:
+                    field_name = fc.field_name
+                    break
+            answers.append(
+                Answer(
+                    question_id=key,
+                    question=field_name,
+                    answer=str(value) if value is not None else "",
+                )
+            )
+        form_response.answers = answers
 
     if not form_response.answers:
         return _error_response(

@@ -92,15 +92,22 @@ Once the form is saved in Microsoft Forms, complete these steps to connect it to
 | Headers | `Content-Type` : `application/json` |
 | Headers | `x-functions-key` : from `Post-Deploy.ps1` output or `Generate-FlowBody.ps1 -Registration` |
 
-**Body** — paste this exactly (the 3 questions are always r1, r2, r3):
+**Body** — build using Dynamic content (do NOT type field IDs manually):
 
-```json
+1. Set the Body to:
+```
 {
-  "form_url": "@{outputs('Get_response_details')?['body/r1']}",
-  "description": "@{outputs('Get_response_details')?['body/r2']}",
-  "has_phi": "@{outputs('Get_response_details')?['body/r3']}"
+  "form_url": "",
+  "description": "",
+  "has_phi": ""
 }
 ```
+
+2. Place your cursor inside the quotes for `form_url`, click **Dynamic content** (⚡), and select the answer for "Paste your form's share link"
+3. Do the same for `description` → select "Briefly describe what this form is for"
+4. Do the same for `has_phi` → select "Does this form collect any patient information?"
+
+Power Automate inserts the correct field references automatically. The actual field IDs are long hashes (like `rdbe4a47c...`) — you never need to type them.
 
 6. **+ New step** → **Condition** → `Status code` is not equal to `200`
    - **If yes**: Send error email to admin

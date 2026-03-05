@@ -182,21 +182,35 @@ This flow triggers on each form submission and sends the response to the Azure F
 2. Name it (e.g., "Forms to Fabric — My Survey")
 3. Trigger: **When a new response is submitted** (Microsoft Forms) → select your form
 4. **+ New step** → **Get response details** (Microsoft Forms) → same form, set Response Id to the dynamic value `Response Id` from the trigger
-5. **+ New step** → **HTTP** — use the helper script to generate the config:
-
-```powershell
-pwsh scripts/Generate-FlowBody.ps1 -FormUrl "https://forms.office.com/..."
-```
-
-The script asks for your question titles and outputs the complete HTTP action config (URI, headers, body JSON) ready to paste into Power Automate.
+5. **+ New step** → **HTTP** with:
 
 | Field | Value |
 |---|---|
 | Method | `POST` |
-| URI | `https://<your-function-app>.azurewebsites.net/api/process-response` |
+| URI | Function App URL from `Post-Deploy.ps1` output + `/api/process-response` |
 | Headers | `Content-Type` : `application/json` |
-| Headers | `x-functions-key` : auto-detected by script |
-| Body | Output from `Generate-FlowBody.ps1` (also saved to `power-automate-body.json`) |
+| Headers | `x-functions-key` : function key from `Post-Deploy.ps1` output |
+
+For the **Body**, build it using Dynamic content:
+
+```
+{
+  "form_id": "<YOUR-FORM-ID>",
+  "response_id": "",
+  "submitted_at": "",
+  "respondent_email": "",
+  "answers": [
+    {"question_id": "q1", "question": "Question 1", "answer": ""},
+    {"question_id": "q2", "question": "Question 2", "answer": ""}
+  ]
+}
+```
+
+For `response_id`, click **Dynamic content** (⚡) → select **Response Id** from the trigger.
+For `respondent_email`, select **Responder** from Get response details.
+For each `answer`, select the matching question answer from Get response details.
+
+> **Note:** Microsoft Forms field IDs are long hashes (like `rdbe4a47c...`), not `r1`/`r2`. Always use the Dynamic content picker — never type field IDs manually.
 
 6. **+ New step** → **Condition** → `Status code` is not equal to `200`
    - **If yes**: Add **Send an email (V2)** to notify your admin of the error

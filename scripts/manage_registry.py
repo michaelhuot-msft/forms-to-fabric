@@ -6,9 +6,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse, parse_qs
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -358,6 +360,49 @@ def cmd_remove_form(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_lookup_id(args: argparse.Namespace) -> int:
+    """Extract the form ID from a Microsoft Forms URL.
+
+    Supports these URL patterns:
+      - https://forms.office.com/Pages/DesignPageV2.aspx?id=<FORM_ID>&...
+      - https://forms.office.com/r/<FORM_ID>
+      - https://forms.microsoft.com/r/<FORM_ID>
+      - https://forms.office.com/Pages/ResponsePage.aspx?id=<FORM_ID>&...
+    """
+    url = args.url.strip()
+
+    # Pattern 1: ?id= query parameter
+    parsed = urlparse(url)
+    qs = parse_qs(parsed.query)
+    if "id" in qs:
+        form_id = qs["id"][0]
+        print(f"Form ID:  {form_id}")
+        print(f"\nUse it with:")
+        print(f"  python scripts/manage_registry.py add-form --form-id \"{form_id}\" --form-name \"<name>\" --target-table \"<table>\"")
+        return 0
+
+    # Pattern 2: /r/<id> short link
+    match = re.search(r"/r/([A-Za-z0-9_-]+)", parsed.path)
+    if match:
+        form_id = match.group(1)
+        print(f"Form ID:  {form_id}")
+        print(f"\nNote: This is a short-link ID. You may need the full form GUID.")
+        print(f"Open the form in edit mode and copy the 'id' from the URL instead.")
+        print(f"\nUse it with:")
+        print(f"  python scripts/manage_registry.py add-form --form-id \"{form_id}\" --form-name \"<name>\" --target-table \"<table>\"")
+        return 0
+
+    print("ERROR: Could not extract a form ID from this URL.")
+    print()
+    print("Expected URL formats:")
+    print("  https://forms.office.com/Pages/DesignPageV2.aspx?id=<FORM_ID>&...")
+    print("  https://forms.office.com/r/<FORM_ID>")
+    print("  https://forms.microsoft.com/r/<FORM_ID>")
+    print()
+    print("Tip: Open the form in Microsoft Forms, click 'Share', and copy the link.")
+    return 1
+
+
 def cmd_diff(args: argparse.Namespace) -> int:
     print(f"Diff for form '{args.form_id}':")
     print()
@@ -401,13 +446,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     # add-form
     add_form = subparsers.add_parser("add-form", help="Add a new form entry")
-    add_form.add_argument("--form-id", required=True, help="Unique form identifier")
+    add_form.add_argument("--form-id", required=True, help="Form ID (GUID from the Forms URL — run 'lookup-id' to extract it)")
     add_form.add_argument("--form-name", required=True, help="Human-readable form name")
     add_form.add_argument("--target-table", required=True, help="Target table name")
 
     # add-field
     add_field = subparsers.add_parser("add-field", help="Add a field to an existing form")
-    add_field.add_argument("--form-id", required=True, help="Form to add the field to")
+    add_field.add_argument("--form-id", required=True, help="Form ID to add the field to (run 'lookup-id' to find it)")
     add_field.add_argument("--question-id", required=True, help="Question identifier")
     add_field.add_argument("--field-name", required=True, help="Column name")
     add_field.add_argument(
@@ -437,6 +482,16 @@ def build_parser() -> argparse.ArgumentParser:
     diff_parser = subparsers.add_parser("diff", help="Show diff instructions (placeholder)")
     diff_parser.add_argument("--form-id", required=True, help="Form to diff")
 
+    # lookup-id
+    lookup_parser = subparsers.add_parser(
+        "lookup-id",
+        help="Extract a form ID from a Microsoft Forms URL",
+    )
+    lookup_parser.add_argument(
+        "url",
+        help="Microsoft Forms URL (e.g. https://forms.office.com/Pages/DesignPageV2.aspx?id=abc123...)",
+    )
+
     return parser
 
 
@@ -451,6 +506,7 @@ def main(argv: list[str] | None = None) -> int:
         "add-field": cmd_add_field,
         "remove-form": cmd_remove_form,
         "diff": cmd_diff,
+        "lookup-id": cmd_lookup_id,
     }
 
     handler = dispatch.get(args.command)

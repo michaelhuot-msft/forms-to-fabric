@@ -23,7 +23,16 @@ flowchart LR
 
 The `manage_registry.py` CLI tool provides a validated, error-proof way to manage form registrations. It prevents common mistakes like JSON syntax errors, duplicate form IDs, and missing de-identification settings.
 
-**Add a new form:**
+**Step 1 — Get the form ID from the clinician's URL:**
+
+The clinician sends you their form link. Extract the form ID:
+
+```bash
+python scripts/manage_registry.py lookup-id "https://forms.office.com/Pages/DesignPageV2.aspx?id=abc123-def456&..."
+# Output: Form ID: abc123-def456
+```
+
+**Step 2 — Register the form:**
 
 ```bash
 python scripts/manage_registry.py add-form \

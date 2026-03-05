@@ -103,6 +103,22 @@ azd up
 2. **Provision** — deploys the Bicep templates in `infra/` to create Azure resources.
 3. **Deploy** — publishes the function app code to the newly provisioned Function App.
 
+```mermaid
+sequenceDiagram
+    participant Dev as Developer
+    participant AZD as azd CLI
+    participant AZ as Azure
+    participant FA as Function App
+
+    Dev->>AZD: azd up
+    AZD->>AZD: Package Python function app
+    AZD->>AZ: Provision resources (Bicep templates)
+    AZ-->>AZD: Resources created
+    AZD->>FA: Deploy function app code
+    FA-->>AZD: Deployment complete
+    AZD-->>Dev: Return Function App URL
+```
+
 ### 3.2 Resources created
 
 The deployment provisions the following resources inside a new Resource Group:
@@ -114,6 +130,23 @@ The deployment provisions the following resources inside a new Resource Group:
 | **Application Insights** | Logging, tracing, and monitoring for the function |
 | **Key Vault** | Secure storage for secrets (Fabric credentials, function keys) |
 | **Managed Identity** | System-assigned identity used to authenticate to Fabric and Key Vault |
+
+```mermaid
+graph TB
+    subgraph RG["Resource Group"]
+        func["Function App<br/>(Python, Consumption)"]
+        sa["Storage Account"]
+        ai["Application Insights"]
+        kv["Key Vault"]
+        mi["Managed Identity"]
+    end
+
+    func -->|"Backing store"| sa
+    func -->|"Monitoring"| ai
+    func -->|"Secrets"| kv
+    func ---|"System-assigned"| mi
+    func -->|"OneLake API"| lh["Fabric Lakehouse"]
+```
 
 ### 3.3 Capture deployment outputs
 
@@ -400,6 +433,17 @@ az webapp log tail --name <your-function-app-name> --resource-group <your-resour
 ---
 
 ## Troubleshooting
+
+```mermaid
+flowchart TD
+    A{"Data not appearing<br/>in dashboard?"} --> B{"Check Power Automate<br/>flow run history"}
+    B -->|"Run failed"| C["Check function key<br/>and form ID in HTTP action"]
+    B -->|"Run succeeded"| D{"Check Azure Function<br/>logs in App Insights"}
+    D -->|"Error logged"| E["Check form registry config<br/>in form-registry.json"]
+    D -->|"No errors"| F{"Check Fabric<br/>Lakehouse tables"}
+    F -->|"Tables empty"| G["Check managed identity<br/>permissions on workspace"]
+    F -->|"Data present"| H["Check Power BI<br/>refresh settings & DirectLake connection"]
+```
 
 | Symptom | Likely Cause | Resolution |
 |---|---|---|

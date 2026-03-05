@@ -40,9 +40,11 @@ Bottom of slide: *"No technical skills required. We handle the behind-the-scenes
 ### Content
 Visual flowchart with four connected steps:
 
-```
-📝 Create Form  →  📋 Register  →  ✉️ Collect Responses  →  📊 View Dashboard
-   (5 minutes)     (one-time)      (automatic)              (anytime)
+```mermaid
+graph LR
+    A["📝 Create Form (5 minutes)"] --> B["📋 Register (one-time)"]
+    B --> C["✉️ Collect Responses (automatic)"]
+    C --> D["📊 View Dashboard (anytime)"]
 ```
 
 - **Create Form** — Build your questionnaire in Microsoft Forms

@@ -4,8 +4,9 @@ A solution that enables clinicians to create questionnaires using Microsoft Form
 
 ## Architecture Overview
 
-```
-Microsoft Forms (M365) → Power Automate → Azure Function → Fabric Lakehouse → Power BI
+```mermaid
+graph LR
+    A["Microsoft Forms"] --> B["Power Automate"] --> C["Azure Function"] --> D["Fabric Lakehouse"] --> E["Power BI"]
 ```
 
 ### Key Features

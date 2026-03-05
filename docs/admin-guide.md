@@ -6,6 +6,15 @@ This guide covers day-to-day administration of the Healthcare Forms-to-Fabric pi
 
 The pipeline flow is: **Microsoft Forms → Power Automate → Azure Function (`src/functions/process_response`) → Microsoft Fabric Lakehouse**. Configuration lives in `config/form-registry.json`, shared modules (de-identification, Fabric client) are in `src/functions/shared/`, and infrastructure is defined as Bicep templates in `infra/`.
 
+```mermaid
+flowchart LR
+    A["1. Get Form ID"] --> B["2. Add to Registry JSON"]
+    B --> C["3. Deploy Config"]
+    C --> D["4. Create Power Automate Flow"]
+    D --> E["5. Test Submission"]
+    E --> F["6. Notify Clinician"]
+```
+
 ---
 
 ## Registering a New Form
@@ -167,22 +176,18 @@ The `generalize` method supports a `granularity` parameter:
 
 Use this decision tree when mapping a new form field:
 
-```
-Is this field PHI or PII?
-├── No  → sensitivity: "non_sensitive", method: "none"
-└── Yes
-    ├── Does it directly identify a person?
-    │   ├── Yes → sensitivity: "direct_identifier"
-    │   │   ├── Do you need to link records across forms?
-    │   │   │   ├── Yes → method: "hash"
-    │   │   │   └── No
-    │   │   │       ├── Might authorized staff need original value?
-    │   │   │       │   ├── Yes → method: "encrypt"
-    │   │   │       │   └── No  → method: "redact"
-    │   └── No (quasi-identifier) → sensitivity: "quasi_identifier"
-    │       └── Is aggregate analysis needed?
-    │           ├── Yes → method: "generalize" (choose appropriate granularity)
-    │           └── No  → method: "redact"
+```mermaid
+flowchart TD
+    A{"Is this field PHI/PII?"} -->|No| B["none"]
+    A -->|Yes| C{"Direct identifier?"}
+    C -->|Yes| D{"Link records?"}
+    D -->|Yes| E["hash"]
+    D -->|No| F{"Need original?"}
+    F -->|Yes| G["encrypt"]
+    F -->|No| H["redact"]
+    C -->|"No (quasi-identifier)"| I{"Aggregate analysis?"}
+    I -->|Yes| J["generalize"]
+    I -->|No| K["redact"]
 ```
 
 ---
@@ -383,6 +388,18 @@ Submit a test response using the modified form and verify:
 
 > **Note:** Removing questions from a form does not delete historical data in the Lakehouse. The raw and curated layers retain all previously processed records.
 
+```mermaid
+flowchart TD
+    A["Form Modified"] --> B["Questions Added"]
+    A --> C["Questions Removed"]
+    A --> D["Questions Reordered"]
+    A --> E["Question Type Changed"]
+    B --> B1["New fields null for old records"]
+    C --> C1["Historical data preserved; new submissions null"]
+    D --> D1["No impact — matched by ID"]
+    E --> E1["May cause type mismatch — review config"]
+```
+
 ---
 
 ## Rotating Secrets in Key Vault
@@ -480,6 +497,23 @@ If you hit throttling limits:
 - Each form gets its own Power Automate flow.
 - The Azure Function in `src/functions/process_response` handles routing — it reads the `form_id` from the request and looks up the matching configuration in `config/form-registry.json`.
 - Adding more forms does not require code changes, only configuration updates.
+
+```mermaid
+graph LR
+    FA["Form A"] --> FlowA["Power Automate Flow A"]
+    FB["Form B"] --> FlowB["Power Automate Flow B"]
+    FC["Form C"] --> FlowC["Power Automate Flow C"]
+    FlowA --> AF["Azure Function"]
+    FlowB --> AF
+    FlowC --> AF
+    AF --> Reg["form-registry.json"]
+    AF --> TA["Table A"]
+    AF --> TB["Table B"]
+    AF --> TC["Table C"]
+    TA --> PBI["Power BI"]
+    TB --> PBI
+    TC --> PBI
+```
 
 ---
 

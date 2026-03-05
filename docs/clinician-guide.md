@@ -96,6 +96,13 @@ Once your form is registered, you're all set. Here's what happens behind the sce
 
 **You don't need to do anything.** It just works.
 
+### Your Journey at a Glance
+
+```mermaid
+graph LR
+    A["📝 Create Form"] --> B["📧 Register with IT"] --> C["🔄 Responses Flow<br/>Automatically"] --> D["📊 View Dashboard"]
+```
+
 ---
 
 ## Step 4: View Your Results
@@ -142,6 +149,16 @@ We take patient privacy very seriously. Here's how your data is protected:
 - 🔒 **Access is logged** — we keep a record of who views the data
 
 If you have concerns about patient privacy, please contact our compliance team at **[compliance-email@organization.com]**.
+
+### How Your Data Is Protected
+
+```mermaid
+graph LR
+    A["Form Response"] --> B["Azure Function"]
+    B --> C["🔒 Raw Data<br/>(Restricted — IT only)"]
+    B --> D["🔓 De-identified Data<br/>(Analysts & Leads)"]
+    D --> E["📊 Power BI Dashboard"]
+```
 
 ---
 

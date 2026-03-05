@@ -8,6 +8,13 @@
 
 When someone fills out your Microsoft Form, their response is automatically sent to a secure analytics platform called Microsoft Fabric. From there, the data is displayed in a Power BI dashboard that you can view anytime. Think of it as: **Forms collects the data → Fabric stores and processes it → Power BI shows it to you.**
 
+```mermaid
+graph LR
+    A["Microsoft Forms"] -->|collects| B["Fabric"]
+    B -->|stores & processes| C["Power BI"]
+    C -->|shows to you| D["Dashboard"]
+```
+
 All of this happens automatically. You don't need to move or export any data yourself.
 
 ---
@@ -52,6 +59,19 @@ If you delete your form in Microsoft Forms:
 - Your Power BI dashboard will remain available with the historical data
 
 If you want to delete the dashboard and all stored data as well, contact IT to request a full removal.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Created
+    Created --> Active : Start collecting responses
+    Active --> Modified : Update config
+    Modified --> Active : Resume collection
+    Active --> Deleted : Form deleted
+    Deleted --> [*]
+
+    note right of Active : Collecting responses
+    note right of Deleted : New responses stop\nHistorical data preserved
+```
 
 ---
 

@@ -14,45 +14,34 @@ All infrastructure is defined as code using Bicep and deployed via the Azure Dev
 
 ### Architecture Diagram
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        Microsoft 365 Tenant                            │
-│                                                                        │
-│  ┌──────────────┐     ┌──────────────────┐                             │
-│  │  Microsoft   │────▶│  Power Automate  │                             │
-│  │    Forms     │     │     (Flow)       │                             │
-│  └──────────────┘     └────────┬─────────┘                             │
-│                                │ HTTPS POST                            │
-│  ┌─────────────────────────────┼───────────────────────────────────┐   │
-│  │                    Azure Subscription                           │   │
-│  │                             │                                   │   │
-│  │                   ┌─────────▼─────────┐                         │   │
-│  │                   │  Azure Function   │                         │   │
-│  │                   │ (process_response)│                         │   │
-│  │                   └────────┬──────────┘                         │   │
-│  │                            │                                    │   │
-│  │  ┌──────────────┐  ┌──────┴───────┐  ┌───────────────────┐     │   │
-│  │  │  Key Vault   │  │ App Insights │  │ Storage Account   │     │   │
-│  │  └──────────────┘  └──────────────┘  └───────────────────┘     │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-│                                │                                       │
-│  ┌─────────────────────────────┼───────────────────────────────────┐   │
-│  │               Microsoft Fabric                                  │   │
-│  │                             │                                   │   │
-│  │           ┌─────────────────▼──────────────────┐                │   │
-│  │           │         Lakehouse                   │                │   │
-│  │           │  ┌─────────┐  ┌──────────────┐     │                │   │
-│  │           │  │   Raw   │  │   Curated    │     │                │   │
-│  │           │  │  Layer  │  │    Layer     │     │                │   │
-│  │           │  └─────────┘  └──────────────┘     │                │   │
-│  │           └────────────────────┬───────────────┘                │   │
-│  │                                │                                │   │
-│  │           ┌────────────────────▼───────────────┐                │   │
-│  │           │         Power BI                    │                │   │
-│  │           │      (DirectLake mode)              │                │   │
-│  │           └────────────────────────────────────┘                │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph M365["Microsoft 365 Tenant"]
+        forms["Microsoft Forms"]
+        pa["Power Automate"]
+    end
+
+    subgraph Azure["Azure Subscription"]
+        func["Azure Function<br/>(process_response)"]
+        kv["Key Vault"]
+        ai["Application Insights"]
+        sa["Storage Account"]
+    end
+
+    subgraph Fabric["Microsoft Fabric"]
+        subgraph LH["Lakehouse"]
+            raw["Raw Layer"]
+            curated["Curated Layer"]
+        end
+        pbi["Power BI<br/>(DirectLake mode)"]
+    end
+
+    forms -->|"New submission"| pa
+    pa -->|"HTTPS POST"| func
+    func -->|"Write raw + curated"| LH
+    func -.->|"Managed Identity"| kv
+    func -.->|"Telemetry"| ai
+    curated -->|"DirectLake"| pbi
 ```
 
 ---
@@ -87,6 +76,29 @@ The following sequence describes the end-to-end processing of a single form subm
 8. **Function writes the de-identified response** to the Lakehouse **curated layer** for downstream analytics.
 9. **Function returns HTTP 200 OK** to Power Automate (or an appropriate error code with diagnostic details).
 10. **Power BI dashboards reflect new data** via DirectLake mode with near-real-time latency.
+
+```mermaid
+sequenceDiagram
+    participant C as Clinician
+    participant MF as Microsoft Forms
+    participant PA as Power Automate
+    participant AF as Azure Function
+    participant FR as Form Registry
+    participant Raw as OneLake Raw
+    participant Cur as OneLake Curated
+    participant PBI as Power BI
+
+    C->>MF: 1. Submit response
+    MF->>PA: 2. Trigger fires on new submission
+    PA->>MF: 3. Retrieve full response details
+    PA->>AF: 4. HTTP POST (form_id, response_id, answers)
+    AF->>FR: 5. Look up form config & field rules
+    AF->>Raw: 6. Write raw response (all fields, unmodified)
+    Note over AF: 7. Apply de-identification rules<br/>(redact, hash, generalize, encrypt, none)
+    AF->>Cur: 8. Write de-identified response
+    AF->>PA: 9. Return HTTP 200 OK
+    PBI->>Cur: 10. DirectLake query reflects new data
+```
 
 ---
 
@@ -138,12 +150,53 @@ The Azure Function applies one of the following de-identification methods to eac
 | **Encrypt** | Reversible encryption using a Key Vault–managed key | Fields that may require authorized re-identification | Original value → encrypted blob |
 | **None** | Pass through unchanged | Non-identifying data: ratings, yes/no, counts | `"4"` → `"4"` |
 
+#### De-Identification Decision Tree
+
+```mermaid
+flowchart TD
+    A{"Is this field<br/>PHI or PII?"} -->|No| B["non_sensitive / none"]
+    A -->|Yes| C{"Does it directly<br/>identify a person?"}
+    C -->|Yes| D["direct_identifier"]
+    C -->|No| E["quasi_identifier"]
+    D --> F{"Need to link<br/>records?"}
+    F -->|Yes| G["hash"]
+    F -->|No| H{"Need original<br/>value later?"}
+    H -->|Yes| I["encrypt"]
+    H -->|No| J["redact"]
+    E --> K{"Aggregate analysis<br/>needed?"}
+    K -->|Yes| L["generalize"]
+    K -->|No| M["redact"]
+```
+
 ### Access Controls
 
 - **Raw layer:** Restricted to IT Admin role (Fabric workspace Admin).
 - **Curated layer:** Department-scoped access via Fabric workspace roles.
 - **Power BI:** Row-level security enforced by department affiliation.
 - **Audit trail:** All data access is logged and available for compliance review.
+
+#### Access Control Model
+
+```mermaid
+flowchart LR
+    subgraph RawAccess["Raw Layer (Restricted)"]
+        raw_layer["Raw Data<br/>🔒 Full PHI"]
+    end
+
+    subgraph CuratedAccess["Curated Layer (Shared)"]
+        curated_layer["De-identified Data<br/>🔓 PHI Removed"]
+    end
+
+    subgraph PBIAccess["Power BI (Row-Level Security)"]
+        pbi_rls["Department-Scoped<br/>Reports"]
+    end
+
+    admin["IT Admins"] --> raw_layer
+    leads["Department Leads"] --> curated_layer
+    analysts["Analysts"] --> curated_layer
+    clinicians["Clinicians"] --> pbi_rls
+    curated_layer --> pbi_rls
+```
 
 ---
 

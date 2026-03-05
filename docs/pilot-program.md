@@ -9,6 +9,37 @@
 - Identify issues before broader rollout
 - Build internal champions for the platform
 
+```mermaid
+gantt
+    title 4-Week Pilot Timeline
+    dateFormat  YYYY-MM-DD
+    axisFormat  %b %d
+
+    section Preparation
+    Deploy infrastructure        :prep1, 2025-01-06, 2d
+    Setup workspace              :prep2, after prep1, 1d
+    Register forms               :prep3, after prep2, 1d
+    Create dashboards            :prep4, after prep3, 1d
+    Training session             :prep5, after prep4, 1d
+
+    section Week 1 Onboarding
+    Kickoff meeting              :w1a, 2025-01-13, 1d
+    Initial use                  :w1b, after w1a, 3d
+    Daily monitoring             :w1c, 2025-01-13, 5d
+    Week 1 check-in              :milestone, w1m, 2025-01-17, 0d
+
+    section Weeks 2-3 Active Use
+    Normal workflow use          :w2a, 2025-01-20, 10d
+    Weekly check-ins             :w2b, 2025-01-24, 1d
+    Feedback collection          :w2c, 2025-01-20, 10d
+    Refinements                  :w2d, 2025-01-27, 4d
+
+    section Week 4 Evaluation
+    Final check-in               :w4a, 2025-02-03, 1d
+    Metrics review               :w4b, after w4a, 2d
+    Go/no-go decision            :milestone, w4m, 2025-02-07, 0d
+```
+
 ## Pilot Scope
 
 - **Participants**: 2–3 clinicians from 1 department (suggest: a department already comfortable with Microsoft Forms)
@@ -125,6 +156,15 @@
 - Minor usability issues → address before rollout
 - Performance below target but functional → optimize and re-test
 - Schema change handling needs improvement → enhance before scaling
+
+```mermaid
+flowchart TD
+    A["Evaluate Metrics"] --> B{"All criteria met?"}
+    B -->|Yes| C["✅ Go — Proceed to rollout"]
+    B -->|No| D{"Critical issue?"}
+    D -->|"Yes (data loss, PHI exposure, downtime >4h)"| E["🚫 No-Go — Remediate and re-pilot"]
+    D -->|No| F["⚠️ Conditional Go — Fix issues, then proceed"]
+```
 
 ## Risk Mitigation During Pilot
 

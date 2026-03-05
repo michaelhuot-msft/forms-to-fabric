@@ -3,7 +3,6 @@ azure-identity
 azure-storage-file-datalake
 azure-keyvault-secrets
 azure-mgmt-web
-azure-mgmt-resource
 pydantic>=2.0
 pyarrow
 pandas

@@ -20,18 +20,13 @@ def _mock_credential():
     return MagicMock(name="DefaultAzureCredential")
 
 
-def _mock_subscription(sub_id="00000000-0000-0000-0000-000000000000"):
-    sub = MagicMock()
-    sub.subscription_id = sub_id
-    sub_client = MagicMock()
-    sub_client.subscriptions.list.return_value = iter([sub])
-    return sub_client
-
-
 def _mock_host_keys(existing: dict[str, str] | None = None):
     keys = MagicMock()
     keys.function_keys = existing or {}
     return keys
+
+
+SUB_ID = "00000000-0000-0000-0000-000000000000"
 
 
 # ---------------------------------------------------------------------------
@@ -44,11 +39,7 @@ class TestDryRun:
 
     @patch("scripts.rotate_function_key.SecretClient")
     @patch("scripts.rotate_function_key.WebSiteManagementClient")
-    @patch(
-        "scripts.rotate_function_key.SubscriptionClient",
-        return_value=_mock_subscription(),
-    )
-    def test_dry_run_does_not_modify(self, mock_sub_cls, mock_web_cls, mock_secret_cls):
+    def test_dry_run_does_not_modify(self, mock_web_cls, mock_secret_cls):
         mock_web = mock_web_cls.return_value
         mock_web.web_apps.list_host_keys.return_value = _mock_host_keys()
 
@@ -58,6 +49,7 @@ class TestDryRun:
             key_vault="kv-test",
             dry_run=True,
             credential=_mock_credential(),
+            subscription_id=SUB_ID,
         )
 
         mock_web.web_apps.create_or_update_host_secret.assert_not_called()
@@ -69,16 +61,11 @@ class TestKeyStored:
 
     @patch("scripts.rotate_function_key.SecretClient")
     @patch("scripts.rotate_function_key.WebSiteManagementClient")
-    @patch(
-        "scripts.rotate_function_key.SubscriptionClient",
-        return_value=_mock_subscription(),
-    )
-    def test_new_key_stored_in_vault(self, mock_sub_cls, mock_web_cls, mock_secret_cls):
+    def test_new_key_stored_in_vault(self, mock_web_cls, mock_secret_cls):
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         new_key_name = f"power-automate-{today}"
 
         mock_web = mock_web_cls.return_value
-        # First call: no existing keys. Second call: new key present.
         mock_web.web_apps.list_host_keys.side_effect = [
             _mock_host_keys({}),
             _mock_host_keys({new_key_name: "generated-secret-value"}),
@@ -92,6 +79,7 @@ class TestKeyStored:
             key_vault="kv-test",
             dry_run=False,
             credential=_mock_credential(),
+            subscription_id=SUB_ID,
         )
 
         mock_web.web_apps.create_or_update_host_secret.assert_called_once()
@@ -107,11 +95,7 @@ class TestKeyNaming:
 
     @patch("scripts.rotate_function_key.SecretClient")
     @patch("scripts.rotate_function_key.WebSiteManagementClient")
-    @patch(
-        "scripts.rotate_function_key.SubscriptionClient",
-        return_value=_mock_subscription(),
-    )
-    def test_key_name_includes_date(self, mock_sub_cls, mock_web_cls, mock_secret_cls):
+    def test_key_name_includes_date(self, mock_web_cls, mock_secret_cls):
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         expected_name = f"power-automate-{today}"
 
@@ -127,6 +111,7 @@ class TestKeyNaming:
             key_vault="kv-test",
             dry_run=False,
             credential=_mock_credential(),
+            subscription_id=SUB_ID,
         )
 
         call_args = mock_web.web_apps.create_or_update_host_secret.call_args
@@ -140,13 +125,7 @@ class TestErrorHandling:
 
     @patch("scripts.rotate_function_key.SecretClient")
     @patch("scripts.rotate_function_key.WebSiteManagementClient")
-    @patch(
-        "scripts.rotate_function_key.SubscriptionClient",
-        return_value=_mock_subscription(),
-    )
-    def test_missing_function_app_error(
-        self, mock_sub_cls, mock_web_cls, mock_secret_cls
-    ):
+    def test_missing_function_app_error(self, mock_web_cls, mock_secret_cls):
         mock_web = mock_web_cls.return_value
         mock_web.web_apps.list_host_keys.side_effect = Exception(
             "ResourceNotFound: func-missing not found"
@@ -159,6 +138,7 @@ class TestErrorHandling:
                 key_vault="kv-test",
                 dry_run=False,
                 credential=_mock_credential(),
+                subscription_id=SUB_ID,
             )
 
         assert exc_info.value.code == 1

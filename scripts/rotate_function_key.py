@@ -22,7 +22,6 @@ from datetime import datetime, timezone
 
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
-from azure.mgmt.resource.subscriptions import SubscriptionClient
 from azure.mgmt.web import WebSiteManagementClient
 from azure.mgmt.web.models import KeyInfo
 
@@ -49,6 +48,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Name of the Key Vault to store the new key.",
     )
     parser.add_argument(
+        "--subscription-id",
+        default=None,
+        help="Azure subscription ID (reads AZURE_SUBSCRIPTION_ID env var if omitted).",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         default=False,
@@ -57,11 +61,21 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _get_subscription_id(credential: DefaultAzureCredential) -> str:
-    """Resolve the current Azure subscription from the environment."""
-    sub_client = SubscriptionClient(credential)
-    subscription = next(sub_client.subscriptions.list())
-    return subscription.subscription_id
+def _get_subscription_id(credential: DefaultAzureCredential, explicit_id: str | None = None) -> str:
+    """Resolve the Azure subscription ID.
+
+    Uses the explicit value if provided, falls back to the
+    ``AZURE_SUBSCRIPTION_ID`` environment variable.
+    """
+    import os
+
+    sub_id = explicit_id or os.environ.get("AZURE_SUBSCRIPTION_ID")
+    if not sub_id:
+        logger.error(
+            "No subscription ID provided. Pass --subscription-id or set AZURE_SUBSCRIPTION_ID."
+        )
+        raise SystemExit(1)
+    return sub_id
 
 
 def _list_existing_keys(
@@ -81,13 +95,14 @@ def rotate(
     *,
     dry_run: bool = False,
     credential: DefaultAzureCredential | None = None,
+    subscription_id: str | None = None,
 ) -> None:
     """Perform the key rotation."""
     credential = credential or DefaultAzureCredential()
 
     # --- Resolve subscription ------------------------------------------
     logger.info("Resolving Azure subscription…")
-    subscription_id = _get_subscription_id(credential)
+    subscription_id = _get_subscription_id(credential, subscription_id)
     logger.info("Using subscription %s", subscription_id)
 
     web_client = WebSiteManagementClient(credential, subscription_id)
@@ -190,6 +205,7 @@ def main(argv: list[str] | None = None) -> None:
         resource_group=args.resource_group,
         key_vault=args.key_vault,
         dry_run=args.dry_run,
+        subscription_id=args.subscription_id,
     )
 
 

@@ -22,6 +22,18 @@ All PRs must pass CI before merge. The CI pipeline validates:
 - Bicep files follow Azure naming conventions with `@description` decorators.
 - Commit messages follow Conventional Commits format.
 
+## Mermaid Diagrams
+
+Do **not** use `<br>` or literal `\n` inside Mermaid node labels — they render inconsistently across GitHub, VS Code preview, and other Markdown renderers. Instead, use short single-line labels or split content across multiple connected nodes.
+
+```mermaid
+%% BAD — \n may not render
+A["Source system\nReferral Event"]
+
+%% GOOD — separate nodes
+A[Source system] -.-> A2[Referral Event]
+```
+
 ## Architecture
 
 - `src/functions/` — Python Azure Functions (v2 programming model)

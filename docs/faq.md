@@ -70,7 +70,7 @@ stateDiagram-v2
     Deleted --> [*]
 
     note right of Active : Collecting responses
-    note right of Deleted : New responses stop\nHistorical data preserved
+    note right of Deleted : New responses stop, historical data preserved
 ```
 
 ---

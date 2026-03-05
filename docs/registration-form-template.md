@@ -98,15 +98,15 @@ Follow the [Power Automate flow template](../power-automate/flow-template.json) 
 
 ```mermaid
 flowchart TD
-    A["Clinician submits\nRegistration Form"] --> B["Power Automate\ntriggers"]
-    B --> C["Azure Function\n/api/register"]
-    C --> D{"Collects patient\ninfo?"}
-    D -- No --> E["Status: active\nForm connected\nautomatically"]
-    D -- Yes --> F["Status: pending_review\nQueued for IT"]
-    F --> G["IT receives\nnotification email"]
-    G --> H["IT reviews form\nand classifies fields"]
-    H --> I["IT activates form\nvia admin CLI"]
-    I --> J["Status: active\nForm connected"]
+    A[Clinician submits registration form] --> B[Power Automate triggers]
+    B --> C[Azure Function processes request]
+    C --> D{Collects patient info?}
+    D -- No --> E[Status: active]
+    D -- Yes --> F[Status: pending review]
+    F --> G[IT receives notification]
+    G --> H[IT reviews and classifies fields]
+    H --> I[IT activates form]
+    I --> J[Status: active]
 
     style A fill:#4472C4,color:#fff
     style E fill:#70AD47,color:#fff

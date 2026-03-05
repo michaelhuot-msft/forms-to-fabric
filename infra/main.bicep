@@ -4,8 +4,8 @@ targetScope = 'resourceGroup'
 // Parameters
 // ──────────────────────────────────────────────
 
-@description('Name of the environment (e.g. dev, staging, prod). Used in resource naming.')
-param environmentName string
+@description('Name of the environment (e.g. dev, staging, prod). Used in resource naming. Set via AZURE_ENV_NAME.')
+param environmentName string = 'dev'
 
 @description('Azure region for all resources. Defaults to the resource group location.')
 param location string = resourceGroup().location

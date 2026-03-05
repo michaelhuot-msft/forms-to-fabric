@@ -86,10 +86,15 @@ Write-Host ""
 # ── Step 1: azd environment ──────────────────────────────────────────────────
 
 Write-Host "Step 1: Configuring azd environment..." -ForegroundColor Cyan
-azd env new $EnvironmentName 2>$null
+# Select existing env or create new one
+azd env select $EnvironmentName 2>$null
+if ($LASTEXITCODE -ne 0) {
+    azd env new $EnvironmentName 2>$null
+}
 azd env set AZURE_LOCATION $Location
 azd env set AZURE_SUBSCRIPTION_ID $SubscriptionId
 azd env set ADMIN_EMAIL $AdminEmail
+azd env set AZURE_ENV_NAME $EnvironmentName
 Write-Host "  azd environment '$EnvironmentName' configured." -ForegroundColor Green
 
 # ── Step 2: Resource Group ───────────────────────────────────────────────────

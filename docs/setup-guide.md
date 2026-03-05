@@ -430,6 +430,83 @@ azd deploy
 az webapp log tail --name <your-function-app-name> --resource-group <your-resource-group>
 ```
 
+### 6.4 Verify data in Fabric Lakehouse
+
+1. Open your Lakehouse in the Fabric portal.
+2. Check the **Tables** section for your target table.
+3. Verify two layers of data:
+   - **Raw layer:** Original response data as received from the form.
+   - **Curated layer:** Processed data with de-identification rules applied.
+4. Verify that fields marked as PHI are de-identified in the curated layer.
+
+---
+
+## Step 7: Configure Power BI Dashboard
+
+### 7.1 Connect to the Lakehouse
+
+1. Open **Power BI Desktop** or navigate to Power BI in the Fabric portal.
+2. Select **Get data** → **Microsoft Fabric** → **Lakehouses**.
+3. Choose your workspace and Lakehouse.
+4. Select **DirectLake** mode for real-time query performance.
+
+### 7.2 Customize and publish
+
+1. Build visuals: response counts, trends over time, answer breakdowns.
+2. Configure **row-level security (RLS)** if required.
+3. Click **Publish** → select your Fabric workspace.
+4. Share the report with stakeholders.
+
+---
+
+## Step 8: Set Up Self-Service Registration (Optional but Recommended)
+
+See [Registration Form Template](registration-form-template.md) for instructions on creating the clinician-facing registration form and connecting it to the pipeline.
+
+---
+
+## Fallback: Manual Registration (v2)
+
+If self-service registration is not set up, register forms manually using the CLI:
+
+```powershell
+# Register a form (just paste the URL)
+python scripts/manage_registry.py add-form --form-url "https://forms.office.com/..."
+
+# Add PHI field classifications
+python scripts/manage_registry.py add-field --form-id "<id>" --question-id "q1" --field-name "patient_name" --contains-phi --deid-method "redact"
+
+# Validate configuration
+python scripts/manage_registry.py validate
+```
+
+Forms registered via CLI are set to "active" immediately. See the [Admin Guide](admin-guide.md) for full CLI documentation.
+
+---
+
+## Troubleshooting
+
+| Symptom | Likely Cause | Resolution |
+|---|---|---|
+| **401 Unauthorized** on PA flow | Invalid function key | Key Vault connector auto-refreshes; check Key Vault secret `function-app-key` |
+| **Data not in Lakehouse** | Managed identity lacks access | Verify Function App identity has Contributor on workspace (Step 3.4) |
+| **De-id not applied** | Field config missing | Check `form-registry.json` sensitivity/de-id settings; run `manage_registry.py validate` |
+| **Function timeout (504)** | Large payload or slow Fabric API | Increase `functionTimeout` in `host.json`; consider Premium plan |
+| **"Form not registered"** error | form_id mismatch | Verify form_id in PA flow body matches registry; run `manage_registry.py list` |
+
+---
+
+## Next Steps
+
+- [Admin Guide](admin-guide.md) — Day-to-day operations, monitoring, key rotation
+- [Architecture](architecture.md) — Detailed design, security, compliance
+- [Pilot Program](pilot-program.md) — Planning a pilot rollout
+- [Registration Form Template](registration-form-template.md) — Set up self-service registration
+
+```bash
+az webapp log tail --name <your-function-app-name> --resource-group <your-resource-group>
+```
+
 ### 7.4 Verify data in Fabric Lakehouse
 
 1. Open your Lakehouse in the Fabric portal.

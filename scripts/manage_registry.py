@@ -277,7 +277,7 @@ def cmd_list(args: argparse.Namespace) -> int:
         return 0
 
     # Build table data
-    headers = ["form_id", "form_name", "target_table", "fields", "phi_fields"]
+    headers = ["form_id", "form_name", "target_table", "status", "fields", "phi_fields"]
     rows = []
     for form in forms:
         fields = form.get("fields", [])
@@ -286,6 +286,7 @@ def cmd_list(args: argparse.Namespace) -> int:
             form.get("form_id", ""),
             form.get("form_name", ""),
             form.get("target_table", ""),
+            form.get("status", "active"),
             str(len(fields)),
             str(phi_count),
         ])
@@ -360,6 +361,7 @@ def cmd_add_form(args: argparse.Namespace) -> int:
         "form_id": form_id,
         "form_name": form_name,
         "target_table": target_table,
+        "status": "active",
         "fields": [],
     }
 

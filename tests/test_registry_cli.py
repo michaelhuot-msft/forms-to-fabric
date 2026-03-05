@@ -24,6 +24,7 @@ VALID_REGISTRY = {
             "form_id": "test-form-001",
             "form_name": "Test Form",
             "target_table": "test_table",
+            "status": "active",
             "fields": [
                 {
                     "question_id": "q1",

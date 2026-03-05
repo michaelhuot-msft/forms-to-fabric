@@ -16,7 +16,7 @@
   "definitions": {
     "FormConfig": {
       "type": "object",
-      "required": ["form_id", "form_name", "target_table", "fields"],
+      "required": ["form_id", "form_name", "target_table", "status", "fields"],
       "additionalProperties": false,
       "properties": {
         "form_id": {
@@ -33,6 +33,11 @@
           "type": "string",
           "pattern": "^[a-z_]+$",
           "description": "Target table name (lowercase letters and underscores only)"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "pending_review", "inactive"],
+          "description": "Registration status: active (processing), pending_review (awaiting IT), inactive (disabled)"
         },
         "fields": {
           "type": "array",

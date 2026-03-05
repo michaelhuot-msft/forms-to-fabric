@@ -4,6 +4,7 @@
       "form_id": "patient-satisfaction-001",
       "form_name": "Patient Satisfaction Survey",
       "target_table": "patient_satisfaction",
+      "status": "active",
       "fields": [
         {
           "question_id": "q1",
@@ -46,6 +47,7 @@
       "form_id": "staff-feedback-002",
       "form_name": "Staff Feedback Form",
       "target_table": "staff_feedback",
+      "status": "active",
       "fields": [
         {
           "question_id": "q1",

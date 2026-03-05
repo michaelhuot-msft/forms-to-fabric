@@ -59,8 +59,30 @@ def handle_form_response(req: func.HttpRequest) -> func.HttpResponse:
             response_id=form_response.response_id,
         )
 
+    # --- Reject non-active forms ----------------------------------------------
+    if form_config.status != "active":
+        return _error_response(
+            f"Form '{form_response.form_id}' is not active (status: {form_config.status})",
+            status_code=403,
+            form_id=form_response.form_id,
+            response_id=form_response.response_id,
+        )
+
     # --- De-identification ----------------------------------------------------
     raw_records, deid_records = apply_deid(form_response.answers, form_config.fields)
+
+    # --- Quarantine unregistered fields ---------------------------------------
+    registered_qids = {f.question_id for f in form_config.fields}
+    curated_records = []
+    for i, ans in enumerate(form_response.answers):
+        if ans.question_id in registered_qids:
+            curated_records.append(deid_records[i])
+        else:
+            logger.warning(
+                "Unregistered field '%s' in form '%s' — included in raw layer, excluded from curated",
+                ans.question_id,
+                form_response.form_id,
+            )
 
     has_phi = any(f.contains_phi for f in form_config.fields)
 
@@ -72,7 +94,7 @@ def handle_form_response(req: func.HttpRequest) -> func.HttpResponse:
     }
 
     raw_data = {**base_meta, "fields": raw_records}
-    curated_data = {**base_meta, "fields": deid_records}
+    curated_data = {**base_meta, "fields": curated_records}
 
     # --- Write to OneLake -----------------------------------------------------
     try:

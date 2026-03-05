@@ -40,6 +40,7 @@ _SAMPLE_CONFIG = FormConfig(
     form_id="patient-satisfaction-001",
     form_name="Patient Satisfaction Survey",
     target_table="patient_satisfaction",
+    status="active",
     fields=[
         FieldConfig(
             question_id="q1",
@@ -111,3 +112,82 @@ class TestHandleFormResponse:
     ) -> None:
         resp = handle_form_response(_make_request(_VALID_PAYLOAD))
         assert resp.status_code == 502
+
+    @patch("process_response.handler.get_form_config")
+    def test_pending_review_form_rejected(self, mock_cfg: MagicMock) -> None:
+        config = FormConfig(
+            form_id="patient-satisfaction-001",
+            form_name="Patient Satisfaction Survey",
+            target_table="patient_satisfaction",
+            status="pending_review",
+            fields=_SAMPLE_CONFIG.fields,
+        )
+        mock_cfg.return_value = config
+        resp = handle_form_response(_make_request(_VALID_PAYLOAD))
+        assert resp.status_code == 403
+        body = json.loads(resp.get_body())
+        assert body["status"] == "error"
+        assert "pending_review" in body["message"]
+
+    @patch("process_response.handler.get_form_config")
+    def test_inactive_form_rejected(self, mock_cfg: MagicMock) -> None:
+        config = FormConfig(
+            form_id="patient-satisfaction-001",
+            form_name="Patient Satisfaction Survey",
+            target_table="patient_satisfaction",
+            status="inactive",
+            fields=_SAMPLE_CONFIG.fields,
+        )
+        mock_cfg.return_value = config
+        resp = handle_form_response(_make_request(_VALID_PAYLOAD))
+        assert resp.status_code == 403
+        body = json.loads(resp.get_body())
+        assert body["status"] == "error"
+        assert "inactive" in body["message"]
+
+    @patch("process_response.handler.write_to_lakehouse", return_value="mock/path.parquet")
+    @patch("process_response.handler.get_form_config")
+    def test_unregistered_field_in_raw_only(
+        self, mock_cfg: MagicMock, _mock_write: MagicMock
+    ) -> None:
+        config = FormConfig(
+            form_id="patient-satisfaction-001",
+            form_name="Patient Satisfaction Survey",
+            target_table="patient_satisfaction",
+            status="active",
+            fields=[
+                FieldConfig(
+                    question_id="q1",
+                    field_name="patient_name",
+                    contains_phi=True,
+                    deid_method="redact",
+                ),
+            ],
+        )
+        mock_cfg.return_value = config
+        payload = {
+            **_VALID_PAYLOAD,
+            "answers": [
+                {"question_id": "q1", "question": "Patient Name", "answer": "John Doe"},
+                {"question_id": "q99", "question": "Extra Field", "answer": "extra_value"},
+            ],
+        }
+        resp = handle_form_response(_make_request(payload))
+        assert resp.status_code == 200
+
+        # Inspect the write_to_lakehouse calls
+        calls = _mock_write.call_args_list
+        raw_call = [c for c in calls if c.kwargs.get("layer") == "raw" or (c.args and "raw" in str(c))]
+        curated_call = [c for c in calls if c.kwargs.get("layer") == "curated" or (c.args and "curated" in str(c))]
+
+        # Raw layer should have both fields (q1 and q99)
+        raw_data = raw_call[0].kwargs["data"]
+        raw_field_names = [f["field_name"] for f in raw_data["fields"]]
+        assert "patient_name" in raw_field_names
+        assert "q99" in raw_field_names
+
+        # Curated layer should only have registered field (q1)
+        curated_data = curated_call[0].kwargs["data"]
+        curated_field_names = [f["field_name"] for f in curated_data["fields"]]
+        assert "patient_name" in curated_field_names
+        assert "q99" not in curated_field_names

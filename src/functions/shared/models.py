@@ -48,6 +48,10 @@ class FormConfig(BaseModel):
     form_id: str
     form_name: str
     target_table: str
+    status: str = Field(
+        default="active",
+        description="'active', 'pending_review', or 'inactive'",
+    )
     fields: list[FieldConfig]
 
 

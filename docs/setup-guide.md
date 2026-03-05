@@ -189,44 +189,43 @@ Then build the flow:
 
 ---
 
-## Step 5: Connect Your First Data Form
+## Step 5: Test the Data Pipeline
 
-### 5.1 Create or choose a data collection form
+Use the registration form you just created as your first test form — no need to create a separate one.
 
-If you don't have one yet, create a simple test form at [forms.microsoft.com](https://forms.microsoft.com).
+### 5.1 Register it as a data form
 
-### 5.2 Register it via self-service
+Open the registration form and submit a test entry:
+1. **Form link**: paste the registration form's own URL
+2. **Description**: "Test form"
+3. **Patient info**: No
 
-1. Open the registration form you created in Step 4
-2. Paste the data form's share link
-3. Add a description
-4. Select whether it collects patient info
-5. Submit — the form is registered automatically (non-PHI) or queued for IT review (PHI)
+The registration flow (Step 4) processes this and registers the form automatically.
 
-### 5.3 Create the data pipeline flow
+### 5.2 Create the data pipeline flow
 
-Run the helper script to get the HTTP action values for the data form:
+Run the helper script with the registration form's URL:
 
 ```powershell
 pwsh scripts/Generate-FlowBody.ps1 -FormUrl "https://forms.office.com/..."
 ```
 
-Then build the flow:
+Then build the data flow:
 
 1. **+ Create** → **Automated cloud flow**
-2. Name it (e.g., "Forms to Fabric — Patient Survey")
-3. Trigger: **When a new response is submitted** → select your data form
+2. Name it: "Forms to Fabric — Registration Form Data"
+3. Trigger: **When a new response is submitted** → select the registration form
 4. **+ New step** → **Get response details** → same form, Response Id from trigger
 5. **+ New step** → **HTTP** — paste Method, URI, Headers, and Body from the script output
 6. **+ New step** → **Condition** → `Status code` ≠ `200` → send error email
 7. Save and enable
 
-### 5.4 Test end-to-end
+### 5.3 Test end-to-end
 
-1. Submit a test response via your data form
-2. Check Power Automate → flow run history → Succeeded
+1. Submit another test entry via the registration form
+2. Check **both** PA flows ran successfully (registration intake + data pipeline)
 3. Check Fabric Lakehouse → Tables → verify data appears
-4. Verify PHI fields are de-identified in the curated layer
+4. You now have a working pipeline — repeat 5.1–5.2 for any new data form
 
 ---
 

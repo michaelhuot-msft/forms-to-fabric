@@ -42,13 +42,13 @@ graph LR
     end
 ```
 
-| Layer | What | How | Time |
-|-------|------|-----|------|
-| **1. Fabric Platform** | Capacity, Workspace, Lakehouse | Bicep + PowerShell script | ~10 min |
-| **2. Azure Infrastructure** | Function App, Key Vault, Storage, App Insights | `azd up` | ~15 min |
-| **3. Data Pipeline** | Power Automate flow per form | Import template | ~10 min |
-| **4. Self-Service Registration** | Registration form + approval flow | Microsoft Forms + Power Automate | ~30 min |
-| **5. First Data Form** | Register, test, validate | Self-service form or CLI | ~10 min |
+| Step | What | How | Time |
+|------|------|-----|------|
+| **1. Clone** | Get the code | `git clone` | 1 min |
+| **2. Environment + Fabric** | Resource group, Fabric capacity, workspace, Lakehouse, azd vars | `Setup-Environment.ps1` (one command) | ~10 min |
+| **3. Deploy** | Function App, Key Vault, Storage, App Insights | `azd up` | ~15 min |
+| **4. Data Pipeline** | Power Automate flow for your form | Import template | ~10 min |
+| **5. First Form** | Register, test, validate | Self-service or CLI | ~10 min |
 
 > **Fallback:** If Layer 3 (self-service) isn't needed yet, you can register forms manually using the CLI. See [Fallback: Manual Registration](#fallback-manual-registration) at the bottom of this guide.
 
@@ -77,78 +77,70 @@ forms-to-fabric/
 
 ---
 
-## Step 2: Configure Basic Environment Variables
+## Step 2: Set Up Environment and Fabric
 
-### 2.1 Create a new `azd` environment
+A single script handles everything: azd configuration, resource group, Fabric capacity, workspace, and Lakehouse.
 
-```bash
-azd env new dev
+```powershell
+# Log in to Azure first
+az login
+
+# Run the setup (replace values with your own)
+pwsh scripts/Setup-Environment.ps1 `
+  -SubscriptionId "<your-subscription-id>" `
+  -AdminEmail "you@yourdomain.com"
 ```
 
-Replace `dev` with a meaningful name for your environment (e.g., `staging`, `prod-canadaeast`).
+This will:
+1. Configure your azd environment variables
+2. Create a resource group (`rg-forms-to-fabric-dev`)
+3. Provision a Fabric capacity (F2 SKU) — add `-SkipCapacity` if your org already has one
+4. Create the Fabric workspace and Lakehouse
+5. Set `FABRIC_WORKSPACE_ID` and `FABRIC_LAKEHOUSE_ID` in your azd environment
 
-### 2.2 Set required variables
+**Optional parameters:**
 
-```bash
-# Azure region — choose a region that meets your data-residency requirements
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `-EnvironmentName` | `dev` | azd environment name |
+| `-Location` | `canadaeast` | Azure region |
+| `-SkipCapacity` | (off) | Skip Fabric capacity creation |
+| `-CapacityName` | `formstofabricdev` | Capacity name (alphanumeric only) |
+| `-FabricSku` | `F2` | Fabric SKU (F2–F64) |
+
+<details>
+<summary><strong>Manual alternative (if the script doesn't work in your environment)</strong></summary>
+
+### Manual Step 2a: Configure azd variables
+
+```powershell
+azd env new dev
 azd env set AZURE_LOCATION canadaeast
-
-# Target Azure subscription
 azd env set AZURE_SUBSCRIPTION_ID <your-subscription-id>
-
-# Admin email address for error notifications
 azd env set ADMIN_EMAIL admin@yourdomain.com
 ```
 
----
-
-## Step 3: Set Up Fabric Workspace and Lakehouse
-
-> **Do this before deploying infrastructure** — you need the workspace and Lakehouse IDs for the Function App configuration.
-
-### Option A (Recommended): Automated setup
-
-A PowerShell script creates the workspace and Lakehouse via the Fabric REST API. It is idempotent — safe to run multiple times.
+### Manual Step 2b: Create resource group and Fabric capacity
 
 ```powershell
-# 1. Log in to Azure CLI
-az login
-
-# 2. If you need a NEW Fabric capacity (skip if your org already has one):
-#    First, create a resource group (azd up will also use this later):
 az group create --name rg-forms-to-fabric-dev --location canadaeast
 
-#    Then provision the capacity (uses the admin email from Step 2):
 $adminEmail = azd env get-value ADMIN_EMAIL
-if (-not $adminEmail) { $adminEmail = Read-Host "Enter your admin email" }
-Write-Host "Using admin email: $adminEmail"
-
 az deployment group create `
   --resource-group rg-forms-to-fabric-dev `
   --template-file infra/modules/fabric-capacity.bicep `
   --parameters capacityName=formstofabricdev skuName=F2 adminMembers="['$adminEmail']"
-
-# 3. Create the workspace and Lakehouse:
-pwsh scripts/Setup-FabricWorkspace.ps1 -CapacityId "<capacity-id-from-output>"
-
-# Omit -CapacityId if the workspace should use the default/existing capacity:
-# pwsh scripts/Setup-FabricWorkspace.ps1
 ```
 
-The script will:
+### Manual Step 2c: Create workspace and Lakehouse
 
-- Find or create the workspace **Forms to Fabric Analytics**
-- Assign the Fabric capacity (if `-CapacityId` is provided)
-- Find or create the Lakehouse **forms_lakehouse**
-
-At the end it prints the workspace and Lakehouse IDs. **Set them now:**
-
-```bash
+```powershell
+pwsh scripts/Setup-FabricWorkspace.ps1 -CapacityId "<capacity-id-from-output>"
 azd env set FABRIC_WORKSPACE_ID <workspace-id>
 azd env set FABRIC_LAKEHOUSE_ID <lakehouse-id>
 ```
 
-### Option B: Manual setup (fallback)
+### Manual Step 2d: Create workspace manually (if scripts aren't available)
 
 If you prefer to set things up by hand, or if the automated script is not available in your environment:
 
@@ -183,7 +175,7 @@ azd env set FABRIC_LAKEHOUSE_ID <lakehouse-guid>
 
 ---
 
-## Step 4: Deploy Infrastructure
+## Step 3: Deploy Infrastructure
 
 Now that Fabric is ready and the IDs are configured, deploy the Azure resources and Function App.
 
@@ -253,7 +245,7 @@ You do **not** need to create tables manually. The `process_response` function a
 
 ---
 
-## Step 5: Create the Power Automate Flow
+## Step 4: Create the Power Automate Flow
 
 A pre-built template is available at `power-automate/flow-template.json`. Follow the steps below to create the flow manually, or import the template directly.
 
@@ -322,7 +314,7 @@ Refer to `power-automate/flow-template.json` for the exact connector configurati
 
 ---
 
-## Step 6: Register Your First Form
+## Step 5: Register Your First Form
 
 The function app uses `config/form-registry.json` to determine how to process each form's responses, including field mapping and de-identification rules.
 
@@ -405,7 +397,7 @@ azd deploy
 
 ---
 
-## Step 7: Test End-to-End
+## Step 6: Test End-to-End
 
 ### 7.1 Submit a test response
 
@@ -443,7 +435,7 @@ az webapp log tail --name <your-function-app-name> --resource-group <your-resour
 
 ---
 
-## Step 8: Configure Power BI Dashboard
+## Step 7: Configure Power BI Dashboard
 
 ### 8.1 Connect to the Lakehouse
 
@@ -472,7 +464,7 @@ az webapp log tail --name <your-function-app-name> --resource-group <your-resour
 
 ---
 
-## Step 9: Set Up Self-Service Registration (Optional but Recommended)
+## Step 8: Set Up Self-Service Registration (Optional but Recommended)
 
 Self-service registration lets clinicians register their own forms by filling out a simple 3-question form. Non-PHI forms are activated automatically; PHI forms go to IT for review.
 

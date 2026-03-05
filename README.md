@@ -70,6 +70,7 @@ forms-to-fabric/
 ├── scripts/            # Admin CLI tools
 │   ├── manage_registry.py      # Form registry management
 │   ├── rotate_function_key.py  # Key rotation automation
+│   ├── Setup-Environment.ps1   # One-command environment setup
 │   └── Setup-FabricWorkspace.ps1  # Fabric workspace provisioning
 ├── config/             # Form registry configuration + JSON schema
 ├── power-automate/     # Power Automate flow templates

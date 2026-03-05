@@ -56,14 +56,14 @@ graph LR
 ## Step 1: Clone the Repository
 
 ```bash
-git clone <YOUR_REPO_URL> forms-solution
-cd forms-solution
+git clone <YOUR_REPO_URL> forms-to-fabric
+cd forms-to-fabric
 ```
 
 Verify the directory structure matches the expected layout:
 
 ```
-forms-solution/
+forms-to-fabric/
 ├── infra/              # Bicep infrastructure templates
 ├── src/functions/      # Azure Function App (Python)
 ├── config/             # Form registry configuration

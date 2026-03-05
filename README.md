@@ -58,7 +58,7 @@ See [docs/setup-guide.md](docs/setup-guide.md) for detailed deployment instructi
 ## Project Structure
 
 ```
-forms-solution/
+forms-to-fabric/
 ├── infra/              # Bicep infrastructure templates
 ├── src/functions/      # Azure Function App (Python)
 │   ├── process_response/   # HTTP trigger — processes form submissions

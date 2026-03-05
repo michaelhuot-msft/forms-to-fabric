@@ -104,13 +104,43 @@ if (-not $workspaceId) {
 
 if ($CapacityId) {
     Write-Host "`nStep 2: Assigning capacity to workspace..." -ForegroundColor Cyan
-    $capBody = @{ capacityId = $CapacityId } | ConvertTo-Json
+
+    # The Fabric API needs the capacity object ID (GUID), not the ARM resource ID.
+    # If a full ARM resource ID is passed, look up the capacity's object ID.
+    $fabricCapacityId = $CapacityId
+    if ($CapacityId -match "/providers/Microsoft.Fabric/capacities/") {
+        # Extract the capacity name from the ARM resource ID
+        $capacityName = ($CapacityId -split "/")[-1]
+        Write-Host "  Looking up capacity object ID for: $capacityName" -ForegroundColor White
+        try {
+            $capacities = Invoke-RestMethod -Uri "$baseUrl/capacities" -Method GET -Headers $headers
+            $cap = $capacities.value | Where-Object { $_.displayName -eq $capacityName }
+            if ($cap) {
+                $fabricCapacityId = $cap.id
+                Write-Host "  Resolved capacity ID: $fabricCapacityId" -ForegroundColor Green
+            } else {
+                Write-Host "  Warning: Could not find capacity '$capacityName' in Fabric API. Trying with provided ID..." -ForegroundColor Yellow
+            }
+        } catch {
+            Write-Host "  Warning: Could not list capacities: $($_.Exception.Message)" -ForegroundColor Yellow
+            Write-Host "  Trying with provided ID..." -ForegroundColor Yellow
+        }
+    }
+
+    $capBody = @{ capacityId = $fabricCapacityId } | ConvertTo-Json
     try {
         Invoke-RestMethod -Uri "$baseUrl/workspaces/$workspaceId/assignToCapacity" `
             -Method POST -Headers $headers -Body $capBody | Out-Null
         Write-Host "  Capacity assigned." -ForegroundColor Green
     } catch {
-        Write-Host "  Capacity already assigned or not applicable: $($_.Exception.Message)" -ForegroundColor Yellow
+        $statusCode = $_.Exception.Response.StatusCode.value__
+        if ($statusCode -eq 400) {
+            Write-Host "  Note: Workspace may already be assigned to this capacity, or the capacity ID format is incorrect." -ForegroundColor Yellow
+            Write-Host "  Capacity ID used: $fabricCapacityId" -ForegroundColor Yellow
+            Write-Host "  You can assign the capacity manually in the Fabric portal: Workspace Settings > License." -ForegroundColor Yellow
+        } else {
+            Write-Host "  Capacity already assigned or not applicable: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
     }
 } else {
     Write-Host "`nStep 2: Skipping capacity assignment (no -CapacityId provided)." -ForegroundColor Yellow
@@ -142,20 +172,32 @@ if (-not $lakehouseId) {
         type        = "Lakehouse"
     } | ConvertTo-Json
 
-    try {
-        $lh = Invoke-RestMethod -Uri "$baseUrl/workspaces/$workspaceId/items" `
-            -Method POST -Headers $headers -Body $lhBody
-        $lakehouseId = $lh.id
-        Write-Host "  Created lakehouse: $lakehouseId" -ForegroundColor Green
-    } catch {
-        if ($_.Exception.Response.StatusCode -eq 409) {
-            $items = Invoke-RestMethod -Uri "$baseUrl/workspaces/$workspaceId/items?type=Lakehouse" `
-                -Method GET -Headers $headers
-            $lh = $items.value | Where-Object { $_.displayName -eq $LakehouseName }
+    # Fabric may need a moment after capacity assignment before allowing item creation
+    $maxRetries = 3
+    $retryDelay = 10
+    for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
+        try {
+            $lh = Invoke-RestMethod -Uri "$baseUrl/workspaces/$workspaceId/items" `
+                -Method POST -Headers $headers -Body $lhBody
             $lakehouseId = $lh.id
-            Write-Host "  Lakehouse already exists: $lakehouseId" -ForegroundColor Yellow
-        } else {
-            throw
+            Write-Host "  Created lakehouse: $lakehouseId" -ForegroundColor Green
+            break
+        } catch {
+            if ($_.Exception.Response.StatusCode -eq 409) {
+                $items = Invoke-RestMethod -Uri "$baseUrl/workspaces/$workspaceId/items?type=Lakehouse" `
+                    -Method GET -Headers $headers
+                $lh = $items.value | Where-Object { $_.displayName -eq $LakehouseName }
+                $lakehouseId = $lh.id
+                Write-Host "  Lakehouse already exists: $lakehouseId" -ForegroundColor Yellow
+                break
+            } elseif ($attempt -lt $maxRetries) {
+                Write-Host "  Attempt $attempt failed: $($_.Exception.Message)" -ForegroundColor Yellow
+                Write-Host "  Retrying in $retryDelay seconds (capacity may still be activating)..." -ForegroundColor Yellow
+                Start-Sleep -Seconds $retryDelay
+                $retryDelay *= 2
+            } else {
+                throw
+            }
         }
     }
 }

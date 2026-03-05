@@ -327,6 +327,21 @@ flowchart TD
 
 ---
 
+### Fabric Workspace Provisioning
+
+The Fabric workspace and Lakehouse are provisioned automatically using the setup script:
+
+```bash
+pwsh scripts/Setup-FabricWorkspace.ps1 -CapacityId "<capacity-id-from-bicep>"
+```
+
+This script is idempotent — it finds existing resources before creating new ones. Use it to:
+- Recreate a workspace after disaster recovery
+- Set up a new environment (dev, staging, prod)
+- Grant the Function App managed identity access to the workspace
+
+The Fabric capacity itself is provisioned via Bicep during `azd up` — see `infra/modules/fabric-capacity.bicep`.
+
 ## Managing Fabric Workspace Access
 
 ### RBAC Roles

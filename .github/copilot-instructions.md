@@ -46,6 +46,12 @@ All diagrams (Mermaid and Excalidraw) must meet WCAG 2.1 AA standards:
 - `docs/` — All documentation
 - `tests/` — pytest test suite
 
+## Infrastructure
+
+- Fabric capacity provisioned via `infra/modules/fabric-capacity.bicep`
+- Workspace and Lakehouse created via `scripts/Setup-FabricWorkspace.ps1` (Fabric REST API)
+- All other Azure resources provisioned via Bicep modules in `infra/modules/`
+
 ## Key Patterns
 
 - Form configs live in `config/form-registry.json` with schema validation

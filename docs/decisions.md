@@ -189,6 +189,18 @@ Decisions are numbered sequentially (D-001, D-002, …). Each entry records what
 
 ---
 
+### D-015
+
+| Field | Detail |
+|-------|--------|
+| **Decision** | Provision Fabric capacity via Bicep and workspace/lakehouse via PowerShell script |
+| **Date** | 2026-03 |
+| **Context** | The setup guide originally required manual Fabric portal steps (create workspace, create Lakehouse, assign capacity, grant access). This was error-prone and not reproducible. Following a pattern from a reference project, we split provisioning into Bicep (capacity — ARM-supported) and PowerShell (workspace/lakehouse — REST API only, not ARM-supported). |
+| **Alternatives considered** | Fully manual portal setup; Terraform with Fabric provider (immature); Python script using Fabric SDK (less ecosystem support than PowerShell for Azure ops) |
+| **How to change later** | If Microsoft adds ARM/Bicep support for Fabric workspaces and lakehouses, consolidate the PowerShell script into the Bicep templates. Monitor the `Microsoft.Fabric` resource provider for new resource types. |
+
+---
+
 ## How to Add a New Decision
 
 Copy the template below and append it to the appropriate section:

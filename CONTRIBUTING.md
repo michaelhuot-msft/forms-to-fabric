@@ -34,6 +34,7 @@ All PRs must pass these automated checks:
 4. **Bicep validation** — `az bicep build --file infra/main.bicep`
 5. **JSON schema validation** — `config/form-registry.json` validated against `config/form-registry.schema.json`
 6. **Credential scanning** — Gitleaks checks for leaked secrets in all commits
+7. **PowerShell scripts** — Scripts in `scripts/` should be tested manually before PR (no automated PS tests yet)
 
 ## Commit Message Format
 

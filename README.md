@@ -21,6 +21,7 @@ graph LR
 - **Automated monitoring**: Schema change detection and RBAC compliance audits run on schedule
 - **Self-service registration**: Clinicians register forms via a simple 3-question form — no email or IT ticket required for non-PHI forms
 - **Admin CLI tools**: Registry management, key rotation, and flow generation scripts reduce manual work by 75%
+- **Infrastructure as Code**: Fabric capacity, Azure Functions, Key Vault — all provisioned via Bicep and scripts
 
 ## Getting Started
 
@@ -68,7 +69,8 @@ forms-to-fabric/
 │   └── shared/             # Shared modules (de-id, config, Graph, Fabric)
 ├── scripts/            # Admin CLI tools
 │   ├── manage_registry.py      # Form registry management
-│   └── rotate_function_key.py  # Key rotation automation
+│   ├── rotate_function_key.py  # Key rotation automation
+│   └── Setup-FabricWorkspace.ps1  # Fabric workspace provisioning
 ├── config/             # Form registry configuration + JSON schema
 ├── power-automate/     # Power Automate flow templates
 ├── power-bi/           # Power BI report templates

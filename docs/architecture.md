@@ -56,6 +56,7 @@ graph TB
 | **Azure Key Vault** | Secrets management | Stores function keys, connection strings, and encryption keys. Accessed exclusively via managed identity — no credentials in code or configuration files. Soft-delete and purge protection enabled. |
 | **Application Insights** | Monitoring and diagnostics | Tracks function execution performance, error rates, and custom metrics (e.g., records processed, de-identification operations). Powers operational alerting and dashboards. |
 | **Storage Account** | Function infrastructure | Provides the backing store required by the Azure Functions runtime. Also used for deployment artifacts managed by `azd`. |
+| **Fabric Capacity** | Infrastructure | Fabric compute capacity (F2+ SKU) provisioned via Bicep (`infra/modules/fabric-capacity.bicep`). Assigned to the workspace that hosts the Lakehouse. Scales from F2 (dev) to F64 (production). |
 | **Microsoft Fabric Lakehouse** | Analytical data store | Two-layer architecture (raw + curated) built on OneLake. Data stored in Delta Lake format for ACID transactions, time travel, and schema enforcement. |
 | **Power BI** | Reporting and visualization | Connects to the Lakehouse in DirectLake mode for near-real-time queries without data duplication. Supports row-level security for department-scoped access. |
 | **Schema Monitor** (`monitor_schema`) | Automated compliance | Timer-triggered function (every 6 hours) that polls Microsoft Graph API to detect form structure changes. Alerts admins when clinicians add, remove, or rename questions. |

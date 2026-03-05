@@ -62,7 +62,7 @@ Three rounds of automation reduced manual touchpoints from **32 to 16** and onbo
 
 | # | Step | Status | Current Time |
 |---|------|--------|-------------|
-| 1 | Grant workspace access | ⚠️ Manual | 3 min |
+| 1 | Grant workspace access | ⚠️ Manual | 3 min | (Workspace creation is automated via `Setup-FabricWorkspace.ps1`) |
 | 2 | Function App identity role | ✅ Bicep IaC | 0 min |
 | 3 | Assign Viewer to clinicians | ⚠️ Manual | 1 min |
 | 4 | Assign Contributor to creators | ⚠️ Manual | 1 min |
@@ -136,7 +136,7 @@ These 16 touchpoints remain manual because they require human judgment, governan
 |----------|---------------|---------------|---------------------|--------|--------|
 | **P1** | Service principal rotation | Manual every 90 days | Entra ID workload identity federation (no secrets) | Medium | High — eliminates rotation entirely |
 | **P1** | Schema change auto-classification | IT manually classifies new fields | NLP/regex-based PHI pre-screening ("name", "DOB", "MRN" → auto-flag) | Medium | High — could auto-classify 80%+ of new fields |
-| **P2** | Workspace access grants | Manual Fabric portal | Fabric REST API via Power Automate | High | Low — infrequent operation |
+| **P2** | Workspace access grants | Manual Fabric portal (workspace provisioning is now IaC via `Setup-FabricWorkspace.ps1`) | Fabric REST API via Power Automate | High | Low — infrequent operation |
 | **P2** | Clinician group management | Manual Azure AD | Entra ID dynamic groups based on department | Medium | Low — typically batch operation |
 | **P2** | Error notification escalation | Email-only alerts | PagerDuty / Teams webhook integration | Low | Medium — reduces mean time to repair |
 | **P3** | End-to-end test automation | Manual form submission + visual check | Synthetic test submission via Graph API + Lakehouse assertion | High | Low — testing is infrequent |

@@ -26,9 +26,9 @@
 | 1 | Clone the repo | `git clone` | 1 min |
 | 2 | Set up environment + Fabric | `Setup-Environment.ps1` | ~10 min |
 | 3 | Deploy Azure infrastructure | `azd up` + `Post-Deploy.ps1` | ~15 min |
-| 4 | Connect your first form | Create form → register → PA flow → test | ~15 min |
-| 5 | Configure Power BI | Connect to Lakehouse | ~10 min |
-| 6 | Set up self-service registration | Optional | ~15 min |
+| 4 | Set up self-service registration | Create registration form + PA flow | ~15 min |
+| 5 | Connect your first data form | Register via self-service → create PA data flow → test | ~15 min |
+| 6 | Configure Power BI | Connect to Lakehouse | ~10 min |
 
 ---
 
@@ -152,73 +152,85 @@ This automatically:
 
 ---
 
-## Step 4: Connect Your First Form
+## Step 4: Set Up Self-Service Registration
 
-### 4.1 Create or choose a Microsoft Form
+Clinicians register their data collection forms by filling out a simple 3-question registration form. This step creates that registration form and connects it to the pipeline.
 
-If you don't have a form yet, create one at [forms.microsoft.com](https://forms.microsoft.com). Even a simple 2–3 question test form works.
+### 4.1 Create the registration form
 
-### 4.2 Register the form in the pipeline
+Follow [Registration Form Template](registration-form-template.md) to create a "Register Your Form for Analytics" form in Microsoft Forms with 3 questions:
+1. Paste your form's share link
+2. Briefly describe what this form is for
+3. Does this form collect any patient information? (Yes / No)
+
+### 4.2 Create the registration Power Automate flow
+
+Run the helper script to get the HTTP action values:
 
 ```powershell
-# Register — just paste the form URL
-python scripts/manage_registry.py add-form --form-url "https://forms.office.com/..."
-
-# For forms with patient info, classify PHI fields
-python scripts/manage_registry.py add-field --form-id "<id>" --question-id "q1" --field-name "patient_name" --contains-phi --deid-method "redact"
-
-# Validate and deploy
-python scripts/manage_registry.py validate
-azd deploy
+pwsh scripts/Generate-FlowBody.ps1 -Registration
 ```
 
-Or use self-service registration if Step 6 is set up.
+Then build the flow:
 
-### 4.3 Create the Power Automate flow
+1. Go to [flow.microsoft.com](https://flow.microsoft.com) → **+ Create** → **Automated cloud flow**
+2. Name it: "Forms to Fabric — Registration Intake"
+3. Trigger: **When a new response is submitted** → select "Register Your Form for Analytics"
+4. **+ New step** → **Get response details** → same form, Response Id from trigger
+5. **+ New step** → **HTTP** — paste Method, URI, Headers, and Body from the script output
+6. **+ New step** → **Condition** → `Status code` ≠ `200` → send error email
+7. Save and enable
 
-First, run the helper script to get your exact HTTP action values:
+### 4.3 Test the registration flow
+
+1. Open the registration form and submit a test entry with a real data form URL
+2. Check Power Automate flow run history → should show Succeeded
+3. Verify the form appears in the registry: `python scripts/manage_registry.py list`
+
+---
+
+## Step 5: Connect Your First Data Form
+
+### 5.1 Create or choose a data collection form
+
+If you don't have one yet, create a simple test form at [forms.microsoft.com](https://forms.microsoft.com).
+
+### 5.2 Register it via self-service
+
+1. Open the registration form you created in Step 4
+2. Paste the data form's share link
+3. Add a description
+4. Select whether it collects patient info
+5. Submit — the form is registered automatically (non-PHI) or queued for IT review (PHI)
+
+### 5.3 Create the data pipeline flow
+
+Run the helper script to get the HTTP action values for the data form:
 
 ```powershell
 pwsh scripts/Generate-FlowBody.ps1 -FormUrl "https://forms.office.com/..."
 ```
 
-This outputs the URI, headers (including function key), and body — ready to copy-paste.
-
 Then build the flow:
 
-1. Go to [flow.microsoft.com](https://flow.microsoft.com) → **+ Create** → **Automated cloud flow**
-2. Name it (e.g., "Forms to Fabric — My Survey")
-3. Trigger: **When a new response is submitted** (Microsoft Forms) → select your form
-4. **+ New step** → **Get response details** (Microsoft Forms) → same form, set Response Id to the dynamic value `Response Id` from the trigger
+1. **+ Create** → **Automated cloud flow**
+2. Name it (e.g., "Forms to Fabric — Patient Survey")
+3. Trigger: **When a new response is submitted** → select your data form
+4. **+ New step** → **Get response details** → same form, Response Id from trigger
 5. **+ New step** → **HTTP** — paste Method, URI, Headers, and Body from the script output
+6. **+ New step** → **Condition** → `Status code` ≠ `200` → send error email
+7. Save and enable
 
-The body for all forms is the same:
+### 5.4 Test end-to-end
 
-```
-{
-  "form_id": "<YOUR-FORM-ID>",
-  "raw_response": @{outputs('Get_response_details')?['body']}
-}
-```
-
-The function extracts answers automatically — **no per-question mapping needed**.
-
-6. **+ New step** → **Condition** → `Status code` is not equal to `200`
-   - **If yes**: Add **Send an email (V2)** to notify your admin of the error
-   - **If no**: Leave empty (success)
-7. **Save** and enable the flow
-
-### 4.4 Test end-to-end
-
-1. Submit a test response via your Microsoft Form
-2. Check Power Automate → flow run history → should show Succeeded
-3. Check Application Insights → Transaction search for `process_response`
-4. Check Fabric Lakehouse → Tables → verify raw and curated data appear
-5. Verify PHI fields are de-identified in the curated layer
+1. Submit a test response via your data form
+2. Check Power Automate → flow run history → Succeeded
+3. Check Fabric Lakehouse → Tables → verify data appears
+4. Verify PHI fields are de-identified in the curated layer
 
 ---
 
-## Step 5: Configure Power BI (Optional)
+## Step 6: Configure Power BI (Optional)
 
 1. Open Power BI → Get data → Microsoft Fabric → Lakehouses
 2. Select your workspace and Lakehouse
@@ -228,15 +240,7 @@ The function extracts answers automatically — **no per-question mapping needed
 
 ---
 
-## Step 6: Set Up Self-Service Registration (Optional)
-
-Lets clinicians register their own forms via a simple 3-question form.
-
-See [Registration Form Template](registration-form-template.md) for setup instructions.
-
----
-
-## Fallback: Manual Registration
+## Fallback: Manual Registration (CLI)
 
 If the scripts or self-service aren't available:
 

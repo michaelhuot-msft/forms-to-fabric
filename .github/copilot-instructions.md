@@ -51,6 +51,8 @@ All diagrams (Mermaid and Excalidraw) must meet WCAG 2.1 AA standards:
 - Fabric capacity provisioned via `infra/modules/fabric-capacity.bicep`
 - Workspace and Lakehouse created via `scripts/Setup-FabricWorkspace.ps1` (Fabric REST API)
 - All other Azure resources provisioned via Bicep modules in `infra/modules/`
+- **Always run `az bicep build --file infra/main.bicep` after any Bicep changes** — do not commit if it fails
+- A pre-commit hook validates Bicep automatically (install via `sh scripts/install-hooks.sh`)
 
 ## Key Patterns
 

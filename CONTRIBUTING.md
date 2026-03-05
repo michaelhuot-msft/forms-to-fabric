@@ -16,6 +16,16 @@ Thank you for your interest in contributing! This guide explains how to get invo
 - **Docstrings:** Include a docstring for every public module, class, and function.
 - **Formatting:** Follow [PEP 8](https://peps.python.org/pep-0008/) conventions.
 
+## Getting Started
+
+After cloning, install the pre-commit hooks:
+
+```bash
+sh scripts/install-hooks.sh
+```
+
+This validates Bicep templates automatically before each commit.
+
 ## Running Tests
 
 ```bash

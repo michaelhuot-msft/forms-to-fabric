@@ -1,0 +1,28 @@
+#!/bin/sh
+# Pre-commit hook: validate Bicep templates before allowing commit
+# Install: sh scripts/install-hooks.sh
+
+# Check if any Bicep files are staged
+BICEP_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.bicep$' || true)
+BICEPPARAM_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.bicepparam$' || true)
+
+if [ -n "$BICEP_FILES" ] || [ -n "$BICEPPARAM_FILES" ]; then
+    echo "Bicep files changed - validating..."
+
+    # Check if az cli is available
+    if ! command -v az > /dev/null 2>&1; then
+        echo "WARNING: Azure CLI not found - skipping Bicep validation"
+        exit 0
+    fi
+
+    # Build the main template (catches errors in all referenced modules)
+    if az bicep build --file infra/main.bicep --stdout > /dev/null 2>&1; then
+        echo "Bicep validation passed"
+    else
+        echo "Bicep validation FAILED:"
+        az bicep build --file infra/main.bicep 2>&1
+        echo ""
+        echo "Fix the errors above before committing."
+        exit 1
+    fi
+fi

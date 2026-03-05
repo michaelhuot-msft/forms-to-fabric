@@ -99,7 +99,7 @@ if ($Registration) {
 {
   "form_url": "@{outputs('Get_response_details')?['body/r1']}",
   "description": "@{outputs('Get_response_details')?['body/r2']}",
-  "has_phi": @{if(equals(outputs('Get_response_details')?['body/r3'], 'Yes'), true, false)}
+  "has_phi": "@{outputs('Get_response_details')?['body/r3']}"
 }
 "@
 } else {

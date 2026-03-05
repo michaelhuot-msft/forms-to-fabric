@@ -50,7 +50,7 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
         )
 
     form_url = body.get("form_url")
-    has_phi = body.get("has_phi")
+    has_phi_raw = body.get("has_phi")
 
     if not form_url:
         return func.HttpResponse(
@@ -58,12 +58,20 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
             status_code=400,
             mimetype="application/json",
         )
-    if has_phi is None:
+    if has_phi_raw is None:
         return func.HttpResponse(
             json.dumps({"error": "Missing required field: has_phi"}),
             status_code=400,
             mimetype="application/json",
         )
+
+    # Normalize has_phi — accept bool, "true"/"false", "Yes"/"No"
+    if isinstance(has_phi_raw, bool):
+        has_phi = has_phi_raw
+    elif isinstance(has_phi_raw, str):
+        has_phi = has_phi_raw.lower().strip() in ("true", "yes", "1")
+    else:
+        has_phi = bool(has_phi_raw)
 
     # Extract form_id from URL
     form_id = _extract_form_id(form_url)

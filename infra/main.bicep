@@ -54,7 +54,6 @@ module appInsights 'modules/app-insights.bicep' = {
 module storage 'modules/storage.bicep' = {
   name: 'storage'
   params: {
-    environmentName: environmentName
     location: location
     tags: tags
   }
@@ -121,10 +120,10 @@ output storageAccountName string = storage.outputs.storageAccountName
 output appInsightsId string = appInsights.outputs.appInsightsId
 
 @description('Resource ID of the Fabric capacity (new or existing).')
-output fabricCapacityId string = !empty(fabricCapacityName) ? fabricCapacity.outputs.capacityId : existingFabricCapacityId
+output fabricCapacityId string = !empty(fabricCapacityName) && fabricCapacity != null ? fabricCapacity!.outputs.capacityId : existingFabricCapacityId
 
 @description('Name of the Fabric capacity.')
-output fabricCapacityOutputName string = !empty(fabricCapacityName) ? fabricCapacity.outputs.capacityName : 'existing'
+output fabricCapacityOutputName string = !empty(fabricCapacityName) && fabricCapacity != null ? fabricCapacity!.outputs.capacityName : 'existing'
 
 @description('Principal ID of the Function App managed identity.')
 output functionAppPrincipalId string = functionApp.outputs.principalId

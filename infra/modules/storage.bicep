@@ -2,9 +2,6 @@
 // Storage Account module – StorageV2, Standard_LRS
 // ──────────────────────────────────────────────
 
-@description('Environment name used in resource naming.')
-param environmentName string
-
 @description('Azure region for all resources.')
 param location string
 

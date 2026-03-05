@@ -122,7 +122,7 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
 
 // Storage Blob Data Owner (read/write blobs for AzureWebJobsStorage)
 resource storageBlobDataOwner 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(storageAccount.id, functionApp.identity.principalId, 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b')
+  name: guid(storageAccount.id, functionApp.id, 'StorageBlobDataOwner')
   scope: storageAccount
   properties: {
     principalId: functionApp.identity.principalId
@@ -133,7 +133,7 @@ resource storageBlobDataOwner 'Microsoft.Authorization/roleAssignments@2022-04-0
 
 // Storage Account Contributor (manage file shares for consumption plan)
 resource storageAccountContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(storageAccount.id, functionApp.identity.principalId, '17d1049b-9a84-46fb-8f53-869881c3d3ab')
+  name: guid(storageAccount.id, functionApp.id, 'StorageAccountContributor')
   scope: storageAccount
   properties: {
     principalId: functionApp.identity.principalId
@@ -144,7 +144,7 @@ resource storageAccountContributor 'Microsoft.Authorization/roleAssignments@2022
 
 // Storage Queue Data Contributor (Azure Functions uses queues internally)
 resource storageQueueDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(storageAccount.id, functionApp.identity.principalId, '974c5e8b-45b9-4653-ba55-5f855dd0fb88')
+  name: guid(storageAccount.id, functionApp.id, 'StorageQueueDataContributor')
   scope: storageAccount
   properties: {
     principalId: functionApp.identity.principalId

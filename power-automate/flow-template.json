@@ -1,0 +1,124 @@
+{
+  "_documentation": {
+    "description": "Reference template for the Forms-to-Fabric Power Automate flow. Admins should use this as a guide to manually recreate the flow in Power Automate. This is NOT an importable flow definition.",
+    "version": "1.0.0",
+    "last_updated": "2025-01-15",
+    "notes": [
+      "This flow is part of a healthcare Forms-to-Fabric pipeline.",
+      "Clinicians submit responses via Microsoft Forms; this flow triggers processing through an Azure Function that de-identifies PHI before landing data in Fabric Lakehouse.",
+      "All PHI handling and de-identification is performed server-side by the Azure Function — the flow itself only transports data.",
+      "Ensure the Azure Function URL and key are obtained from azd deployment outputs before configuring the flow.",
+      "Power BI reports downstream consume the Lakehouse tables populated by this pipeline."
+    ]
+  },
+  "flow_name": "Forms-to-Fabric: Process Response",
+  "trigger": {
+    "type": "When a new response is submitted",
+    "connector": "Microsoft Forms",
+    "_comment_trigger": "This trigger fires each time a clinician submits a new response to the configured Microsoft Form.",
+    "_comment_connector": "Uses the Microsoft Forms connector (standard connector, no premium license required).",
+    "_comment_setup": "When configuring, the admin must select the target Form from the 'Form Id' dropdown. The Form must be owned by or shared with the connection account.",
+    "inputs": {
+      "form_id": "@{environment_variables.FORM_ID}"
+    }
+  },
+  "actions": [
+    {
+      "order": 1,
+      "name": "Get_response_details",
+      "display_name": "Get response details",
+      "type": "OpenApiConnection",
+      "connector": "Microsoft Forms",
+      "_comment": "Retrieves the full response data (all question answers, respondent info, submission timestamp) for the response that triggered the flow. Uses the responseId from the trigger output.",
+      "inputs": {
+        "form_id": "@{triggerOutputs()?['body/formId']}",
+        "response_id": "@{triggerOutputs()?['body/responseId']}"
+      }
+    },
+    {
+      "order": 2,
+      "name": "Call_Azure_Function",
+      "display_name": "HTTP",
+      "type": "Http",
+      "_comment": "POSTs the form response payload to the Azure Function for processing. The function URL should come from 'azd env get-values' or the Azure portal after deployment. The x-functions-key header value must be stored in and retrieved from Azure Key Vault — never hard-code the function key in the flow.",
+      "inputs": {
+        "method": "POST",
+        "uri": "@{environment_variables.AZURE_FUNCTION_URL}",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-functions-key": "@{environment_variables.AZURE_FUNCTION_KEY}"
+        },
+        "body": {
+          "form_id": "@{triggerOutputs()?['body/formId']}",
+          "response_id": "@{triggerOutputs()?['body/responseId']}",
+          "submitted_at": "@{utcNow()}",
+          "respondent_email": "@{outputs('Get_response_details')?['body/responder']}",
+          "answers": "@{outputs('Get_response_details')?['body/responses']}"
+        }
+      },
+      "run_after": "Get_response_details"
+    },
+    {
+      "order": 3,
+      "name": "Check_response_status",
+      "display_name": "Condition",
+      "type": "If",
+      "_comment": "Evaluates whether the Azure Function returned HTTP 200 (success). On success, no further action is needed — the function has already de-identified PHI and landed the data in Fabric Lakehouse. On failure, an email alert is sent to the admin with error details for investigation.",
+      "expression": {
+        "equals": [
+          "@{outputs('Call_Azure_Function')?['statusCode']}",
+          200
+        ]
+      },
+      "if_true": {
+        "_comment": "No action required. The Azure Function successfully processed the response, performed PHI de-identification, and wrote the data to the Fabric Lakehouse."
+      },
+      "if_false": {
+        "action": "Send_error_notification",
+        "display_name": "Send an email notification (V2)",
+        "type": "OpenApiConnection",
+        "connector": "Office 365 Outlook",
+        "_comment": "Sends a failure alert to the configured admin. The email includes the HTTP status code and response body to aid debugging. Ensure the ADMIN_NOTIFICATION_EMAIL environment variable is set to a monitored mailbox.",
+        "inputs": {
+          "to": "@{environment_variables.ADMIN_NOTIFICATION_EMAIL}",
+          "subject": "Forms-to-Fabric Pipeline Error: Response @{triggerOutputs()?['body/responseId']}",
+          "body": "<p><strong>Forms-to-Fabric Pipeline Error</strong></p><p>A form response failed to process.</p><p><strong>Form ID:</strong> @{triggerOutputs()?['body/formId']}</p><p><strong>Response ID:</strong> @{triggerOutputs()?['body/responseId']}</p><p><strong>Timestamp:</strong> @{utcNow()}</p><p><strong>HTTP Status Code:</strong> @{outputs('Call_Azure_Function')?['statusCode']}</p><p><strong>Error Details:</strong></p><pre>@{body('Call_Azure_Function')}</pre><p>Please investigate in the Azure portal and resubmit if necessary.</p>",
+          "importance": "High"
+        }
+      },
+      "run_after": "Call_Azure_Function"
+    }
+  ],
+  "environment_variables": {
+    "AZURE_FUNCTION_URL": {
+      "type": "string",
+      "description": "The full URL of the Azure Function endpoint (e.g., https://<function-app-name>.azurewebsites.net/api/process-form-response). Obtain from 'azd env get-values' after deployment."
+    },
+    "AZURE_FUNCTION_KEY": {
+      "type": "string",
+      "description": "The function-level API key for authenticating requests. Must be stored in Azure Key Vault and referenced securely — never paste the raw key into the flow."
+    },
+    "ADMIN_NOTIFICATION_EMAIL": {
+      "type": "string",
+      "description": "Email address that receives pipeline error notifications. Should be a monitored shared mailbox or distribution list (e.g., forms-admin@contoso.com)."
+    },
+    "FORM_ID": {
+      "type": "string",
+      "description": "The unique identifier of the Microsoft Form used for clinician data collection. Found in the Form URL or the Forms admin portal."
+    }
+  },
+  "setup_instructions": [
+    "1. Deploy the Azure Function and infrastructure using 'azd up'. Note the function URL and retrieve the function key from the Azure portal or Key Vault.",
+    "2. Store the Azure Function key in Azure Key Vault if not already provisioned by the azd template.",
+    "3. Open Power Automate (https://make.powerautomate.com) and create a new Automated Cloud Flow.",
+    "4. Select the 'When a new response is submitted' trigger from the Microsoft Forms connector.",
+    "5. In the trigger, select the target clinician Form from the 'Form Id' dropdown.",
+    "6. Add a 'Get response details' action (Microsoft Forms connector). Set Form Id and Response Id to reference the trigger outputs.",
+    "7. Add an 'HTTP' action. Set method to POST, paste the Azure Function URL, add Content-Type and x-functions-key headers, and configure the JSON body as shown in the template.",
+    "8. Add a 'Condition' action to check if the HTTP status code equals 200.",
+    "9. In the 'If no' branch, add a 'Send an email (V2)' action (Office 365 Outlook connector) with the error notification template.",
+    "10. Configure the admin notification email address in the Outlook action.",
+    "11. Save the flow and test with a sample form submission to verify end-to-end processing.",
+    "12. Monitor initial runs in the Power Automate run history to confirm data lands in the Fabric Lakehouse and PHI de-identification is applied correctly."
+  ]
+}

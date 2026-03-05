@@ -1,0 +1,81 @@
+{
+  "forms": [
+    {
+      "form_id": "patient-satisfaction-001",
+      "form_name": "Patient Satisfaction Survey",
+      "target_table": "patient_satisfaction",
+      "fields": [
+        {
+          "question_id": "q1",
+          "field_name": "patient_name",
+          "contains_phi": true,
+          "deid_method": "hash",
+          "field_type": null
+        },
+        {
+          "question_id": "q2",
+          "field_name": "date_of_birth",
+          "contains_phi": true,
+          "deid_method": "generalize",
+          "field_type": "date"
+        },
+        {
+          "question_id": "q3",
+          "field_name": "patient_age",
+          "contains_phi": true,
+          "deid_method": "generalize",
+          "field_type": "age"
+        },
+        {
+          "question_id": "q4",
+          "field_name": "satisfaction_rating",
+          "contains_phi": false,
+          "deid_method": null,
+          "field_type": null
+        },
+        {
+          "question_id": "q5",
+          "field_name": "comments",
+          "contains_phi": true,
+          "deid_method": "redact",
+          "field_type": null
+        }
+      ]
+    },
+    {
+      "form_id": "staff-feedback-002",
+      "form_name": "Staff Feedback Form",
+      "target_table": "staff_feedback",
+      "fields": [
+        {
+          "question_id": "q1",
+          "field_name": "department",
+          "contains_phi": false,
+          "deid_method": null,
+          "field_type": null
+        },
+        {
+          "question_id": "q2",
+          "field_name": "overall_satisfaction",
+          "contains_phi": false,
+          "deid_method": null,
+          "field_type": null
+        },
+        {
+          "question_id": "q3",
+          "field_name": "improvement_suggestions",
+          "contains_phi": false,
+          "deid_method": null,
+          "field_type": null
+        },
+        {
+          "question_id": "q4",
+          "field_name": "would_recommend",
+          "contains_phi": false,
+          "deid_method": null,
+          "field_type": null
+        }
+      ]
+    }
+  ]
+}

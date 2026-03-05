@@ -77,16 +77,37 @@ Once the form is saved in Microsoft Forms, complete these steps to connect it to
    ```
 3. Copy the value after `id=` (it's a long base64 string, not a short GUID). This is the form ID you will select in the Power Automate trigger.
 
-### Step 2 — Create (or Update) the Power Automate Flow
+### Step 2 — Create the Power Automate Flow
 
-Follow the [Power Automate flow template](../power-automate/flow-template.json) to create a flow that:
+1. Go to [flow.microsoft.com](https://flow.microsoft.com) → **+ Create** → **Automated cloud flow**
+2. Name it: "Forms to Fabric — Registration Intake"
+3. Trigger: **When a new response is submitted** → select "Register Your Form for Analytics"
+4. **+ New step** → **Get response details** → same form, Response Id from trigger
+5. **+ New step** → **HTTP** with:
 
-1. **Triggers** on "When a new response is submitted" for this registration form.
-2. **Gets response details** to read the three answers.
-3. **Calls the Azure Function** `/api/register` endpoint with the link, description, PHI flag, and submitter info.
-4. **Handles errors** by emailing the IT distribution list (see the [Setup Guide](setup-guide.md) for error-handling patterns).
+| Field | Value |
+|---|---|
+| Method | `POST` |
+| URI | `https://<your-function-app>.azurewebsites.net/api/register-form` |
+| Headers | `Content-Type` : `application/json` |
+| Headers | `x-functions-key` : `<your-function-key>` |
 
-> **Tip:** In Power Automate, you select the form by name from a dropdown — you don't paste the ID. But knowing the ID helps if you need to troubleshoot or rebuild the flow.
+**Body** — paste this exactly (the 3 questions are always r1, r2, r3):
+
+```json
+{
+  "form_url": "@{outputs('Get_response_details')?['body/r1']}",
+  "description": "@{outputs('Get_response_details')?['body/r2']}",
+  "has_phi": @{if(equals(outputs('Get_response_details')?['body/r3'], 'Yes'), true, false)}
+}
+```
+
+6. **+ New step** → **Condition** → `Status code` is not equal to `200`
+   - **If yes**: Send error email to admin
+   - **If no**: Leave empty (the Azure Function handles notifications)
+7. Save and enable
+
+> **Tip:** The Function App URL and key are from `Post-Deploy.ps1` output (Step 3 of the setup guide). The function key is also stored in Key Vault.
 
 ### Step 3 — Test End-to-End
 

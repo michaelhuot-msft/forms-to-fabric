@@ -17,6 +17,9 @@ param functionAppPrincipalId string
 @description('Resource ID of the Log Analytics workspace for diagnostic settings.')
 param logAnalyticsWorkspaceId string
 
+@description('Current UTC timestamp for secret expiry calculation. Do not override.')
+param currentTime string = utcNow()
+
 // ──────────────────────────────────────────────
 // Key Vault
 // ──────────────────────────────────────────────
@@ -62,7 +65,7 @@ resource functionAppKeySecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
     contentType: 'Function App host key for Power Automate'
     attributes: {
       enabled: true
-      exp: dateTimeAdd(utcNow(), 'P90D')  // 90-day expiry
+      exp: dateTimeAdd(currentTime, 'P90D')  // 90-day expiry
     }
   }
 }

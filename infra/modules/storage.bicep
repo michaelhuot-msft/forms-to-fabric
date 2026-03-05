@@ -12,7 +12,9 @@ param location string
 param tags object = {}
 
 // Storage account names must be 3-24 chars, lowercase alphanumeric only.
-var storageAccountName = 'stforms${environmentName}'
+// uniqueString() generates a deterministic 13-char hash from the resource group ID,
+// ensuring global uniqueness while being stable across redeployments.
+var storageAccountName = 'stforms${take(uniqueString(resourceGroup().id), 8)}'
 
 // ──────────────────────────────────────────────
 // Storage Account

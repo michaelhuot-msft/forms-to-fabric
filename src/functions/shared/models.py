@@ -60,3 +60,43 @@ class ProcessingResult(BaseModel):
     raw_path: Optional[str] = None
     curated_path: Optional[str] = None
     message: Optional[str] = None
+
+
+class SchemaChange(BaseModel):
+    """A single detected change in a form's question structure."""
+
+    change_type: str = Field(description="'added', 'removed', or 'renamed'")
+    question_id: str
+    field_name: Optional[str] = None
+    old_value: Optional[str] = None
+    new_value: Optional[str] = None
+
+
+class SchemaChangeReport(BaseModel):
+    """Report of all schema changes detected for a single form."""
+
+    form_id: str
+    form_name: str
+    checked_at: datetime
+    changes: list[SchemaChange]
+    has_changes: bool = False
+
+
+class RbacViolation(BaseModel):
+    """A single RBAC violation found during audit."""
+
+    principal_id: str
+    principal_name: str
+    principal_type: str
+    assigned_role: str
+    reason: str
+
+
+class RbacAuditReport(BaseModel):
+    """Results of an RBAC audit for a Fabric workspace."""
+
+    workspace_id: str
+    checked_at: datetime
+    total_assignments: int
+    violations: list[RbacViolation]
+    is_compliant: bool

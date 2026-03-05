@@ -59,6 +59,16 @@ def get_form_config(form_id: str) -> Optional[FormConfig]:
     return _cache.get(form_id)
 
 
+def get_all_form_configs() -> dict[str, FormConfig]:
+    """Return all registered form configurations keyed by form_id.
+
+    Results are cached in memory and refreshed every
+    ``_CACHE_TTL_SECONDS`` seconds.
+    """
+    _ensure_cache()
+    return dict(_cache)
+
+
 def invalidate_cache() -> None:
     """Force the next ``get_form_config`` call to reload from disk."""
     global _cache, _cache_loaded_at  # noqa: PLW0603

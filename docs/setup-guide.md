@@ -195,7 +195,7 @@ The script asks for your question titles and outputs the complete HTTP action co
 | Method | `POST` |
 | URI | `https://<your-function-app>.azurewebsites.net/api/process-response` |
 | Headers | `Content-Type` : `application/json` |
-| Headers | `x-functions-key` : `<your-function-key>` |
+| Headers | `x-functions-key` : auto-detected by script |
 | Body | Output from `Generate-FlowBody.ps1` (also saved to `power-automate-body.json`) |
 
 6. **+ New step** → **Condition** → `Status code` is not equal to `200`

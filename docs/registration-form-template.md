@@ -88,9 +88,9 @@ Once the form is saved in Microsoft Forms, complete these steps to connect it to
 | Field | Value |
 |---|---|
 | Method | `POST` |
-| URI | `https://<your-function-app>.azurewebsites.net/api/register-form` |
+| URI | `https://<your-function-app>.azurewebsites.net/api/register-form` (from `Post-Deploy.ps1` output) |
 | Headers | `Content-Type` : `application/json` |
-| Headers | `x-functions-key` : `<your-function-key>` |
+| Headers | `x-functions-key` : from `Post-Deploy.ps1` output or `Generate-FlowBody.ps1 -Registration` |
 
 **Body** — paste this exactly (the 3 questions are always r1, r2, r3):
 

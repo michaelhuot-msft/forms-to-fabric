@@ -120,6 +120,9 @@ az group create --name rg-forms-to-fabric-dev --location canadaeast
 
 #    Then provision the capacity (uses the admin email from Step 2):
 $adminEmail = azd env get-value ADMIN_EMAIL
+if (-not $adminEmail) { $adminEmail = Read-Host "Enter your admin email" }
+Write-Host "Using admin email: $adminEmail"
+
 az deployment group create `
   --resource-group rg-forms-to-fabric-dev `
   --template-file infra/modules/fabric-capacity.bicep `

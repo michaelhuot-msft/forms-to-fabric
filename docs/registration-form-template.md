@@ -1,0 +1,139 @@
+# Registration Form Template — "Register Your Form for Analytics"
+
+> **Audience:** IT Administrators
+> **Last Updated:** 2025-07-15
+> **Classification:** Internal
+
+---
+
+## Overview
+
+Clinicians across the organization author data-collection forms in Microsoft Forms. Before those forms can feed into the analytics pipeline, they must be **registered** — a lightweight process that tells the system *which* form to watch, *what* it does, and *whether* it contains patient information.
+
+The **"Register Your Form for Analytics"** Microsoft Form is a **meta-form**: a form about forms. A clinician fills it out once per data-collection form they want connected to the Fabric Lakehouse and Power BI dashboards. Submissions trigger a Power Automate flow that calls the Azure Function registration endpoint, which either activates the form automatically (no PHI) or places it in a pending-review queue (PHI).
+
+> **Why a Microsoft Form?** Clinicians already know how to use Forms, no new tool adoption is needed, and Power Automate can trigger directly on submissions. See [Decisions Log — D-011](decisions.md#d-011) for alternatives considered.
+
+---
+
+## Questions to Create
+
+Open [Microsoft Forms](https://forms.office.com) and create a new form with the three questions below. Match the question text, type, and settings exactly.
+
+| # | Question Text | Type | Required | Notes |
+|---|---------------|------|----------|-------|
+| 1 | Paste your form's share link (open your form in Microsoft Forms, click **Share**, and copy the link) | Text (short answer) | Yes | See validation guidance below |
+| 2 | Briefly describe what this form is for | Text (long answer) | No | Helps IT understand context when reviewing |
+| 3 | Does this form collect any patient information? (names, dates of birth, medical record numbers, or other data that could identify a patient) | Choice: **Yes** / **No** | Yes | Determines whether the form requires IT approval before activation |
+
+### Question 1 — Link Validation
+
+Microsoft Forms does not support regex validation natively, but you can add a **restriction** to help catch obvious errors:
+
+1. Click the question, then click the **…** menu → **Restrictions**.
+2. Choose **URL** as the restriction type if available, otherwise leave as plain text.
+3. In the subtitle / helper text, add: *"The link should start with `https://forms.office.com/` or `https://forms.microsoft.com/`."*
+
+The Azure Function performs server-side validation and will reject malformed links with a clear error returned to the Power Automate flow.
+
+---
+
+## Form Settings
+
+Configure the form with the following settings:
+
+| Setting | Value |
+|---------|-------|
+| **Title** | Register Your Form for Analytics |
+| **Description** | Use this form to connect your Microsoft Form to our analytics dashboard. It takes about 1 minute. |
+| **Who can fill it out** | Only people in my organization |
+| **Accept responses** | On |
+| **Show confirmation message** | See below |
+
+### Confirmation Message
+
+Paste the following as the confirmation message:
+
+> Thank you! Your form has been submitted for registration. If it doesn't collect patient info, it will be set up automatically. If it does, our IT team will review it within 1–2 business days.
+
+### Additional Settings
+
+- **Record name** — Enabled (so you can see who submitted each registration).
+- **Response receipts** — Optional but recommended so the clinician has a copy.
+- **One response per person** — Off (a clinician may register multiple forms).
+
+---
+
+## After Creating the Form
+
+Once the form is saved in Microsoft Forms, complete these steps to connect it to the pipeline.
+
+### Step 1 — Note the Form ID
+
+1. Open the registration form in the Forms editor.
+2. Look at the browser URL — it contains a segment like `FormId=<GUID>`.
+3. Copy the GUID. This is the `registration_form_id` you will configure in Power Automate.
+
+### Step 2 — Create (or Update) the Power Automate Flow
+
+Follow the [Power Automate flow template](../power-automate/flow-template.json) to create a flow that:
+
+1. **Triggers** on "When a new response is submitted" for this registration form.
+2. **Gets response details** to read the three answers.
+3. **Calls the Azure Function** `/api/register` endpoint with the link, description, PHI flag, and submitter info.
+4. **Handles errors** by emailing the IT distribution list (see the [Setup Guide](setup-guide.md) for error-handling patterns).
+
+> **Tip:** The `registration_form_id` must be set in the flow trigger. If you rebuild the registration form, you must update this value in the flow.
+
+### Step 3 — Test End-to-End
+
+1. Open the registration form and submit a test entry with a known form link, a description, and **No** for patient info.
+2. Verify the Power Automate flow runs successfully (check **Flow run history**).
+3. Confirm the form appears in `config/form-registry.json` with `status: "active"`.
+4. Repeat with **Yes** for patient info and verify the form appears with `status: "pending_review"`.
+
+---
+
+## What Happens After Submission
+
+```mermaid
+flowchart TD
+    A["Clinician submits\nRegistration Form"] --> B["Power Automate\ntriggers"]
+    B --> C["Azure Function\n/api/register"]
+    C --> D{"Collects patient\ninfo?"}
+    D -- No --> E["Status: active\nForm connected\nautomatically"]
+    D -- Yes --> F["Status: pending_review\nQueued for IT"]
+    F --> G["IT receives\nnotification email"]
+    G --> H["IT reviews form\nand classifies fields"]
+    H --> I["IT activates form\nvia admin CLI"]
+    I --> J["Status: active\nForm connected"]
+
+    style A fill:#4472C4,color:#fff
+    style E fill:#70AD47,color:#fff
+    style J fill:#70AD47,color:#fff
+    style F fill:#FFC000,color:#000
+```
+
+### Flow Details
+
+| Step | Actor | What Happens |
+|------|-------|--------------|
+| 1 | Clinician | Fills out the registration form with their form link, description, and PHI flag |
+| 2 | Power Automate | Triggers automatically on new submission; calls the Azure Function |
+| 3 | Azure Function | Validates the link, extracts the form ID, creates a registry entry |
+| 4a | System (no PHI) | Sets status to `active`; the form's responses will start flowing into the pipeline |
+| 4b | System (PHI) | Sets status to `pending_review`; sends a notification email to the IT team |
+| 5 | IT Admin | Reviews the form, classifies PHI fields, and activates via `manage_registry.py` |
+| 6 | System | Once activated, responses flow into the raw (restricted) layer; PHI fields are excluded from the curated (de-identified) layer |
+
+> **Note:** If a registered form's structure changes later, the Schema Monitor function detects the change, notifies IT, and quarantines new fields in the raw layer only until reviewed. See [Architecture — Schema Monitor](architecture.md) and [Decisions Log — D-014](decisions.md#d-014).
+
+---
+
+## Related Documents
+
+- [Architecture](architecture.md) — Full system design
+- [Setup Guide](setup-guide.md) — Azure Function and Power Automate deployment
+- [Admin Guide](admin-guide.md) — Managing the form registry
+- [Clinician Guide](clinician-guide.md) — End-user instructions
+- [Decisions Log](decisions.md) — Why we chose this approach

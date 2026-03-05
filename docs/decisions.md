@@ -2,7 +2,7 @@
 
 > **Audience:** IT Leadership, Project Stakeholders
 > **Last Updated:** 2025-07-15
-> **Classification:** Internal
+
 
 ---
 
@@ -131,11 +131,11 @@ Decisions are numbered sequentially (D-001, D-002, …). Each entry records what
 
 | Field | Detail |
 |-------|--------|
-| **Decision** | Use a private repository with no client-identifying information in the code |
+| **Decision** | Maintain as a public, reusable template repository with no client-identifying information |
 | **Date** | 2025-07 |
-| **Context** | The solution is reusable across organizations. Keeping the repo free of client names, URLs, and environment-specific secrets makes it safe to maintain as a template and avoids accidental exposure if the repo is ever shared. |
+| **Context** | The solution is designed as a shareable accelerator that any organization can fork and customize. Keeping the repo free of client names, URLs, and environment-specific secrets makes it safe to publish openly and reuse across engagements. |
 | **Alternatives considered** | Client-specific repo with environment branches; monorepo with per-client folders |
-| **How to change later** | Environment-specific values live in `config/` files and environment variables. To make the repo client-specific, populate those config files — no code changes needed. |
+| **How to change later** | If a specific deployment needs private customizations, fork the repo into a private repository. Environment-specific values live in `config/` files and environment variables — populate those config files without changing the shared codebase. |
 
 ---
 

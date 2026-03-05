@@ -157,7 +157,7 @@ Below is a complete example entry:
   "form_name": "Patient Satisfaction Survey",
   "description": "Post-visit satisfaction questionnaire",
   "department": "Cardiology",
-  "owner_email": "dr.smith@hospital.org",
+  "owner_email": "clinician@contoso.com",
   "created_date": "2025-01-15",
   "target_table": "patient_satisfaction",
   "fields": [

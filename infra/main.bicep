@@ -19,6 +19,16 @@ param onelakeEndpoint string = 'https://onelake.dfs.fabric.microsoft.com'
 @description('Path inside the storage container where the form-registry configuration is stored.')
 param formRegistryPath string = 'form-registry/registry.json'
 
+@description('Name of the Fabric capacity. Leave empty to skip capacity provisioning.')
+param fabricCapacityName string = 'forms-to-fabric-${environmentName}'
+
+@description('Fabric SKU (F2, F4, F8, F16, F32, F64).')
+@allowed(['F2', 'F4', 'F8', 'F16', 'F32', 'F64'])
+param fabricSkuName string = 'F2'
+
+@description('Entra ID of the Fabric capacity admin(s).')
+param fabricAdminMembers array
+
 // ──────────────────────────────────────────────
 // Variables
 // ──────────────────────────────────────────────
@@ -62,6 +72,17 @@ module functionApp 'modules/function-app.bicep' = {
   }
 }
 
+module fabricCapacity 'modules/fabric-capacity.bicep' = {
+  name: 'fabricCapacity'
+  params: {
+    capacityName: fabricCapacityName
+    location: location
+    skuName: fabricSkuName
+    adminMembers: fabricAdminMembers
+    tags: tags
+  }
+}
+
 module keyVault 'modules/key-vault.bicep' = {
   name: 'keyVault'
   params: {
@@ -94,3 +115,12 @@ output storageAccountName string = storage.outputs.storageAccountName
 
 @description('Resource ID of Application Insights.')
 output appInsightsId string = appInsights.outputs.appInsightsId
+
+@description('Resource ID of the Fabric capacity.')
+output fabricCapacityId string = fabricCapacity.outputs.capacityId
+
+@description('Name of the Fabric capacity.')
+output fabricCapacityName string = fabricCapacity.outputs.capacityName
+
+@description('Principal ID of the Function App managed identity.')
+output functionAppPrincipalId string = functionApp.outputs.principalId

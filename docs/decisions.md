@@ -213,3 +213,39 @@ Copy the template below and append it to the appropriate section:
 - [Registration Form Template](registration-form-template.md) — Implements D-011, D-012, D-013
 - [Admin Guide](admin-guide.md) — Operational procedures
 - [Pilot Program](pilot-program.md) — Implements D-005
+
+---
+
+## Lessons Learned
+
+> **Added:** 2026-03-05 — After three rounds of automation (initial build → automation gaps → self-service registration)
+
+### What Worked
+
+| Lesson | Detail |
+|--------|--------|
+| **Forms-as-intake for a Forms pipeline** | Using Microsoft Forms as the registration intake means clinicians use the same tool for both data collection and pipeline registration. Zero new tools to learn. |
+| **Graph API field auto-discovery** | The single highest-error-rate step (manual question-ID-to-field mapping) was eliminated by calling `GET /forms/{id}/questions`. This also removed the need for admins to understand Forms URL structures. |
+| **Quarantine pattern for unknown fields** | Writing unregistered fields to the raw layer but excluding them from curated balances data availability (no data loss) with PHI safety (no unclassified data in reports). |
+| **Status model (active / pending_review)** | A simple two-state gate enables zero-touch onboarding for non-PHI forms while preserving a human-in-the-loop for PHI forms. The conditional approval path avoided an all-or-nothing trade-off. |
+| **Iterative automation** | Three rounds of improvement (v1: manual, v2: CLI + monitoring, v3: self-service) each built on the last. This avoided big-bang risk and let us validate each layer before adding the next. |
+| **Documentation-first approach** | Writing clinician guides and admin docs before code caught UX problems early and created alignment with stakeholders before implementation. |
+| **Atomic commits and continuous push** | Every logical change was committed and pushed immediately, keeping the repo deployable at all times and making rollback trivial. |
+
+### What Could Be Improved
+
+| Area | Current Limitation | Potential Solution |
+|------|-------------------|-------------------|
+| **Registry storage** | JSON file on disk; works at low volume but fragile at scale | Move to Cosmos DB or a Fabric Lakehouse table for the registry |
+| **One PA flow per form** | Creates N flows for N forms; admin overhead scales linearly | Use a single dynamic flow with form_id as parameter (requires Power Automate Premium) |
+| **No automatic PA flow creation** | Admin still imports generated JSON into Power Automate UI | Power Automate Management Connector API could programmatically create flows |
+| **Manual E2E testing** | Human must submit a test response and visually verify dashboard | Synthetic test: submit via Graph API, assert on Lakehouse table rows |
+| **Field classification is manual** | IT must open the form and classify each field for PHI | NLP/regex-based pre-screening (e.g., "patient name" → auto-flag as direct identifier) |
+
+### Design Principles That Emerged
+
+1. **Meet users where they are** — Clinicians know Forms; don't ask them to learn a new tool. The admin CLI wraps complexity so IT also stays in familiar territory.
+2. **Safe defaults over fast defaults** — When in doubt, restrict (quarantine unknown fields, require IT review for PHI). It's easier to open up later than to close down after a PHI leak.
+3. **Automate detection before automation of action** — Schema monitor detects changes without auto-fixing them. This builds trust and gives IT visibility before we automate the response.
+4. **Make the right thing the easy thing** — The `add-form --form-url` command does everything in one step. When the easy path is also the correct path, adoption follows naturally.
+5. **Document decisions with alternatives** — Every choice records what else was considered and how to change later. This prevents re-litigation and enables future teams to evolve the architecture confidently.

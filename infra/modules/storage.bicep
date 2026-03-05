@@ -32,8 +32,8 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
     supportsHttpsTrafficOnly: true
     minimumTlsVersion: 'TLS1_2'
     allowBlobPublicAccess: false
-    allowSharedKeyAccess: true  // Required for AzureWebJobsStorage connection string
-    defaultToOAuthAuthentication: false
+    allowSharedKeyAccess: false  // Managed identity only — no shared keys
+    defaultToOAuthAuthentication: true
   }
 }
 

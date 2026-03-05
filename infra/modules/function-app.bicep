@@ -87,16 +87,9 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
           value: '~4'
         }
         {
-          name: 'AzureWebJobsStorage'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
-        }
-        {
-          name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
-        }
-        {
-          name: 'WEBSITE_CONTENTSHARE'
-          value: 'func-forms-${environmentName}-${suffix}'
+          // Use managed identity for storage — no shared keys needed
+          name: 'AzureWebJobsStorage__accountName'
+          value: storageAccount.name
         }
         {
           name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
@@ -120,6 +113,43 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         }
       ]
     }
+  }
+}
+
+// ──────────────────────────────────────────────
+// Role assignments – managed identity → storage
+// ──────────────────────────────────────────────
+
+// Storage Blob Data Owner (read/write blobs for AzureWebJobsStorage)
+resource storageBlobDataOwner 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storageAccount.id, functionApp.id, 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b')
+  scope: storageAccount
+  properties: {
+    principalId: functionApp.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b')
+  }
+}
+
+// Storage Account Contributor (manage file shares for consumption plan)
+resource storageAccountContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storageAccount.id, functionApp.id, '17d1049b-9a84-46fb-8f53-869881c3d3ab')
+  scope: storageAccount
+  properties: {
+    principalId: functionApp.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '17d1049b-9a84-46fb-8f53-869881c3d3ab')
+  }
+}
+
+// Storage Queue Data Contributor (Azure Functions uses queues internally)
+resource storageQueueDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storageAccount.id, functionApp.id, '974c5e8b-45b9-4653-ba55-5f855dd0fb88')
+  scope: storageAccount
+  properties: {
+    principalId: functionApp.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '974c5e8b-45b9-4653-ba55-5f855dd0fb88')
   }
 }
 

@@ -23,15 +23,21 @@ flowchart LR
 
 The `manage_registry.py` CLI tool provides a validated, error-proof way to manage form registrations. The clinician sends you their form link — you paste it in and you're done.
 
-**Register a form (just the URL and table name):**
+**Register a form (just paste the URL):**
 
 ```bash
 python scripts/manage_registry.py add-form \
-  --form-url "https://forms.office.com/Pages/DesignPageV2.aspx?id=abc123-def456&origin=lprLink" \
-  --target-table "patient_satisfaction"
+  --form-url "https://forms.office.com/Pages/DesignPageV2.aspx?id=abc123-def456&origin=lprLink"
 ```
 
-The form ID is extracted from the URL automatically, and the form name is fetched from Microsoft Forms. If the API is unreachable, the form ID is used as the name.
+The form ID, form name, and table name are all derived automatically. Override any of them if needed:
+
+```bash
+python scripts/manage_registry.py add-form \
+  --form-url "https://forms.office.com/..." \
+  --target-table "custom_table_name" \
+  --form-name "Custom Display Name"
+```
 
 **Add fields to the form:**
 

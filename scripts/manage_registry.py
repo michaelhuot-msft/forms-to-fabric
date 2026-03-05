@@ -34,6 +34,14 @@ def load_json(path: Path) -> Any:
         return json.load(f)
 
 
+def slugify(name: str) -> str:
+    """Convert a display name to a valid table name (lowercase, underscores)."""
+    slug = name.lower().strip()
+    slug = re.sub(r"[^a-z0-9]+", "_", slug)
+    slug = slug.strip("_")
+    return slug or "unnamed_form"
+
+
 def save_registry(data: dict, path: Path) -> None:
     """Write the registry back to disk with consistent formatting."""
     with open(path, "w", encoding="utf-8", newline="\n") as f:
@@ -342,16 +350,22 @@ def cmd_add_form(args: argparse.Namespace) -> int:
             form_name = form_id
             print(f"Could not reach Graph API — using form ID as name: {form_name}")
 
+    # Resolve target_table: explicit flag > slugified form_name > slugified form_id
+    target_table = getattr(args, "target_table", None)
+    if not target_table:
+        target_table = slugify(form_name)
+        print(f"Target table: {target_table}")
+
     new_form = {
         "form_id": form_id,
         "form_name": form_name,
-        "target_table": args.target_table,
+        "target_table": target_table,
         "fields": [],
     }
 
     registry["forms"].append(new_form)
     save_registry(registry, registry_path)
-    print(f"Added form '{form_id}' → table '{args.target_table}'")
+    print(f"Added form '{form_id}' → table '{target_table}'")
     return 0
 
 
@@ -529,7 +543,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--form-name",
         help="Display name override (auto-fetched from Forms API if omitted)",
     )
-    add_form.add_argument("--target-table", required=True, help="Lakehouse table name (lowercase, underscores)")
+    add_form.add_argument("--target-table", help="Lakehouse table name (default: derived from form name, lowercase with underscores)")
 
     # add-field
     add_field = subparsers.add_parser("add-field", help="Add a field to an existing form")

@@ -140,6 +140,20 @@ class TestAddForm:
         # form_name defaults to form_id when Graph API is unavailable
         assert new_form["form_name"] == "url-form-003"
 
+    def test_add_form_url_only(self, registry_dir: Path) -> None:
+        """Just a URL — target_table and form_name are both derived."""
+        rc = run_cli(registry_dir, [
+            "add-form",
+            "--form-url", "https://forms.office.com/Pages/DesignPageV2.aspx?id=minimal-form-004",
+        ])
+        assert rc == 0
+
+        data = json.loads(registry_path(registry_dir).read_text(encoding="utf-8"))
+        new_form = [f for f in data["forms"] if f["form_id"] == "minimal-form-004"][0]
+        # Both derived from form_id since Graph API is unavailable
+        assert new_form["form_name"] == "minimal-form-004"
+        assert new_form["target_table"] == "minimal_form_004"
+
     def test_add_form_bad_url(self, registry_dir: Path) -> None:
         rc = run_cli(registry_dir, [
             "add-form",

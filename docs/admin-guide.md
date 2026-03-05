@@ -17,6 +17,72 @@ flowchart LR
 
 ---
 
+## Self-Service Registration
+
+Clinicians can now register their own forms without emailing IT. They fill out a short "Register Your Form" Microsoft Form (3 questions), and a Power Automate flow handles the rest. Non-PHI forms are activated instantly; PHI forms are routed to IT for review.
+
+### How It Works End-to-End
+
+```mermaid
+flowchart TD
+    A["Clinician fills out<br/>Register Your Form"] --> B["Power Automate triggers"]
+    B --> C["Flow calls POST /api/register-form"]
+    C --> D{"has_phi?"}
+    D -->|No| E["Status: active<br/>Auto-activated"]
+    D -->|Yes| F["Status: pending_review<br/>Quarantined"]
+    E --> G["📧 Confirmation email<br/>sent to clinician"]
+    F --> H["💬 Teams adaptive card<br/>posted to IT channel"]
+    H --> I["IT reviews form &<br/>classifies PHI fields"]
+    I --> J["IT calls POST /api/activate-form"]
+    J --> K["Status: active"]
+    K --> L["📧 Clinician notified"]
+```
+
+### What IT Sees for PHI Forms
+
+When a clinician registers a form that collects patient information, IT receives a **Teams adaptive card** in the configured review channel. The card includes:
+
+- **Form name** and **form URL** (clickable link to open the form)
+- **Submitter's email** (the clinician who registered)
+- **Form ID** (for use with CLI tools and API calls)
+- **"Review in Admin Guide" button** linking to this documentation
+
+### Steps to Review and Activate a PHI Form
+
+1. **Open the form link** in the Teams notification and review the questions. Identify which fields contain PHI (names, dates of birth, MRNs, etc.).
+
+2. **Classify PHI fields** using the registry CLI. For each sensitive field, specify the appropriate de-identification method:
+
+   ```bash
+   python scripts/manage_registry.py add-field \
+     --form-id "<form-id-from-notification>" \
+     --question-id "q1" \
+     --field-name "patient_name" \
+     --contains-phi \
+     --deid-method "redact"
+   ```
+
+   Repeat for each PHI field. See the [De-Identification Rules](#configuring-de-identification-rules) section below for method choices.
+
+3. **Activate the form** by calling the activate endpoint or using the CLI:
+
+   ```bash
+   # Via API
+   curl -X POST "https://<function-app>.azurewebsites.net/api/activate-form" \
+     -H "Content-Type: application/json" \
+     -H "x-functions-key: <function-key>" \
+     -d '{"form_id": "<form-id>"}'
+   ```
+
+4. **The clinician is notified** automatically — they receive an email confirming their form is now connected to the pipeline.
+
+### Reference
+
+- **Registration form setup:** See [docs/registration-form-template.md](registration-form-template.md) for creating the intake form.
+- **Flow template:** See `power-automate/registration-flow-template.json` for the Power Automate flow reference.
+
+---
+
 ## Registering a New Form
 
 ### Recommended: Use the Registry CLI

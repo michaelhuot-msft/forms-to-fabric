@@ -64,24 +64,26 @@ No software to install. No special permissions to request.
 
 ---
 
-## Step 2: Let Us Know About Your Form
+## Step 2: Register Your Form
 
-Before your form data can appear in a dashboard, we need to set it up in our system. This is a one-time step.
+Before your form data can appear in a dashboard, you need to register it. This is a quick, one-time step — just fill out a short form and you're done.
 
 ### What to Do
 
-Send an email to **[IT-support-email@organization.com]** with the following:
+1. Go to **[registration form link placeholder]**
+2. **Paste your form's share link** — in Microsoft Forms, click the **"Share"** button and copy the link
+3. **Add a brief description** of what your form is for (optional, but helpful)
+4. **Tell us if your form collects patient information** — things like names, dates of birth, or medical record numbers
+5. Click **Submit**
 
-1. **Your form's link** — in Microsoft Forms, click the **"Share"** button and copy the link
-2. **The name of your form** — so we can easily identify it
-3. **Which fields contain sensitive patient information** — let us know which questions collect things like names, dates of birth, medical record numbers, or other patient details so we can protect them automatically
-4. **Who should have access to the results** — list the names or email addresses of people who should be able to see the dashboard
+That's it! No email required.
 
 `[Screenshot: Where to find the Share button and copy the form link]`
 
 ### What Happens Next
 
-Our team will configure your form in the system. This usually takes **1–2 business days**. We'll email you when it's ready.
+- **If your form does NOT collect patient info** → it's connected automatically! You'll get an email confirmation within seconds, and responses will start flowing to your dashboard right away.
+- **If your form DOES collect patient info** → our IT team will review it and set it up within **1–2 business days**. This extra step makes sure all sensitive data is properly protected. You'll get an email when it's ready.
 
 ---
 
@@ -100,7 +102,7 @@ Once your form is registered, you're all set. Here's what happens behind the sce
 
 ```mermaid
 graph LR
-    A["📝 Create Form"] --> B["📧 Register with IT"] --> C["🔄 Responses Flow<br/>Automatically"] --> D["📊 View Dashboard"]
+    A["📝 Create Form"] --> B["📋 Register Your Form"] --> C["🔄 Responses Flow<br/>Automatically"] --> D["📊 View Dashboard"]
 ```
 
 ---

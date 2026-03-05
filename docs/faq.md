@@ -128,6 +128,27 @@ Collaborators can edit questions, view responses, and manage the form just like 
 
 ---
 
+### How do I register my form?
+
+Go to the **[registration form link placeholder]** and fill out the short registration form. You'll need to paste your form's share link, add a brief description, and tell us whether your form collects patient information. That's it — just three questions, and you're done!
+
+---
+
+### How long does registration take?
+
+It depends on whether your form collects patient information:
+
+- **No patient info** → your form is connected **instantly**. You'll get an email confirmation right away, and responses will start appearing in your dashboard within minutes.
+- **Has patient info** → our IT team will review it and set it up within **1–2 business days**. You'll get an email when it's ready.
+
+---
+
+### What if I forgot to say my form has patient info?
+
+No worries — just contact IT at **[IT-support-email@organization.com]** and let them know. They can update the settings and make sure your patient data is properly protected. It's a quick fix on their end.
+
+---
+
 ---
 
 ## For Administrators
@@ -269,6 +290,23 @@ Use the flow generator endpoint instead of building flows manually:
 5. Save and enable the flow
 
 This reduces setup from ~15 minutes to ~2 minutes and eliminates common configuration errors.
+
+---
+
+### How does self-service registration work?
+
+When a clinician fills out the registration form, a Power Automate flow picks up the submission and calls the `POST /api/register-form` endpoint on the Azure Function. The endpoint creates a new entry in `form-registry.json` and returns a status:
+
+- **Non-PHI forms** are activated immediately (`status: active`). The clinician receives an email confirmation, and a response-processing flow can be generated right away.
+- **PHI forms** are set to `status: pending_review`. IT receives a Teams adaptive card notification with the form details. An admin must review the form, classify PHI fields using `manage_registry.py add-field`, and call `POST /api/activate-form` (or use the CLI) to activate it. The clinician is notified by email once activation is complete.
+
+See [docs/registration-form-template.md](registration-form-template.md) for the registration form setup and `power-automate/registration-flow-template.json` for the flow reference.
+
+---
+
+### What happens to new fields added after a form is registered?
+
+New fields are captured in the **raw layer** of the Lakehouse but are **excluded from the curated layer** until they are classified. This means the data is safely stored but won't appear in dashboards or reports until an admin adds the field configuration using `manage_registry.py add-field`. The schema monitor function runs every 6 hours and will alert IT when unregistered fields are detected.
 
 ---
 

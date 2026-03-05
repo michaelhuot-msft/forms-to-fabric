@@ -61,6 +61,8 @@ graph TB
 | **Schema Monitor** (`monitor_schema`) | Automated compliance | Timer-triggered function (every 6 hours) that polls Microsoft Graph API to detect form structure changes. Alerts admins when clinicians add, remove, or rename questions. |
 | **RBAC Auditor** (`audit_rbac`) | Access compliance | Daily timer-triggered function that audits Fabric workspace role assignments. Flags any non-admin user with access to raw (PHI) layer and logs violations to Application Insights. |
 | **Flow Generator** (`generate_flow`) | Admin automation | HTTP endpoint that generates importable Power Automate flow definitions for registered forms, reducing manual flow creation from 15 minutes to 2 minutes. |
+| **Registration Endpoint** (`register_form`) | Self-service onboarding | HTTP POST endpoint (`/api/register-form`) that accepts a form URL, description, and PHI flag. Creates a form-registry entry and returns status: `active` (non-PHI, auto-activated) or `pending_review` (PHI, requires IT review). |
+| **Activation Endpoint** (`activate_form`) | Admin approval | HTTP POST endpoint (`/api/activate-form`) that transitions a form from `pending_review` to `active` status. Called by IT after reviewing and classifying PHI fields. Triggers clinician notification. |
 
 ---
 
@@ -71,6 +73,7 @@ Three automated functions run alongside the core processing pipeline to reduce m
 - **Schema Monitor** detects form structure changes every 6 hours by polling the Microsoft Graph API.
 - **RBAC Auditor** checks Fabric workspace access daily at 8 AM UTC and flags unauthorized raw-layer access.
 - **Flow Generator** provides on-demand Power Automate flow definitions via HTTP GET, reducing flow creation from 15 minutes to 2 minutes.
+- **Self-Service Registration** allows clinicians to register forms via a simple 3-question Microsoft Form. A Power Automate flow calls the `register-form` endpoint, which auto-activates non-PHI forms and routes PHI forms to IT for review via Teams notification. IT activates PHI forms by calling the `activate-form` endpoint after classifying sensitive fields.
 - **Registry Management CLI** (`scripts/manage_registry.py`) validates and manages `form-registry.json` entries.
 - **Key Rotation Script** (`scripts/rotate_function_key.py`) automates function key rotation with zero-downtime.
 

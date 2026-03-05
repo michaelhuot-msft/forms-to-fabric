@@ -1,0 +1,269 @@
+{
+  "_documentation": {
+    "description": "Reference template for the Self-Service Registration Power Automate flow. Clinicians fill out a 3-question 'Register Your Form' Microsoft Form, and this flow calls the register-form API endpoint. Based on the response, it either sends a confirmation email (non-PHI) or posts a Teams review notification (PHI). This is NOT an importable flow definition — use it as a guide to manually recreate the flow in Power Automate.",
+    "version": "1.0.0",
+    "last_updated": "2025-07-15",
+    "related_files": [
+      "docs/registration-form-template.md — the Microsoft Form that triggers this flow",
+      "power-automate/flow-template-keyvault.json — the response-processing flow (separate)",
+      "docs/admin-guide.md — IT review and activation steps for PHI forms"
+    ],
+    "notes": [
+      "This flow handles form REGISTRATION, not form RESPONSE processing. It is a separate flow from the per-form response flows.",
+      "The registration form asks three questions: (1) form share link, (2) description, (3) whether it collects patient information.",
+      "Non-PHI forms are activated automatically — the clinician receives an email confirmation within seconds.",
+      "PHI forms are set to 'pending_review' — IT receives a Teams adaptive card and must review and activate manually.",
+      "The register-form endpoint creates the form-registry.json entry; the activate-form endpoint transitions status from pending_review to active.",
+      "Ensure the Azure Function URL and key are obtained from azd deployment outputs before configuring the flow."
+    ]
+  },
+  "flow_name": "Forms-to-Fabric: Register New Form",
+  "trigger": {
+    "type": "When a new response is submitted",
+    "connector": "Microsoft Forms",
+    "_comment_trigger": "This trigger fires each time a clinician submits a new response to the 'Register Your Form' registration form. This is NOT the clinician's data-collection form — it is the internal registration form that onboards new forms into the pipeline.",
+    "_comment_setup": "When configuring, select the 'Register Your Form' form from the 'Form Id' dropdown. The form must be owned by or shared with the connection account. See docs/registration-form-template.md for the form setup instructions.",
+    "inputs": {
+      "form_id": "@{parameters('REGISTRATION_FORM_ID')}"
+    }
+  },
+  "actions": [
+    {
+      "order": 1,
+      "name": "Get_response_details",
+      "display_name": "Get response details",
+      "type": "OpenApiConnection",
+      "connector": "Microsoft Forms",
+      "_comment": "Retrieves the full response from the registration form. The three answers map to: question1 = form share link, question2 = description, question3 = 'Yes' or 'No' for patient information. The respondent email is also captured for sending confirmation.",
+      "inputs": {
+        "form_id": "@{triggerOutputs()?['body/formId']}",
+        "response_id": "@{triggerOutputs()?['body/responseId']}"
+      }
+    },
+    {
+      "order": 2,
+      "name": "Get_secret",
+      "display_name": "Get secret — function-app-key",
+      "type": "OpenApiConnection",
+      "connector": "Azure Key Vault",
+      "_comment": "Reads the current function app host key from Key Vault at runtime. This is the same Key Vault secret used by the response-processing flows. When keys are rotated via rotate_function_key.py, this flow automatically picks up the new value.",
+      "inputs": {
+        "vault_name": "@{parameters('KEY_VAULT_NAME')}",
+        "secret_name": "function-app-key"
+      },
+      "run_after": "Get_response_details",
+      "_setup_notes": [
+        "1. Add the 'Get secret' action from the Azure Key Vault connector (premium).",
+        "2. Select or create a connection to Key Vault with GET secret permissions.",
+        "3. Set the vault name to the Key Vault deployed by the Bicep template.",
+        "4. Set the secret name to 'function-app-key'."
+      ]
+    },
+    {
+      "order": 3,
+      "name": "Call_Register_Form",
+      "display_name": "HTTP — POST /api/register-form",
+      "type": "Http",
+      "_comment": "Calls the register-form endpoint with the clinician's registration answers. The endpoint creates a form-registry entry and returns a status: 'active' (non-PHI, auto-activated) or 'pending_review' (PHI, requires IT review). The response also includes form_id, form_name, and a message.",
+      "inputs": {
+        "method": "POST",
+        "uri": "@{parameters('AZURE_FUNCTION_URL')}/api/register-form",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-functions-key": "@{body('Get_secret')?['value']}"
+        },
+        "body": {
+          "form_url": "@{outputs('Get_response_details')?['body/question1_answer']}",
+          "description": "@{outputs('Get_response_details')?['body/question2_answer']}",
+          "has_phi": "@{if(equals(outputs('Get_response_details')?['body/question3_answer'], 'Yes'), true, false)}"
+        }
+      },
+      "run_after": "Get_secret"
+    },
+    {
+      "order": 4,
+      "name": "Check_HTTP_status",
+      "display_name": "Condition — Check HTTP success",
+      "type": "If",
+      "_comment": "First, check whether the HTTP call itself succeeded (status 200). If it failed (e.g., 400 bad request, 500 server error), skip to error handling. If it succeeded, proceed to check the registration status in the response body.",
+      "expression": {
+        "equals": [
+          "@{outputs('Call_Register_Form')?['statusCode']}",
+          200
+        ]
+      },
+      "if_true": {
+        "_comment": "HTTP call succeeded — now check the registration status to determine next steps.",
+        "action": "Check_registration_status"
+      },
+      "if_false": {
+        "_comment": "HTTP call failed — send error notification to admin.",
+        "action": "Send_error_notification"
+      },
+      "run_after": "Call_Register_Form"
+    },
+    {
+      "order": 5,
+      "name": "Check_registration_status",
+      "display_name": "Switch — Registration status",
+      "type": "Switch",
+      "_comment": "Evaluates the 'status' field from the register-form API response. The endpoint returns 'active' for non-PHI forms (auto-activated) or 'pending_review' for forms that collect patient information (requires IT review before activation).",
+      "expression": "@{body('Call_Register_Form')?['status']}",
+      "cases": {
+        "active": {
+          "_comment": "Non-PHI form — automatically activated. Send confirmation email to the clinician.",
+          "action": "Send_confirmation_email"
+        },
+        "pending_review": {
+          "_comment": "PHI form — requires IT review. Post an adaptive card to the IT Teams channel.",
+          "action": "Send_Teams_review_notification"
+        }
+      },
+      "default": {
+        "_comment": "Unexpected status value — treat as an error.",
+        "action": "Send_error_notification"
+      },
+      "run_after": "Check_HTTP_status"
+    },
+    {
+      "order": 6,
+      "name": "Send_confirmation_email",
+      "display_name": "Send an email (V2) — Registration confirmed",
+      "type": "OpenApiConnection",
+      "connector": "Office 365 Outlook",
+      "_comment": "Sends a confirmation email to the clinician who submitted the registration. This email is only sent when the form does NOT collect patient information and was auto-activated. The clinician can start distributing their form immediately.",
+      "inputs": {
+        "to": "@{outputs('Get_response_details')?['body/responder']}",
+        "subject": "Your form has been registered!",
+        "body": "<p>Hi there,</p><p>Great news — your form <strong>'@{body('Call_Register_Form')?['form_name']}'</strong> is now connected to the analytics pipeline.</p><p>Responses will appear in your dashboard within minutes of being submitted. You can start sharing your form right away.</p><p><strong>What's next:</strong></p><ul><li>Share your form link with respondents</li><li>View results at <a href='https://app.powerbi.com'>app.powerbi.com</a> once responses come in</li></ul><p>If you have any questions, reply to this email or reach out to our support team.</p>",
+        "importance": "Normal"
+      },
+      "run_after": "Check_registration_status"
+    },
+    {
+      "order": 7,
+      "name": "Send_Teams_review_notification",
+      "display_name": "Post adaptive card in a chat or channel — Review required",
+      "type": "OpenApiConnection",
+      "connector": "Microsoft Teams",
+      "_comment": "Posts an adaptive card to the IT review Teams channel when a PHI form is registered. The card shows the form details and includes a button linking to the admin guide for review steps. IT must review the form, classify PHI fields with de-id methods, and call POST /api/activate-form to activate it.",
+      "inputs": {
+        "channel_id": "@{parameters('IT_REVIEW_CHANNEL_ID')}",
+        "team_id": "@{parameters('IT_REVIEW_TEAM_ID')}",
+        "adaptive_card": {
+          "type": "AdaptiveCard",
+          "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+          "version": "1.4",
+          "body": [
+            {
+              "type": "TextBlock",
+              "text": "New Form Registration — Review Required",
+              "weight": "Bolder",
+              "size": "Medium",
+              "color": "Attention"
+            },
+            {
+              "type": "FactSet",
+              "facts": [
+                {
+                  "title": "Form Name",
+                  "value": "@{body('Call_Register_Form')?['form_name']}"
+                },
+                {
+                  "title": "Form URL",
+                  "value": "@{outputs('Get_response_details')?['body/question1_answer']}"
+                },
+                {
+                  "title": "Submitted By",
+                  "value": "@{outputs('Get_response_details')?['body/responder']}"
+                },
+                {
+                  "title": "Form ID",
+                  "value": "@{body('Call_Register_Form')?['form_id']}"
+                }
+              ]
+            },
+            {
+              "type": "TextBlock",
+              "text": "This form collects patient information. Please review the form questions and classify PHI fields with appropriate de-identification methods before activating.",
+              "wrap": true,
+              "spacing": "Medium"
+            }
+          ],
+          "actions": [
+            {
+              "type": "Action.OpenUrl",
+              "title": "Review in Admin Guide",
+              "url": "@{parameters('ADMIN_GUIDE_URL')}"
+            }
+          ]
+        }
+      },
+      "run_after": "Check_registration_status"
+    },
+    {
+      "order": 8,
+      "name": "Send_error_notification",
+      "display_name": "Send an email (V2) — Registration error",
+      "type": "OpenApiConnection",
+      "connector": "Office 365 Outlook",
+      "_comment": "Sends an error notification to the admin when the register-form API call fails. Includes the HTTP status code, error details, and the original registration submission for debugging. The clinician is NOT notified of the error — only admin is alerted.",
+      "inputs": {
+        "to": "@{parameters('ADMIN_NOTIFICATION_EMAIL')}",
+        "subject": "Form Registration Error: @{outputs('Get_response_details')?['body/question1_answer']}",
+        "body": "<p><strong>Form Registration Error</strong></p><p>A self-service form registration failed to process.</p><p><strong>Submitted By:</strong> @{outputs('Get_response_details')?['body/responder']}</p><p><strong>Form URL:</strong> @{outputs('Get_response_details')?['body/question1_answer']}</p><p><strong>Description:</strong> @{outputs('Get_response_details')?['body/question2_answer']}</p><p><strong>Has PHI:</strong> @{outputs('Get_response_details')?['body/question3_answer']}</p><p><strong>Timestamp:</strong> @{utcNow()}</p><p><strong>HTTP Status Code:</strong> @{outputs('Call_Register_Form')?['statusCode']}</p><p><strong>Error Details:</strong></p><pre>@{body('Call_Register_Form')}</pre><p>Please investigate and manually register the form if needed.</p>",
+        "importance": "High"
+      },
+      "run_after": "Check_HTTP_status"
+    }
+  ],
+  "parameters": {
+    "AZURE_FUNCTION_URL": {
+      "type": "string",
+      "description": "The base URL of the Azure Function App (e.g., https://<function-app-name>.azurewebsites.net). Do NOT include the /api/register-form path — the flow appends it. Obtain from 'azd env get-values' after deployment."
+    },
+    "KEY_VAULT_NAME": {
+      "type": "string",
+      "description": "Name of the Azure Key Vault that stores the function app host key (e.g., kv-forms-dev). The Key Vault connector connection must have GET secret permission."
+    },
+    "REGISTRATION_FORM_ID": {
+      "type": "string",
+      "description": "The unique identifier of the 'Register Your Form' Microsoft Form. This is the registration intake form, NOT a clinician data-collection form. Found in the Form URL or the Forms admin portal."
+    },
+    "ADMIN_NOTIFICATION_EMAIL": {
+      "type": "string",
+      "description": "Email address that receives registration error notifications. Should be a monitored shared mailbox or distribution list (e.g., forms-admin@contoso.com)."
+    },
+    "IT_REVIEW_TEAM_ID": {
+      "type": "string",
+      "description": "The Microsoft Teams team ID where PHI review notifications are posted. Find this in Teams admin center or via the Teams connector setup in Power Automate."
+    },
+    "IT_REVIEW_CHANNEL_ID": {
+      "type": "string",
+      "description": "The Microsoft Teams channel ID within the IT review team. This channel receives adaptive card notifications for forms that require PHI review."
+    },
+    "ADMIN_GUIDE_URL": {
+      "type": "string",
+      "description": "URL to the admin guide's self-service registration section. Used in the Teams adaptive card 'Review in Admin Guide' button. Can be a SharePoint-hosted copy or a GitHub Pages URL."
+    }
+  },
+  "setup_instructions": [
+    "1. Create the 'Register Your Form' Microsoft Form using the template in docs/registration-form-template.md.",
+    "2. Deploy the Azure Function and infrastructure using 'azd up'. Ensure the register-form and activate-form endpoints are deployed.",
+    "3. Run the key rotation script to populate Key Vault: python scripts/rotate_function_key.py --function-app <name> --resource-group <rg> --key-vault <vault>",
+    "4. Open Power Automate (https://make.powerautomate.com) and create a new Automated Cloud Flow.",
+    "5. Select the 'When a new response is submitted' trigger from the Microsoft Forms connector.",
+    "6. In the trigger, select the 'Register Your Form' form from the 'Form Id' dropdown.",
+    "7. Add a 'Get response details' action (Microsoft Forms connector). Set Form Id and Response Id to reference the trigger outputs.",
+    "8. Add a 'Get secret' action from the Azure Key Vault connector. Set the vault name and secret name to 'function-app-key'.",
+    "9. Add an 'HTTP' action. Set method to POST, URI to <function-app-url>/api/register-form, add Content-Type and x-functions-key headers, and configure the JSON body with question1 (form_url), question2 (description), and question3 (has_phi with Yes/No to boolean conversion).",
+    "10. Add a 'Condition' action to check if the HTTP status code equals 200.",
+    "11. In the 'If yes' branch, add a 'Switch' action on body('Call_Register_Form')?['status'].",
+    "12. In the 'active' case, add a 'Send an email (V2)' action (Office 365 Outlook) with the confirmation email template.",
+    "13. In the 'pending_review' case, add a 'Post adaptive card in a chat or channel' action (Microsoft Teams) with the review notification template.",
+    "14. In the 'If no' branch (HTTP error), add a 'Send an email (V2)' action with the error notification template.",
+    "15. Configure all parameters: Function URL, Key Vault name, registration form ID, admin email, Teams team/channel IDs, and admin guide URL.",
+    "16. Save the flow and test by submitting a test registration (once without PHI, once with PHI) to verify both paths work correctly.",
+    "17. Verify: non-PHI registration sends confirmation email; PHI registration posts Teams adaptive card to IT channel."
+  ]
+}

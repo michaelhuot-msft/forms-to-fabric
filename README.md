@@ -17,6 +17,7 @@ graph LR
 - **Two-layer security**: Raw data (restricted) + curated data (de-identified)
 - **Self-service reporting**: Power BI dashboard with DirectLake mode
 - **Automated monitoring**: Schema change detection and RBAC compliance audits run on schedule
+- **Self-service registration**: Clinicians register forms via a simple 3-question form — no email or IT ticket required for non-PHI forms
 - **Admin CLI tools**: Registry management, key rotation, and flow generation scripts reduce manual work by 75%
 
 ## Getting Started

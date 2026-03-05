@@ -8,4 +8,9 @@ param tags = {
   managedBy: 'bicep'
 }
 
+// Option A: Create a new Fabric capacity for dev
+param fabricCapacityName = 'forms-to-fabric-dev'
 param fabricAdminMembers = ['your-admin@yourdomain.com']
+
+// Option B: Use an existing capacity (uncomment and set, remove Option A params)
+// param existingFabricCapacityId = '/subscriptions/<sub-id>/resourceGroups/<rg>/providers/Microsoft.Fabric/capacities/<name>'

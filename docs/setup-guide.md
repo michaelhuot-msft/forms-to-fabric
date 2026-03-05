@@ -12,7 +12,7 @@ Before you begin, ensure you have the following:
 |---|---|
 | **Azure subscription** | Contributor access (or higher) on the target subscription |
 | **Microsoft 365 account** | Organizational account with access to Microsoft Forms |
-| **Microsoft Fabric capacity** | F2 or higher, or Power BI Premium P1 capacity |
+| **Microsoft Fabric capacity** | F2 or higher — either an existing capacity OR the Bicep template creates one for you |
 | **Azure Developer CLI (`azd`)** | v1.5 or later — [install instructions](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) |
 | **Python** | 3.10 or later |
 | **Git** | Any recent version |

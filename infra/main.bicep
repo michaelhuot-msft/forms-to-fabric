@@ -19,15 +19,18 @@ param onelakeEndpoint string = 'https://onelake.dfs.fabric.microsoft.com'
 @description('Path inside the storage container where the form-registry configuration is stored.')
 param formRegistryPath string = 'form-registry/registry.json'
 
-@description('Name of the Fabric capacity. Leave empty to skip capacity provisioning.')
-param fabricCapacityName string = 'forms-to-fabric-${environmentName}'
+@description('Name of the Fabric capacity to create. Leave empty to skip capacity provisioning (use existingFabricCapacityId instead).')
+param fabricCapacityName string = ''
 
-@description('Fabric SKU (F2, F4, F8, F16, F32, F64).')
+@description('Resource ID of an existing Fabric capacity. Use this if your organization already has a capacity. Leave empty to create a new one.')
+param existingFabricCapacityId string = ''
+
+@description('Fabric SKU (F2, F4, F8, F16, F32, F64). Only used when creating a new capacity.')
 @allowed(['F2', 'F4', 'F8', 'F16', 'F32', 'F64'])
 param fabricSkuName string = 'F2'
 
-@description('Entra ID of the Fabric capacity admin(s).')
-param fabricAdminMembers array
+@description('Entra ID of the Fabric capacity admin(s). Only used when creating a new capacity.')
+param fabricAdminMembers array = []
 
 // ──────────────────────────────────────────────
 // Variables
@@ -72,7 +75,8 @@ module functionApp 'modules/function-app.bicep' = {
   }
 }
 
-module fabricCapacity 'modules/fabric-capacity.bicep' = {
+// Fabric capacity — only deploy if creating a new one (fabricCapacityName is set)
+module fabricCapacity 'modules/fabric-capacity.bicep' = if (!empty(fabricCapacityName)) {
   name: 'fabricCapacity'
   params: {
     capacityName: fabricCapacityName
@@ -116,11 +120,11 @@ output storageAccountName string = storage.outputs.storageAccountName
 @description('Resource ID of Application Insights.')
 output appInsightsId string = appInsights.outputs.appInsightsId
 
-@description('Resource ID of the Fabric capacity.')
-output fabricCapacityId string = fabricCapacity.outputs.capacityId
+@description('Resource ID of the Fabric capacity (new or existing).')
+output fabricCapacityId string = !empty(fabricCapacityName) ? fabricCapacity.outputs.capacityId : existingFabricCapacityId
 
 @description('Name of the Fabric capacity.')
-output fabricCapacityName string = fabricCapacity.outputs.capacityName
+output fabricCapacityOutputName string = !empty(fabricCapacityName) ? fabricCapacity.outputs.capacityName : 'existing'
 
 @description('Principal ID of the Function App managed identity.')
 output functionAppPrincipalId string = functionApp.outputs.principalId

@@ -233,3 +233,59 @@ The system uses multiple layers of security:
 - **Data residency** — all data remains within the organization's Microsoft 365 tenant and configured geographic region
 
 For full security documentation, refer to the [security and compliance guide](security-compliance.md).
+
+---
+
+### Is there a tool to manage form registrations without editing JSON?
+
+Yes! The `manage_registry.py` CLI tool provides validated commands for adding forms, adding fields, and checking your configuration:
+
+```bash
+# Add a new form
+python scripts/manage_registry.py add-form --form-id "my-form-id" --form-name "My Survey" --target-table "my_survey"
+
+# Add a field with PHI protection
+python scripts/manage_registry.py add-field --form-id "my-form-id" --question-id "q1" --field-name "patient_name" --contains-phi --deid-method "redact"
+
+# Validate the entire registry
+python scripts/manage_registry.py validate
+
+# List all registered forms
+python scripts/manage_registry.py list
+```
+
+This prevents JSON syntax errors and catches configuration mistakes before deployment.
+
+---
+
+### How do I quickly set up a Power Automate flow for a new form?
+
+Use the flow generator endpoint instead of building flows manually:
+
+1. Call: `GET https://<function-app>/api/generate-flow?form_id=<your-form-id>`
+2. Save the returned JSON as a `.json` file
+3. In Power Automate, go to **My flows** → **Import** → upload the file
+4. Configure your Forms and Key Vault connections
+5. Save and enable the flow
+
+This reduces setup from ~15 minutes to ~2 minutes and eliminates common configuration errors.
+
+---
+
+### What happens if a clinician changes their form without telling IT?
+
+The system automatically detects form changes. A scheduled function runs every 6 hours and compares each registered form's current structure against the pipeline configuration. If questions have been added, removed, or renamed, IT is alerted via Application Insights (and optionally by email).
+
+This prevents silent data loss that would otherwise occur if new questions aren't captured by the pipeline.
+
+---
+
+### How are function keys rotated without breaking the pipeline?
+
+Use the automated key rotation script:
+
+```bash
+python scripts/rotate_function_key.py --function-app <name> --resource-group <rg> --key-vault <vault>
+```
+
+This generates a new key, stores it in Key Vault, and all Power Automate flows using the Key Vault–integrated template automatically pick up the new key. No manual flow updates are needed.

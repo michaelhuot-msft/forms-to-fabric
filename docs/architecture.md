@@ -58,6 +58,32 @@ graph TB
 | **Storage Account** | Function infrastructure | Provides the backing store required by the Azure Functions runtime. Also used for deployment artifacts managed by `azd`. |
 | **Microsoft Fabric Lakehouse** | Analytical data store | Two-layer architecture (raw + curated) built on OneLake. Data stored in Delta Lake format for ACID transactions, time travel, and schema enforcement. |
 | **Power BI** | Reporting and visualization | Connects to the Lakehouse in DirectLake mode for near-real-time queries without data duplication. Supports row-level security for department-scoped access. |
+| **Schema Monitor** (`monitor_schema`) | Automated compliance | Timer-triggered function (every 6 hours) that polls Microsoft Graph API to detect form structure changes. Alerts admins when clinicians add, remove, or rename questions. |
+| **RBAC Auditor** (`audit_rbac`) | Access compliance | Daily timer-triggered function that audits Fabric workspace role assignments. Flags any non-admin user with access to raw (PHI) layer and logs violations to Application Insights. |
+| **Flow Generator** (`generate_flow`) | Admin automation | HTTP endpoint that generates importable Power Automate flow definitions for registered forms, reducing manual flow creation from 15 minutes to 2 minutes. |
+
+---
+
+## Administrative Automation
+
+Three automated functions run alongside the core processing pipeline to reduce manual administration:
+
+- **Schema Monitor** detects form structure changes every 6 hours by polling the Microsoft Graph API.
+- **RBAC Auditor** checks Fabric workspace access daily at 8 AM UTC and flags unauthorized raw-layer access.
+- **Flow Generator** provides on-demand Power Automate flow definitions via HTTP GET, reducing flow creation from 15 minutes to 2 minutes.
+- **Registry Management CLI** (`scripts/manage_registry.py`) validates and manages `form-registry.json` entries.
+- **Key Rotation Script** (`scripts/rotate_function_key.py`) automates function key rotation with zero-downtime.
+
+```mermaid
+graph LR
+    subgraph "Automated Admin Functions"
+        SM[Schema Monitor<br/>Every 6 hours] -->|polls| GRAPH[Microsoft Graph API]
+        RA[RBAC Auditor<br/>Daily 8 AM] -->|checks| FABRIC[Fabric Workspace]
+        FG[Flow Generator<br/>On demand] -->|generates| PA[Power Automate Definitions]
+    end
+    SM -->|alerts| AI[Application Insights]
+    RA -->|alerts| AI
+```
 
 ---
 

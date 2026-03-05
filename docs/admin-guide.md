@@ -19,6 +19,46 @@ flowchart LR
 
 ## Registering a New Form
 
+### Recommended: Use the Registry CLI
+
+The `manage_registry.py` CLI tool provides a validated, error-proof way to manage form registrations. It prevents common mistakes like JSON syntax errors, duplicate form IDs, and missing de-identification settings.
+
+**Add a new form:**
+
+```bash
+python scripts/manage_registry.py add-form \
+  --form-id "abc123-def456" \
+  --form-name "Patient Satisfaction Survey" \
+  --target-table "patient_satisfaction"
+```
+
+**Add fields to the form:**
+
+```bash
+python scripts/manage_registry.py add-field \
+  --form-id "abc123-def456" \
+  --question-id "q1" \
+  --field-name "patient_name" \
+  --contains-phi \
+  --deid-method "redact"
+```
+
+**Validate the registry:**
+
+```bash
+python scripts/manage_registry.py validate
+```
+
+**List all registered forms:**
+
+```bash
+python scripts/manage_registry.py list
+```
+
+> **Tip:** Always run `validate` before deploying. The CLI catches syntax errors, missing fields, and configuration conflicts that would break the pipeline.
+
+If you prefer to edit the JSON directly, follow the manual steps below.
+
 ### Step 1: Get the Form ID from Microsoft Forms
 
 1. Open [Microsoft Forms](https://forms.office.com) and navigate to the target form.
@@ -343,6 +383,61 @@ union requests, dependencies, exceptions
 2. Select the flow for the form in question.
 3. Click **Run history** to see recent executions, status, and duration.
 4. Click a failed run to see which step failed and the error message.
+
+### Automated Schema Change Detection
+
+The `monitor_schema` function runs every 6 hours and automatically detects when clinicians modify their forms. It compares the live form structure (via Microsoft Graph API) against the registered configuration in `form-registry.json`.
+
+**What it detects:**
+- **Added questions** — new questions not yet in the registry
+- **Removed questions** — questions in the registry that no longer exist in the form
+- **Renamed questions** — same question ID but different title text
+
+**When changes are detected:**
+- A warning is logged to Application Insights (searchable via the KQL queries above)
+- If `ADMIN_ALERT_EMAIL` is configured, an email notification is sent
+
+**KQL query to find schema change alerts:**
+
+```kql
+traces
+| where message contains "schema change detected"
+| where timestamp > ago(7d)
+| extend formId = tostring(customDimensions["form_id"])
+| project timestamp, formId, message
+| order by timestamp desc
+```
+
+**What to do when changes are detected:**
+1. Review the change report in Application Insights
+2. Update `form-registry.json` using the CLI: `python scripts/manage_registry.py add-field ...`
+3. Classify any new fields for sensitivity and de-identification
+4. Deploy: `azd deploy`
+5. Test with a sample submission
+
+### Automated RBAC Compliance Audit
+
+The `audit_rbac` function runs daily at 8:00 AM UTC and verifies that Fabric workspace access controls are correctly configured.
+
+**What it checks:**
+- Only the allowed admin group (configured via `ALLOWED_RAW_ACCESS_GROUP` env var) has Contributor/Member/Admin access to the workspace
+- The Function App's managed identity is allowed (required for data writes)
+- Viewer-role assignments are not flagged (read-only access to curated data is expected)
+
+**When violations are detected:**
+- A WARNING-level log is written to Application Insights with the violating principal's details
+- Configure an Application Insights alert rule on these warnings for real-time notification
+
+**KQL query to find RBAC violations:**
+
+```kql
+traces
+| where severityLevel >= 2
+| where message contains "RBAC violation"
+| where timestamp > ago(30d)
+| project timestamp, message, customDimensions
+| order by timestamp desc
+```
 
 ---
 

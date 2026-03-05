@@ -288,6 +288,8 @@ Body template:
 
 Refer to `power-automate/flow-template.json` for the exact connector configuration and expression syntax.
 
+> **Zero-downtime key rotation:** For production deployments, use the Key Vault–integrated flow template at `power-automate/flow-template-keyvault.json`. This template reads the function key from Key Vault at runtime, so key rotations don't require updating any flows. See the [Admin Guide](admin-guide.md#rotating-secrets-in-key-vault) for details.
+
 ---
 
 ## Step 6: Register Your First Form
@@ -299,6 +301,14 @@ The function app uses `config/form-registry.json` to determine how to process ea
 ```bash
 code config/form-registry.json
 ```
+
+> **Recommended:** Instead of editing JSON manually, use the registry CLI:
+> ```bash
+> python scripts/manage_registry.py add-form --form-id "abc123def456" --form-name "Patient Intake Survey" --target-table "patient_intake"
+> python scripts/manage_registry.py add-field --form-id "abc123def456" --question-id "r1" --field-name "patient_name" --contains-phi --deid-method "redact"
+> python scripts/manage_registry.py validate
+> ```
+> See the [Admin Guide](admin-guide.md) for full CLI documentation.
 
 ### 6.2 Add a new form entry
 

@@ -48,11 +48,11 @@ Configure the form with the following settings:
 | **Description** | Use this form to connect your Microsoft Form to the analytics dashboard. It takes about 1 minute. |
 | **Who can fill it out** | Only people in my organization |
 | **Accept responses** | On |
-| **Show confirmation message** | See below |
+| **Customize thank you message** | See below |
 
-### Confirmation Message
+### Thank You Message
 
-Paste the following as the confirmation message:
+In the form settings, enable **Customize thank you message** and paste:
 
 > Thank you! Your form has been submitted for registration. If it doesn't collect patient info, it will be set up automatically. If it does, your organization's IT team will review it within 1–2 business days.
 

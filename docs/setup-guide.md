@@ -25,10 +25,10 @@
 |------|------|-----|------|
 | 1 | Clone the repo | `git clone` | 1 min |
 | 2 | Set up environment + Fabric | `Setup-Environment.ps1` | ~10 min |
-| 3 | Deploy Azure infrastructure | `azd up` | ~15 min |
-| 4 | Create Power Automate flow | Import template | ~10 min |
-| 5 | Register and test a form | CLI or self-service | ~10 min |
-| 6 | Configure Power BI | Connect to Lakehouse | ~10 min |
+| 3 | Deploy Azure infrastructure | `azd up` + `Post-Deploy.ps1` | ~15 min |
+| 4 | Connect your first form | Create form → register → PA flow → test | ~15 min |
+| 5 | Configure Power BI | Connect to Lakehouse | ~10 min |
+| 6 | Set up self-service registration | Optional | ~15 min |
 
 ---
 
@@ -152,12 +152,34 @@ This automatically:
 
 ---
 
-## Step 4: Create the Power Automate Flow
+## Step 4: Connect Your First Form
 
-This flow triggers when someone submits a Microsoft Form response and sends it to the Azure Function for processing.
+### 4.1 Create or choose a Microsoft Form
+
+If you don't have a form yet, create one at [forms.microsoft.com](https://forms.microsoft.com). Even a simple 2–3 question test form works.
+
+### 4.2 Register the form in the pipeline
+
+```powershell
+# Register — just paste the form URL
+python scripts/manage_registry.py add-form --form-url "https://forms.office.com/..."
+
+# For forms with patient info, classify PHI fields
+python scripts/manage_registry.py add-field --form-id "<id>" --question-id "q1" --field-name "patient_name" --contains-phi --deid-method "redact"
+
+# Validate and deploy
+python scripts/manage_registry.py validate
+azd deploy
+```
+
+Or use self-service registration if Step 6 is set up.
+
+### 4.3 Create the Power Automate flow
+
+This flow triggers on each form submission and sends the response to the Azure Function.
 
 1. Go to [flow.microsoft.com](https://flow.microsoft.com) → **+ Create** → **Automated cloud flow**
-2. Trigger: **When a new response is submitted** (Microsoft Forms) → select your form
+2. Trigger: **When a new response is submitted** (Microsoft Forms) → select the form you just registered
 3. Action: **Get response details** → same form, Response Id from trigger
 4. Action: **HTTP POST** to your Function App:
 
@@ -173,30 +195,7 @@ This flow triggers when someone submits a Microsoft Form response and sends it t
 
 > **Tip:** For production, use `power-automate/flow-template-keyvault.json` which reads the function key from Key Vault at runtime — zero-downtime key rotation.
 
----
-
-## Step 5: Register and Test a Form
-
-**Option A: Self-service** (if Step 6 is set up)
-- Fill out the registration form with your form's URL
-
-**Option B: CLI**
-
-```powershell
-# Register the form
-python scripts/manage_registry.py add-form --form-url "https://forms.office.com/..."
-
-# Add field classifications (for PHI forms)
-python scripts/manage_registry.py add-field --form-id "<id>" --question-id "q1" --field-name "patient_name" --contains-phi --deid-method "redact"
-
-# Validate
-python scripts/manage_registry.py validate
-
-# Deploy updated config
-azd deploy
-```
-
-**Test end-to-end:**
+### 4.4 Test end-to-end
 
 1. Submit a test response via your Microsoft Form
 2. Check Power Automate → flow run history → should show Succeeded
@@ -206,7 +205,7 @@ azd deploy
 
 ---
 
-## Step 6: Configure Power BI (Optional)
+## Step 5: Configure Power BI (Optional)
 
 1. Open Power BI → Get data → Microsoft Fabric → Lakehouses
 2. Select your workspace and Lakehouse
@@ -216,7 +215,7 @@ azd deploy
 
 ---
 
-## Step 7: Set Up Self-Service Registration (Optional)
+## Step 6: Set Up Self-Service Registration (Optional)
 
 Lets clinicians register their own forms via a simple 3-question form.
 

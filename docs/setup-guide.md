@@ -122,7 +122,7 @@ az group create --name rg-forms-to-fabric-dev --location canadaeast
 az deployment group create \
   --resource-group rg-forms-to-fabric-dev \
   --template-file infra/modules/fabric-capacity.bicep \
-  --parameters capacityName=forms-to-fabric-dev skuName=F2 adminMembers='["you@yourdomain.com"]'
+  --parameters capacityName=forms-to-fabric-dev skuName=F2 adminMembers="[\"$(azd env get-value ADMIN_EMAIL)\"]"
 
 # 3. Create the workspace and Lakehouse:
 pwsh scripts/Setup-FabricWorkspace.ps1 -CapacityId "<capacity-id>"

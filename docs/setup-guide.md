@@ -110,7 +110,7 @@ azd env set ADMIN_EMAIL admin@yourdomain.com
 
 A PowerShell script creates the workspace and Lakehouse via the Fabric REST API. It is idempotent — safe to run multiple times.
 
-```bash
+```powershell
 # 1. Log in to Azure CLI
 az login
 
@@ -118,14 +118,15 @@ az login
 #    First, create a resource group (azd up will also use this later):
 az group create --name rg-forms-to-fabric-dev --location canadaeast
 
-#    Then provision the capacity:
-az deployment group create \
-  --resource-group rg-forms-to-fabric-dev \
-  --template-file infra/modules/fabric-capacity.bicep \
-  --parameters capacityName=forms-to-fabric-dev skuName=F2 adminMembers="[\"$(azd env get-value ADMIN_EMAIL)\"]"
+#    Then provision the capacity (uses the admin email from Step 2):
+$adminEmail = azd env get-value ADMIN_EMAIL
+az deployment group create `
+  --resource-group rg-forms-to-fabric-dev `
+  --template-file infra/modules/fabric-capacity.bicep `
+  --parameters capacityName=forms-to-fabric-dev skuName=F2 adminMembers="['$adminEmail']"
 
 # 3. Create the workspace and Lakehouse:
-pwsh scripts/Setup-FabricWorkspace.ps1 -CapacityId "<capacity-id>"
+pwsh scripts/Setup-FabricWorkspace.ps1 -CapacityId "<capacity-id-from-output>"
 
 # Omit -CapacityId if the workspace should use the default/existing capacity:
 # pwsh scripts/Setup-FabricWorkspace.ps1

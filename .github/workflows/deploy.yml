@@ -91,13 +91,67 @@ jobs:
       - name: Run Ruff formatter check
         run: ruff format --check src/functions/ tests/
 
+  # ── Bicep Validation ──────────────────────────────────────────────────
+  bicep:
+    name: Validate Bicep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Azure CLI
+        uses: azure/cli@v2
+        with:
+          inlineScript: az bicep version
+
+      - name: Lint Bicep templates
+        run: az bicep build --file infra/main.bicep --stdout > /dev/null
+
+  # ── Schema Validation ────────────────────────────────────────────────
+  schema:
+    name: Validate Registry Schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install jsonschema
+        run: pip install jsonschema
+
+      - name: Validate form-registry.json against schema
+        run: |
+          python -c "
+          import json, jsonschema
+          with open('config/form-registry.json') as f: data = json.load(f)
+          with open('config/form-registry.schema.json') as f: schema = json.load(f)
+          jsonschema.validate(data, schema)
+          print('✅ form-registry.json is valid')
+          "
+
+  # ── Credential Scanning ──────────────────────────────────────────────
+  secrets:
+    name: Scan for Secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # ── Deploy ───────────────────────────────────────────────────────────────
-  # Runs ONLY on pushes to main, after both test and lint pass.
+  # Runs ONLY on pushes to main, after all checks pass.
   # PR builds never reach this job thanks to the `if` condition below.
   deploy:
     name: Deploy to Azure
     runs-on: ubuntu-latest
-    needs: [test, lint]
+    needs: [test, lint, bicep, schema, secrets]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment: production
     steps:

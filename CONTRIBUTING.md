@@ -24,6 +24,17 @@ python -m pytest tests/ -v
 
 All tests must pass before a PR will be reviewed.
 
+## CI Checks
+
+All PRs must pass these automated checks:
+
+1. **Python tests** — `python -m pytest tests/ -v`
+2. **Ruff linter** — `ruff check src/functions/ tests/`
+3. **Ruff formatter** — `ruff format --check src/functions/ tests/`
+4. **Bicep validation** — `az bicep build --file infra/main.bicep`
+5. **JSON schema validation** — `config/form-registry.json` validated against `config/form-registry.schema.json`
+6. **Credential scanning** — Gitleaks checks for leaked secrets in all commits
+
 ## Commit Message Format
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/):

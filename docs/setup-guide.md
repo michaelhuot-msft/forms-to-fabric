@@ -202,7 +202,48 @@ Save the **Function App URL** and **function key** — you will need both when c
 
 ## Step 4: Set Up Fabric Workspace and Lakehouse
 
-### 4.1 Create a workspace
+### Option A (Recommended): Automated setup
+
+A PowerShell script creates the workspace and Lakehouse via the Fabric REST API. It is idempotent — safe to run multiple times.
+
+```bash
+# 1. Make sure you are logged in to Azure CLI
+az login
+
+# 2. If you need a NEW Fabric capacity (skip if your org already has one):
+#    The capacity is provisioned automatically by `azd up` via Bicep.
+#    After deployment, grab the capacity ID from the azd output:
+#    FABRIC_CAPACITY_ID=$(az deployment group show \
+#      --resource-group <rg> --name fabricCapacity \
+#      --query properties.outputs.capacityId.value -o tsv)
+
+# 3. Create the workspace and Lakehouse:
+pwsh scripts/Setup-FabricWorkspace.ps1 -CapacityId "<capacity-id>"
+
+# Omit -CapacityId if the workspace should use the default capacity:
+# pwsh scripts/Setup-FabricWorkspace.ps1
+```
+
+The script will:
+
+- Find or create the workspace **Forms to Fabric Analytics**
+- Assign the Fabric capacity (if `-CapacityId` is provided)
+- Find or create the Lakehouse **forms_lakehouse**
+- Grant the Function App managed identity **Contributor** access (if `FUNCTION_APP_PRINCIPAL_ID` is set)
+
+At the end it prints the workspace and Lakehouse IDs. Set them in your azd environment and redeploy:
+
+```bash
+azd env set FABRIC_WORKSPACE_ID <workspace-id>
+azd env set FABRIC_LAKEHOUSE_ID <lakehouse-id>
+azd deploy
+```
+
+### Option B: Manual setup (fallback)
+
+If you prefer to set things up by hand, or if the automated script is not available in your environment:
+
+#### 4.1 Create a workspace
 
 1. Navigate to [Microsoft Fabric](https://app.fabric.microsoft.com).
 2. Click **Workspaces** → **New workspace**.
@@ -210,13 +251,13 @@ Save the **Function App URL** and **function key** — you will need both when c
 4. Under **Advanced**, assign the workspace to your Fabric capacity (F2+ or Premium P1).
 5. Click **Apply**.
 
-### 4.2 Create a Lakehouse
+#### 4.2 Create a Lakehouse
 
 1. Inside the new workspace, click **+ New item** → **Lakehouse**.
 2. Name it `forms_lakehouse`.
 3. Click **Create**.
 
-### 4.3 Note the workspace and Lakehouse IDs
+#### 4.3 Note the workspace and Lakehouse IDs
 
 Both IDs are GUIDs found in the browser URL when you are inside the Lakehouse:
 
@@ -237,7 +278,7 @@ Then re-deploy the function app to pick up the new configuration:
 azd deploy
 ```
 
-### 4.4 Grant the Function App access
+#### 4.4 Grant the Function App access
 
 The Azure Function authenticates to Fabric using its system-assigned managed identity. You must grant this identity access to the workspace:
 
@@ -247,7 +288,7 @@ The Azure Function authenticates to Fabric using its system-assigned managed ide
 4. Assign the **Contributor** role.
 5. Click **Add**.
 
-### 4.5 Initial tables
+#### 4.5 Initial tables
 
 You do **not** need to create tables manually. The `process_response` function automatically creates the required raw and curated tables in the Lakehouse on first run.
 

@@ -175,3 +175,11 @@ jobs:
           AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
           AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
           AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Fabric Workspace
+        if: vars.FABRIC_WORKSPACE_ID == ''
+        run: |
+          pwsh scripts/Setup-FabricWorkspace.ps1 `
+            -CapacityId "${{ vars.FABRIC_CAPACITY_ID }}"
+        env:
+          FUNCTION_APP_PRINCIPAL_ID: ${{ vars.FUNCTION_APP_PRINCIPAL_ID }}

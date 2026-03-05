@@ -85,10 +85,15 @@ A single script handles everything: azd configuration, resource group, Fabric ca
 # Log in to Azure first
 az login
 
-# Run the setup (replace values with your own)
-pwsh scripts/Setup-Environment.ps1 `
-  -SubscriptionId "<your-subscription-id>" `
-  -AdminEmail "you@yourdomain.com"
+# Run the setup — subscription and email are auto-detected from your az login
+pwsh scripts/Setup-Environment.ps1
+```
+
+The script auto-detects your **subscription ID** and **admin email** from your Azure CLI login. Override anything with parameters:
+
+```powershell
+# Example: different region and skip capacity creation
+pwsh scripts/Setup-Environment.ps1 -Location eastus -SkipCapacity
 ```
 
 This will:
@@ -102,10 +107,12 @@ This will:
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
+| `-SubscriptionId` | Auto-detected from `az account show` | Azure subscription ID |
+| `-AdminEmail` | Auto-detected from `az account show` | Fabric capacity admin + notification email |
 | `-EnvironmentName` | `dev` | azd environment name |
 | `-Location` | `canadaeast` | Azure region |
-| `-SkipCapacity` | (off) | Skip Fabric capacity creation |
-| `-CapacityName` | `formstofabricdev` | Capacity name (alphanumeric only) |
+| `-SkipCapacity` | (off) | Skip Fabric capacity creation (use existing) |
+| `-CapacityName` | `formstofabric{env}` | Capacity name (alphanumeric only) |
 | `-FabricSku` | `F2` | Fabric SKU (F2–F64) |
 
 <details>

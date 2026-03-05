@@ -25,17 +25,21 @@
 .EXAMPLE
     pwsh scripts/Setup-Environment.ps1 -SubscriptionId "7a5070f6-..." -AdminEmail "you@org.com"
 .EXAMPLE
-    pwsh scripts/Setup-Environment.ps1 -SubscriptionId "7a5070f6-..." -AdminEmail "you@org.com" -SkipCapacity
+    pwsh scripts/Setup-Environment.ps1
+.EXAMPLE
+    pwsh scripts/Setup-Environment.ps1 -SkipCapacity
+.EXAMPLE
+    pwsh scripts/Setup-Environment.ps1 -SubscriptionId "7a5070f6-..." -AdminEmail "you@org.com"
 #>
 
 param(
     [string]$EnvironmentName = "dev",
     [string]$Location        = "canadaeast",
-    [Parameter(Mandatory)][string]$SubscriptionId,
-    [Parameter(Mandatory)][string]$AdminEmail,
+    [string]$SubscriptionId  = "",
+    [string]$AdminEmail      = "",
     [switch]$SkipCapacity,
-    [string]$CapacityName    = "formstofabric$EnvironmentName",
-    [string]$ResourceGroup   = "rg-forms-to-fabric-$EnvironmentName",
+    [string]$CapacityName    = "",
+    [string]$ResourceGroup   = "",
     [string]$FabricSku       = "F2"
 )
 
@@ -45,7 +49,30 @@ Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "  Forms to Fabric — Environment Setup" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
 
-Write-Host "Configuration:" -ForegroundColor White
+# ── Auto-detect values from Azure CLI if not provided ────────────────────────
+
+if (-not $SubscriptionId) {
+    Write-Host "Detecting subscription ID from Azure CLI..." -ForegroundColor White
+    $SubscriptionId = (az account show --query "id" -o tsv 2>$null)
+    if (-not $SubscriptionId) {
+        throw "Could not detect subscription. Run 'az login' first, or pass -SubscriptionId."
+    }
+    Write-Host "  Found: $SubscriptionId" -ForegroundColor Green
+}
+
+if (-not $AdminEmail) {
+    Write-Host "Detecting admin email from Azure CLI..." -ForegroundColor White
+    $AdminEmail = (az account show --query "user.name" -o tsv 2>$null)
+    if (-not $AdminEmail) {
+        $AdminEmail = Read-Host "Could not auto-detect. Enter your admin email"
+    }
+    Write-Host "  Found: $AdminEmail" -ForegroundColor Green
+}
+
+if (-not $CapacityName) { $CapacityName = "formstofabric$EnvironmentName" }
+if (-not $ResourceGroup) { $ResourceGroup = "rg-forms-to-fabric-$EnvironmentName" }
+
+Write-Host "`nConfiguration:" -ForegroundColor White
 Write-Host "  Environment:    $EnvironmentName"
 Write-Host "  Location:       $Location"
 Write-Host "  Subscription:   $SubscriptionId"

@@ -71,8 +71,11 @@ Once the form is saved in Microsoft Forms, complete these steps to connect it to
 ### Step 1 — Note the Form ID
 
 1. Open the registration form in the Forms editor.
-2. Look at the browser URL — it contains a segment like `FormId=<GUID>`.
-3. Copy the GUID. This is the `registration_form_id` you will configure in Power Automate.
+2. Look at the browser URL — it contains an `id=` parameter:
+   ```
+   https://forms.office.com/Pages/DesignPageV2.aspx?...&id=ePzQbQgk1kOiVUOD-9o_dsPlwRCEj...
+   ```
+3. Copy the value after `id=` (it's a long base64 string, not a short GUID). This is the form ID you will select in the Power Automate trigger.
 
 ### Step 2 — Create (or Update) the Power Automate Flow
 
@@ -83,7 +86,7 @@ Follow the [Power Automate flow template](../power-automate/flow-template.json) 
 3. **Calls the Azure Function** `/api/register` endpoint with the link, description, PHI flag, and submitter info.
 4. **Handles errors** by emailing the IT distribution list (see the [Setup Guide](setup-guide.md) for error-handling patterns).
 
-> **Tip:** The `registration_form_id` must be set in the flow trigger. If you rebuild the registration form, you must update this value in the flow.
+> **Tip:** In Power Automate, you select the form by name from a dropdown — you don't paste the ID. But knowing the ID helps if you need to troubleshoot or rebuild the flow.
 
 ### Step 3 — Test End-to-End
 

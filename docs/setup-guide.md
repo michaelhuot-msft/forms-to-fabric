@@ -115,10 +115,12 @@ A PowerShell script creates the workspace and Lakehouse via the Fabric REST API.
 az login
 
 # 2. If you need a NEW Fabric capacity (skip if your org already has one):
-#    Edit infra/parameters/dev.bicepparam to set fabricCapacityName and fabricAdminMembers,
-#    then provision it:
+#    First, create a resource group (azd up will also use this later):
+az group create --name rg-forms-to-fabric-dev --location canadaeast
+
+#    Then provision the capacity:
 az deployment group create \
-  --resource-group <your-rg> \
+  --resource-group rg-forms-to-fabric-dev \
   --template-file infra/modules/fabric-capacity.bicep \
   --parameters capacityName=forms-to-fabric-dev skuName=F2 adminMembers='["you@yourdomain.com"]'
 

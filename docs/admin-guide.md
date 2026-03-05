@@ -93,7 +93,7 @@ The `manage_registry.py` CLI tool provides a validated, error-proof way to manag
 
 ```bash
 python scripts/manage_registry.py add-form \
-  --form-url "https://forms.office.com/Pages/DesignPageV2.aspx?id=abc123-def456&origin=lprLink"
+  --form-url "https://forms.office.com/Pages/DesignPageV2.aspx?id=aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890ABCDEFG.u&origin=lprLink"
 ```
 
 The form ID, form name, and table name are all derived automatically. Override any of them if needed:
@@ -109,7 +109,7 @@ python scripts/manage_registry.py add-form \
 
 ```bash
 python scripts/manage_registry.py add-field \
-  --form-id "abc123-def456" \
+  --form-id "aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890ABCDEFG.u" \
   --question-id "q1" \
   --field-name "patient_name" \
   --contains-phi \
@@ -137,7 +137,7 @@ If you prefer to edit the JSON directly, follow the manual steps below.
 1. Open [Microsoft Forms](https://forms.office.com) and navigate to the target form.
 2. Click **Share** or look at the browser URL. The Form ID is the GUID in the URL:
    ```
-   https://forms.office.com/Pages/DesignPageV2.aspx?id=abc123-def456&...
+   https://forms.office.com/Pages/DesignPageV2.aspx?id=aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890ABCDEFG.u&...
                                                         ^^^^^^^^^^^^^^
                                                         This is the Form ID
    ```
@@ -153,7 +153,7 @@ Below is a complete example entry:
 
 ```json
 {
-  "form_id": "abc123-def456",
+  "form_id": "aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890ABCDEFG.u",
   "form_name": "Patient Satisfaction Survey",
   "description": "Post-visit satisfaction questionnaire",
   "department": "Cardiology",

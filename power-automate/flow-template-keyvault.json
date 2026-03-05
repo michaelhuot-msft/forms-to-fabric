@@ -1,0 +1,152 @@
+{
+  "_documentation": {
+    "description": "Key Vault-integrated Power Automate flow template for Forms-to-Fabric. Unlike the basic template (flow-template.json), this version reads the Azure Function key from Key Vault at runtime. When keys are rotated, flows automatically use the new key with zero downtime — no manual flow edits required.",
+    "version": "2.0.0",
+    "last_updated": "2025-07-14",
+    "key_vault_integration": [
+      "The flow uses the Azure Key Vault connector (premium) to retrieve the function key at execution time.",
+      "Secret 'function-app-key' is read from Key Vault before every HTTP call to the Azure Function.",
+      "When 'scripts/rotate_function_key.py' updates the Key Vault secret, running flows pick up the new key automatically.",
+      "No flow re-deployment or manual editing is needed after key rotation."
+    ],
+    "notes": [
+      "This flow is part of a healthcare Forms-to-Fabric pipeline.",
+      "Clinicians submit responses via Microsoft Forms; this flow triggers processing through an Azure Function that de-identifies PHI before landing data in Fabric Lakehouse.",
+      "All PHI handling and de-identification is performed server-side by the Azure Function — the flow itself only transports data.",
+      "The Azure Key Vault connector requires a premium Power Automate license.",
+      "Ensure the Key Vault access policy grants the Power Automate connection identity GET permission on secrets."
+    ]
+  },
+  "flow_name": "Forms-to-Fabric: Process Response (Key Vault)",
+  "trigger": {
+    "type": "When a new response is submitted",
+    "connector": "Microsoft Forms",
+    "_comment_trigger": "This trigger fires each time a clinician submits a new response to the configured Microsoft Form.",
+    "_comment_connector": "Uses the Microsoft Forms connector (standard connector, no premium license required).",
+    "_comment_setup": "When configuring, the admin must select the target Form from the 'Form Id' dropdown. The Form must be owned by or shared with the connection account.",
+    "inputs": {
+      "form_id": "@{parameters('FORM_ID')}"
+    }
+  },
+  "actions": [
+    {
+      "order": 1,
+      "name": "Get_response_details",
+      "display_name": "Get response details",
+      "type": "OpenApiConnection",
+      "connector": "Microsoft Forms",
+      "_comment": "Retrieves the full response data (all question answers, respondent info, submission timestamp) for the response that triggered the flow. Uses the responseId from the trigger output.",
+      "inputs": {
+        "form_id": "@{triggerOutputs()?['body/formId']}",
+        "response_id": "@{triggerOutputs()?['body/responseId']}"
+      }
+    },
+    {
+      "order": 2,
+      "name": "Get_secret",
+      "display_name": "Get secret — function-app-key",
+      "type": "OpenApiConnection",
+      "connector": "Azure Key Vault",
+      "_comment": "Reads the current function app host key from Key Vault at runtime. This is the key step that enables zero-downtime key rotation: when the 'function-app-key' secret is updated in Key Vault (e.g., via rotate_function_key.py), every subsequent flow run automatically picks up the new value without any manual edits.",
+      "inputs": {
+        "vault_name": "@{parameters('KEY_VAULT_NAME')}",
+        "secret_name": "function-app-key"
+      },
+      "run_after": "Get_response_details",
+      "_setup_notes": [
+        "1. In Power Automate, add the 'Get secret' action from the Azure Key Vault connector.",
+        "2. Select or create a connection to Key Vault (use a service principal or managed identity with GET secret permissions).",
+        "3. Set the vault name to the Key Vault deployed by the Bicep template.",
+        "4. Set the secret name to 'function-app-key'.",
+        "5. The secret value is available in subsequent steps as: body('Get_secret')?['value']"
+      ]
+    },
+    {
+      "order": 3,
+      "name": "Call_Azure_Function",
+      "display_name": "HTTP — Call Azure Function",
+      "type": "Http",
+      "_comment": "POSTs the form response payload to the Azure Function for processing. The x-functions-key header value is dynamically retrieved from the previous Key Vault step, so it always uses the current key — even after rotation.",
+      "inputs": {
+        "method": "POST",
+        "uri": "@{parameters('AZURE_FUNCTION_URL')}",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-functions-key": "@{body('Get_secret')?['value']}"
+        },
+        "body": {
+          "form_id": "@{triggerOutputs()?['body/formId']}",
+          "response_id": "@{triggerOutputs()?['body/responseId']}",
+          "submitted_at": "@{utcNow()}",
+          "respondent_email": "@{outputs('Get_response_details')?['body/responder']}",
+          "answers": "@{outputs('Get_response_details')?['body/responses']}"
+        }
+      },
+      "run_after": "Get_secret"
+    },
+    {
+      "order": 4,
+      "name": "Check_response_status",
+      "display_name": "Condition",
+      "type": "If",
+      "_comment": "Evaluates whether the Azure Function returned HTTP 200 (success). On success, no further action is needed — the function has already de-identified PHI and landed the data in Fabric Lakehouse. On failure, an email alert is sent to the admin with error details for investigation.",
+      "expression": {
+        "equals": [
+          "@{outputs('Call_Azure_Function')?['statusCode']}",
+          200
+        ]
+      },
+      "if_true": {
+        "_comment": "No action required. The Azure Function successfully processed the response, performed PHI de-identification, and wrote the data to the Fabric Lakehouse."
+      },
+      "if_false": {
+        "action": "Send_error_notification",
+        "display_name": "Send an email notification (V2)",
+        "type": "OpenApiConnection",
+        "connector": "Office 365 Outlook",
+        "_comment": "Sends a failure alert to the configured admin. The email includes the HTTP status code and response body to aid debugging. Ensure the ADMIN_NOTIFICATION_EMAIL parameter is set to a monitored mailbox.",
+        "inputs": {
+          "to": "@{parameters('ADMIN_NOTIFICATION_EMAIL')}",
+          "subject": "Forms-to-Fabric Pipeline Error: Response @{triggerOutputs()?['body/responseId']}",
+          "body": "<p><strong>Forms-to-Fabric Pipeline Error</strong></p><p>A form response failed to process.</p><p><strong>Form ID:</strong> @{triggerOutputs()?['body/formId']}</p><p><strong>Response ID:</strong> @{triggerOutputs()?['body/responseId']}</p><p><strong>Timestamp:</strong> @{utcNow()}</p><p><strong>HTTP Status Code:</strong> @{outputs('Call_Azure_Function')?['statusCode']}</p><p><strong>Error Details:</strong></p><pre>@{body('Call_Azure_Function')}</pre><p>Please investigate in the Azure portal and resubmit if necessary.</p>",
+          "importance": "High"
+        }
+      },
+      "run_after": "Call_Azure_Function"
+    }
+  ],
+  "parameters": {
+    "AZURE_FUNCTION_URL": {
+      "type": "string",
+      "description": "The full URL of the Azure Function endpoint (e.g., https://<function-app-name>.azurewebsites.net/api/process-form-response). Obtain from 'azd env get-values' after deployment."
+    },
+    "KEY_VAULT_NAME": {
+      "type": "string",
+      "description": "Name of the Azure Key Vault that stores the function app host key (e.g., kv-forms-dev). The Key Vault connector connection must have GET secret permission."
+    },
+    "ADMIN_NOTIFICATION_EMAIL": {
+      "type": "string",
+      "description": "Email address that receives pipeline error notifications. Should be a monitored shared mailbox or distribution list (e.g., forms-admin@contoso.com)."
+    },
+    "FORM_ID": {
+      "type": "string",
+      "description": "The unique identifier of the Microsoft Form used for clinician data collection. Found in the Form URL or the Forms admin portal."
+    }
+  },
+  "setup_instructions": [
+    "1. Deploy the Azure Function and infrastructure using 'azd up'. The Key Vault and placeholder secret are created automatically.",
+    "2. Run the rotation script to populate the Key Vault with a real function key:",
+    "     python scripts/rotate_function_key.py --function-app <name> --resource-group <rg> --key-vault <vault>",
+    "3. Open Power Automate (https://make.powerautomate.com) and create a new Automated Cloud Flow.",
+    "4. Select the 'When a new response is submitted' trigger from the Microsoft Forms connector.",
+    "5. In the trigger, select the target clinician Form from the 'Form Id' dropdown.",
+    "6. Add a 'Get response details' action (Microsoft Forms connector). Set Form Id and Response Id to reference the trigger outputs.",
+    "7. Add a 'Get secret' action from the Azure Key Vault connector. Select the Key Vault and set the secret name to 'function-app-key'.",
+    "8. Add an 'HTTP' action. Set method to POST, paste the Azure Function URL, add Content-Type header, and set x-functions-key to the dynamic content: body('Get_secret')?['value'].",
+    "9. Configure the JSON body as shown in the template.",
+    "10. Add a 'Condition' action to check if the HTTP status code equals 200.",
+    "11. In the 'If no' branch, add a 'Send an email (V2)' action (Office 365 Outlook connector) with the error notification template.",
+    "12. Save the flow and test with a sample form submission.",
+    "13. Future key rotations only require running the rotation script — no flow edits needed."
+  ]
+}

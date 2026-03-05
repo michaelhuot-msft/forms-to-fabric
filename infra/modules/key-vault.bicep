@@ -51,6 +51,23 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
 }
 
 // ──────────────────────────────────────────────
+// Function App Key Secret (placeholder — rotate after deploy)
+// ──────────────────────────────────────────────
+
+resource functionAppKeySecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'function-app-key'
+  properties: {
+    value: 'PLACEHOLDER-ROTATE-AFTER-DEPLOY'
+    contentType: 'Function App host key for Power Automate'
+    attributes: {
+      enabled: true
+      exp: dateTimeAdd(utcNow(), 'P90D')  // 90-day expiry
+    }
+  }
+}
+
+// ──────────────────────────────────────────────
 // Diagnostic settings
 // ──────────────────────────────────────────────
 
@@ -90,3 +107,6 @@ output keyVaultName string = keyVault.name
 
 @description('URI of the Key Vault.')
 output keyVaultUri string = keyVault.properties.vaultUri
+
+@description('URI of the function app key secret.')
+output functionAppKeySecretUri string = functionAppKeySecret.properties.secretUri

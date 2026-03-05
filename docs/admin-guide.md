@@ -116,6 +116,28 @@ git push
 
 ### Step 5: Create the Power Automate Flow
 
+#### Option A: Generate and Import a Flow (Recommended)
+
+Use the `generate-flow` admin endpoint to produce a ready-to-import flow definition — this reduces setup from ~15 minutes to ~2 minutes.
+
+1. **Call the endpoint** to generate the flow JSON for your form:
+   ```
+   GET https://<function-app>.azurewebsites.net/api/generate-flow?form_id=<id>&code=<function-key>
+   ```
+   You can also pass optional `function_app_url` and `key_vault_name` query parameters to override the defaults.
+
+2. **Save the response** as a `.json` file (e.g. `my-form-flow.json`).
+
+3. In **Power Automate**, go to **My Flows → Import → Import Package (Legacy)**.
+
+4. **Upload** the JSON file.
+
+5. **Configure connections** — you will be prompted to link your Microsoft Forms, Azure Key Vault, and Office 365 Outlook connections.
+
+6. **Done** — the flow is ready to use. Submit a test response to verify end-to-end processing.
+
+#### Option B: Create a Flow Manually (Fallback)
+
 1. Open [Power Automate](https://make.powerautomate.com).
 2. Create a new **Automated cloud flow**.
 3. Set the trigger to **When a new response is submitted** (Microsoft Forms connector).
@@ -406,7 +428,41 @@ flowchart TD
 
 ### Function App Key Rotation
 
-Rotate the function key used by Power Automate to call the Azure Function:
+Rotate the function key used by Power Automate to call the Azure Function.
+
+#### Automated rotation (recommended)
+
+Use the rotation script to generate a new host key and update Key Vault in one step:
+
+```bash
+python scripts/rotate_function_key.py \
+  --function-app <function-app-name> \
+  --resource-group <resource-group> \
+  --key-vault <keyvault-name>
+```
+
+Preview first with `--dry-run`:
+
+```bash
+python scripts/rotate_function_key.py \
+  --function-app <function-app-name> \
+  --resource-group <resource-group> \
+  --key-vault <keyvault-name> \
+  --dry-run
+```
+
+The script will:
+1. Generate a new host key named `power-automate-YYYY-MM-DD` on the Function App.
+2. Store the new key in Key Vault as the secret `function-app-key`.
+3. Print the names of any old `power-automate-*` keys for manual cleanup.
+
+If your Power Automate flow uses the **Key Vault connector** (see `power-automate/flow-template-keyvault.json`), it reads the function key from Key Vault at runtime. After running the rotation script, **no flow edits are required** — every subsequent flow run automatically picks up the new key with zero downtime.
+
+> **Note:** The Key Vault secret `function-app-key` is deployed with a 90-day expiry attribute. Set a calendar reminder or Azure Monitor alert to rotate before it expires.
+
+#### Manual rotation (fallback)
+
+If you cannot run the script, perform the rotation manually:
 
 1. **Generate a new key** in the Azure Portal:
    - Function App → **App keys** → **New host key**
@@ -421,17 +477,11 @@ Rotate the function key used by Power Automate to call the Azure Function:
      --value "<new-key-value>"
    ```
 
-3. **Update the Power Automate flow:**
-   - Open the flow in Power Automate
-   - Edit the HTTP action that calls the Azure Function
-   - Update the `x-functions-key` header with the new key
-   - Save the flow
-
-4. **Verify the flow still works:**
+3. **Verify the flow still works:**
    - Submit a test form response
    - Confirm the flow runs successfully and data reaches Fabric
 
-5. **Disable the old key:**
+4. **Disable the old key:**
    - Function App → **App keys** → select the old key → **Delete**
 
 ### Rotation Schedule

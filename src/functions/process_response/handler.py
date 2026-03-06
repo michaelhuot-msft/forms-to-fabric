@@ -136,7 +136,10 @@ def handle_form_response(req: func.HttpRequest) -> func.HttpResponse:
     # --- Build data payloads for OneLake --------------------------------------
     base_meta = {
         "response_id": form_response.response_id,
-        "submitted_at": form_response.submitted_at.isoformat(),
+        "form_id": form_response.form_id,
+        "submitted_at": form_response.submitted_at.isoformat()
+        if form_response.submitted_at
+        else "",
         "respondent_email": form_response.respondent_email,
     }
 

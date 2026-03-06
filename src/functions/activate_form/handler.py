@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import json
 import logging
-from pathlib import Path
 
 import azure.functions as func
 
-from shared.config import _registry_path, invalidate_cache
+from shared.config import invalidate_cache, load_registry_data, save_registry_data
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +33,7 @@ def handle_activate_form(req: func.HttpRequest) -> func.HttpResponse:
         )
 
     # Load registry
-    registry_path = Path(_registry_path())
-    with open(registry_path, encoding="utf-8") as fh:
-        registry_data = json.load(fh)
+    registry_data = load_registry_data()
 
     # Find the form
     form_entry = None
@@ -97,10 +94,7 @@ def handle_activate_form(req: func.HttpRequest) -> func.HttpResponse:
 
     # Activate
     form_entry["status"] = "active"
-
-    with open(registry_path, "w", encoding="utf-8", newline="\n") as fh:
-        json.dump(registry_data, fh, indent=2)
-        fh.write("\n")
+    save_registry_data(registry_data)
 
     invalidate_cache()
 

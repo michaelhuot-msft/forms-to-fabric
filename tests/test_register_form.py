@@ -31,31 +31,22 @@ def _make_request(body: dict | None = None) -> MagicMock:
     return req
 
 
-def _make_registry(tmp_path: Path, forms: list | None = None) -> Path:
-    """Create a temporary registry file and return its path."""
-    config_dir = tmp_path / "config"
-    config_dir.mkdir(exist_ok=True)
-    registry_path = config_dir / "form-registry.json"
-    registry_path.write_text(
-        json.dumps({"forms": forms or []}, indent=2), encoding="utf-8"
-    )
-    return registry_path
-
-
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
 
 
 class TestRegisterForm:
-    def test_register_non_phi_form(self, tmp_path: Path) -> None:
-        registry_path = _make_registry(tmp_path)
+    def test_register_non_phi_form(self) -> None:
+        mock_save = MagicMock()
         req = _make_request({"form_url": VALID_FORM_URL, "has_phi": False})
 
         with (
             patch(
-                "register_form.handler._registry_path", return_value=str(registry_path)
+                "register_form.handler.load_registry_data",
+                return_value={"forms": []},
             ),
+            patch("register_form.handler.save_registry_data", mock_save),
             patch("register_form.handler.get_form_config", return_value=None),
         ):
             resp = handle_register_form(req)
@@ -66,17 +57,20 @@ class TestRegisterForm:
         assert result["status"] == "active"
         assert result["field_count"] == 0  # No Graph API, fields added later
 
-        registry = json.loads(registry_path.read_text(encoding="utf-8"))
-        assert len(registry["forms"]) == 1
+        mock_save.assert_called_once()
+        saved = mock_save.call_args[0][0]
+        assert len(saved["forms"]) == 1
 
-    def test_register_phi_form(self, tmp_path: Path) -> None:
-        registry_path = _make_registry(tmp_path)
+    def test_register_phi_form(self) -> None:
+        mock_save = MagicMock()
         req = _make_request({"form_url": VALID_FORM_URL, "has_phi": True})
 
         with (
             patch(
-                "register_form.handler._registry_path", return_value=str(registry_path)
+                "register_form.handler.load_registry_data",
+                return_value={"forms": []},
             ),
+            patch("register_form.handler.save_registry_data", mock_save),
             patch("register_form.handler.get_form_config", return_value=None),
         ):
             resp = handle_register_form(req)
@@ -85,15 +79,16 @@ class TestRegisterForm:
         result = json.loads(resp.get_body())
         assert result["status"] == "pending_review"
 
-    def test_duplicate_form_id(self, tmp_path: Path) -> None:
-        registry_path = _make_registry(tmp_path)
+    def test_duplicate_form_id(self) -> None:
         existing_config = MagicMock()
         req = _make_request({"form_url": VALID_FORM_URL, "has_phi": False})
 
         with (
             patch(
-                "register_form.handler._registry_path", return_value=str(registry_path)
+                "register_form.handler.load_registry_data",
+                return_value={"forms": []},
             ),
+            patch("register_form.handler.save_registry_data", MagicMock()),
             patch(
                 "register_form.handler.get_form_config", return_value=existing_config
             ),
@@ -107,28 +102,24 @@ class TestRegisterForm:
         resp = handle_register_form(req)
         assert resp.status_code == 400
 
-    def test_invalid_url(self, tmp_path: Path) -> None:
-        registry_path = _make_registry(tmp_path)
+    def test_invalid_url(self) -> None:
         req = _make_request(
             {"form_url": "https://example.com/not-a-form", "has_phi": False}
         )
-
-        with patch(
-            "register_form.handler._registry_path", return_value=str(registry_path)
-        ):
-            resp = handle_register_form(req)
-
+        resp = handle_register_form(req)
         assert resp.status_code == 400
 
-    def test_register_with_has_phi_yes_string(self, tmp_path: Path) -> None:
+    def test_register_with_has_phi_yes_string(self) -> None:
         """has_phi accepts 'Yes' string from Power Automate."""
-        registry_path = _make_registry(tmp_path)
+        mock_save = MagicMock()
         req = _make_request({"form_url": VALID_FORM_URL, "has_phi": "Yes"})
 
         with (
             patch(
-                "register_form.handler._registry_path", return_value=str(registry_path)
+                "register_form.handler.load_registry_data",
+                return_value={"forms": []},
             ),
+            patch("register_form.handler.save_registry_data", mock_save),
             patch("register_form.handler.get_form_config", return_value=None),
         ):
             resp = handle_register_form(req)

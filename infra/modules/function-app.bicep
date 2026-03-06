@@ -26,9 +26,6 @@ param keyVaultName string
 @description('Microsoft Fabric OneLake endpoint URL.')
 param onelakeEndpoint string
 
-@description('Path to the form-registry configuration inside the storage container.')
-param formRegistryPath string
-
 // ──────────────────────────────────────────────
 // Existing resources
 // ──────────────────────────────────────────────
@@ -114,10 +111,6 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'ONELAKE_ENDPOINT'
           value: onelakeEndpoint
-        }
-        {
-          name: 'FORM_REGISTRY_PATH'
-          value: formRegistryPath
         }
       ]
     }

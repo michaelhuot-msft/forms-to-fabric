@@ -5,12 +5,16 @@ from __future__ import annotations
 import json
 import logging
 import re
-from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import azure.functions as func
 
-from shared.config import _registry_path, get_form_config, invalidate_cache
+from shared.config import (
+    get_form_config,
+    invalidate_cache,
+    load_registry_data,
+    save_registry_data,
+)
 from shared.models import FieldConfig, FormConfig
 
 logger = logging.getLogger(__name__)
@@ -131,18 +135,14 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
         fields=fields,
     )
 
-    # Load, modify, and save the registry
-    registry_path = Path(_registry_path())
-    with open(registry_path, encoding="utf-8") as fh:
-        registry_data = json.load(fh)
+    # Load, modify, and save the registry (blob storage or local file)
+    registry_data = load_registry_data()
 
     registry_data.setdefault("forms", []).append(
         json.loads(form_config.model_dump_json())
     )
 
-    with open(registry_path, "w", encoding="utf-8", newline="\n") as fh:
-        json.dump(registry_data, fh, indent=2)
-        fh.write("\n")
+    save_registry_data(registry_data)
 
     # Invalidate the config cache so subsequent reads pick up the new entry
     invalidate_cache()

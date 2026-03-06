@@ -11,7 +11,6 @@ from urllib.parse import parse_qs, urlparse
 import azure.functions as func
 
 from shared.config import _registry_path, get_form_config, invalidate_cache
-from shared.graph_client import FormNotFoundError, GraphAPIError, GraphClient
 from shared.models import FieldConfig, FormConfig
 
 logger = logging.getLogger(__name__)
@@ -113,39 +112,13 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json",
         )
 
-    # Fetch form metadata and questions from Graph API
-    try:
-        graph = GraphClient()
-        metadata = graph.get_form_metadata(form_id)
-        questions = graph.get_form_questions(form_id)
-    except FormNotFoundError:
-        return func.HttpResponse(
-            json.dumps({"error": f"Form '{form_id}' not found in Graph API"}),
-            status_code=404,
-            mimetype="application/json",
-        )
-    except (GraphAPIError, Exception) as exc:
-        logger.exception("Graph API failure while registering form %s", form_id)
-        return func.HttpResponse(
-            json.dumps({"error": f"Graph API failure: {exc}"}),
-            status_code=502,
-            mimetype="application/json",
-        )
-
-    # Derive form_name and target_table
-    form_name = metadata.get("title") or form_id
+    # Derive form_name and target_table from form_id (no Graph API needed)
+    form_name = form_id[:40] if len(form_id) > 40 else form_id
     target_table = _slugify(form_name)
 
-    # Build field entries from questions
-    fields = [
-        FieldConfig(
-            question_id=q["id"],
-            field_name=_slugify(q["title"]),
-            contains_phi=False,
-            deid_method=None,
-        )
-        for q in questions
-    ]
+    # Register with empty fields — they'll be auto-discovered from raw_response
+    # at processing time, or manually configured via manage_registry.py
+    fields: list[FieldConfig] = []
 
     # Determine status
     status = "pending_review" if has_phi else "active"

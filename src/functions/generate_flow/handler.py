@@ -118,7 +118,7 @@ def _build_flow_definition(
             "Check_HTTP_status": {
                 "type": "If",
                 "runAfter": {
-                    "HTTP_POST_to_Azure_Function": ["Succeeded", "Failed"],
+                    "HTTP_POST_to_Azure_Function": ["Succeeded", "Failed", "TimedOut"],
                 },
                 "expression": {
                     "not": {

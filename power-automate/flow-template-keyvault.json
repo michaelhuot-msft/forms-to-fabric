@@ -112,7 +112,9 @@
           "importance": "High"
         }
       },
-      "run_after": "Call_Azure_Function"
+      "run_after": {
+        "Call_Azure_Function": ["Succeeded", "Failed", "TimedOut"]
+      }
     }
   ],
   "parameters": {

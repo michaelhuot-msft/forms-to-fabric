@@ -258,10 +258,40 @@ See the [Admin Guide](admin-guide.md) for full CLI documentation.
 | Symptom | Cause | Fix |
 |---|---|---|
 | 401 Unauthorized | Invalid function key | Check Key Vault secret or regenerate key |
+| 404 on function endpoint | Functions not registered | See "Functions not loading" below |
 | Data not in Lakehouse | Managed identity lacks access | Grant Function App Contributor on workspace |
 | De-id not applied | Missing field config | Check registry: `manage_registry.py validate` |
 | Function timeout | Large payload | Increase `functionTimeout` in `host.json` |
 | Form not registered | form_id mismatch | Verify form_id: `manage_registry.py list` |
+| Storage 403 Forbidden | Subscription blocks shared key access | Add `SecurityControl=Ignore` tag to storage account |
+
+### Functions not loading after deployment
+
+If `azd deploy` succeeds but endpoints return 404:
+
+1. **Check Python version matches** — the Function App must run Python 3.11:
+   ```powershell
+   az functionapp config show --name <func-name> --resource-group <rg> --query "linuxFxVersion"
+   # Should show "Python|3.11"
+   ```
+
+2. **Verify remote build ran** — check deployment logs for "pip install":
+   ```powershell
+   az functionapp log deployment show --name <func-name> --resource-group <rg> --query "[-3:].[message]" -o tsv
+   # Should show "Deployment successful"
+   ```
+
+3. **If remote build fails silently** — your subscription may block shared key access. Add the `SecurityControl=Ignore` tag:
+   ```powershell
+   az storage account update --name <storage-name> --resource-group <rg> --allow-shared-key-access true --tags SecurityControl=Ignore
+   ```
+
+4. **Test directly** — `az functionapp function list` has a delay with v2 Python. Hit the endpoint instead:
+   ```powershell
+   $key = az functionapp keys list --name <func-name> --resource-group <rg> --query "functionKeys.default" -o tsv
+   Invoke-WebRequest -Uri "https://<func-name>.azurewebsites.net/api/process-response?code=$key" -Method POST -Body '{}' -ContentType "application/json"
+   # Should return 400 (validation error) — that means it's working
+   ```
 
 ---
 

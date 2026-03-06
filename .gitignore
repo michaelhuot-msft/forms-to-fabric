@@ -47,3 +47,5 @@ htmlcov/
 *.log
 deploy.zip
 power-automate-body.json
+deploy-source.zip
+src/deploy-source.zip

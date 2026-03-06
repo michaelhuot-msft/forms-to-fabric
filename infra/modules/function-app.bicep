@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────
-// Function App module – Linux Consumption (Python 3.10)
+// Function App module – Linux Consumption (Python 3.11)
 // ──────────────────────────────────────────────
 
 @description('Environment name used in resource naming.')
@@ -74,7 +74,7 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
     serverFarmId: hostingPlan.id
     httpsOnly: true
     siteConfig: {
-      linuxFxVersion: 'Python|3.10'
+      linuxFxVersion: 'Python|3.11'
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
       appSettings: [

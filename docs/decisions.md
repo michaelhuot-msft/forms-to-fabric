@@ -237,7 +237,7 @@ Copy the template below and append it to the appropriate section:
 | Lesson | Detail |
 |--------|--------|
 | **Forms-as-intake for a Forms pipeline** | Using Microsoft Forms as the registration intake means clinicians use the same tool for both data collection and pipeline registration. Zero new tools to learn. |
-| **Graph API field auto-discovery** | The single highest-error-rate step (manual question-ID-to-field mapping) was eliminated by calling `GET /forms/{id}/questions`. This also removed the need for admins to understand Forms URL structures. |
+| **raw_response passthrough** | The single highest-error-rate step (manual question-ID-to-field mapping) was eliminated by the `raw_response` passthrough pattern. The Azure Function receives the entire Forms response and extracts answers at processing time — no Graph API needed. |
 | **Quarantine pattern for unknown fields** | Writing unregistered fields to the raw layer but excluding them from curated balances data availability (no data loss) with PHI safety (no unclassified data in reports). |
 | **Status model (active / pending_review)** | A simple two-state gate enables zero-touch onboarding for non-PHI forms while preserving a human-in-the-loop for PHI forms. The conditional approval path avoided an all-or-nothing trade-off. |
 | **Iterative automation** | Three rounds of improvement (v1: manual, v2: CLI + monitoring, v3: self-service) each built on the last. This avoided big-bang risk and let us validate each layer before adding the next. |

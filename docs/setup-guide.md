@@ -15,7 +15,7 @@
 | **Azure Developer CLI** | v1.5+ — [install](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) |
 | **Azure CLI** | Latest — [install](https://learn.microsoft.com/cli/azure/install-azure-cli) |
 | **PowerShell 7+** | [install](https://learn.microsoft.com/powershell/scripting/install/installing-powershell) |
-| **Python** | 3.10+ |
+| **Python** | 3.11+ |
 
 ---
 

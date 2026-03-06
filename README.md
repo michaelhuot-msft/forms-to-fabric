@@ -31,7 +31,7 @@ graph LR
 - Microsoft 365 organizational account (for Forms)
 - Microsoft Fabric workspace (or capacity to create one)
 - Azure Developer CLI (`azd`) installed
-- Python 3.10+
+- Python 3.11+
 
 ### Quick Start
 

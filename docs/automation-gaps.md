@@ -18,7 +18,7 @@ Three rounds of automation reduced manual touchpoints from **32 to 16** and onbo
 |-------|-------------|-------------|-----------------|------------------------|
 | **v1: Initial build** | Manual CLI + JSON editing | 32 | ~90 min | 50–65 hrs |
 | **v2: Automation gaps addressed** | Schema monitor, RBAC audit, registry CLI, key rotation, flow generator | 24 | ~15 min | 10–15 hrs |
-| **v3: Self-service registration** | Registration form, auto-discovery, approval workflow, field quarantine | 16 | ~11 min (non-PHI) / ~20 min (PHI) | 10–15 hrs |
+| **v3: Self-service registration** | Registration form, raw_response passthrough, approval workflow, field quarantine | 16 | ~11 min (non-PHI) / ~20 min (PHI) | 10–15 hrs |
 
 ---
 
@@ -30,7 +30,7 @@ Three rounds of automation reduced manual touchpoints from **32 to 16** and onbo
 |---|-------------|---------|----------------|--------------|--------------|
 | 1 | Extract Form ID from URL | 2 min | **ELIMINATED** | 0 | Clinician submits link; `/api/register-form` extracts automatically |
 | 2 | Create registry entry | 10 min | **ELIMINATED** | 0 | Auto-created by register-form endpoint |
-| 3 | Map question IDs to fields | 15 min | **ELIMINATED** | 0 | Graph API auto-discovers all questions |
+| 3 | Map question IDs to fields | 15 min | **ELIMINATED** | 0 | raw_response passthrough extracts fields at runtime |
 | 4 | Classify field sensitivity | 10-20 min | **Manual (PHI only)** | 5-10 min | Only for PHI forms; non-PHI skip entirely |
 | 5 | Select de-id method | 5-10 min | **Manual (PHI only)** | 5-10 min | Only for PHI forms; guided by decision tree |
 | 6 | Deploy config | 3 min | **ELIMINATED** | 0 | Register-form writes directly; no deploy needed |
@@ -147,7 +147,7 @@ These 16 touchpoints remain manual because they require human judgment, governan
 
 ### What Worked Well
 1. **Forms-as-intake for a Forms pipeline** — Using the same tool (Microsoft Forms) for the registration meta-form means clinicians already know the interface
-2. **Graph API auto-discovery** — Eliminated the highest-error-rate step (manual field mapping) entirely
+2. **raw_response passthrough** — Eliminated manual field mapping. The Azure Function extracts answers from the raw Forms response at processing time, so no per-question configuration is needed.
 3. **Quarantine pattern** — Writing unknown fields to raw but excluding from curated balances data availability with PHI safety
 4. **Status model (active/pending_review)** — Simple two-state gate enables self-service without compromising PHI governance
 5. **Iterative automation** — Three rounds of improvement, each building on the last, avoided big-bang risk

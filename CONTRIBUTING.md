@@ -11,7 +11,7 @@ Thank you for your interest in contributing! This guide explains how to get invo
 
 ## Code Style
 
-- **Language:** Python 3.10+
+- **Language:** Python 3.11+
 - **Type hints:** Use type annotations on all function signatures.
 - **Docstrings:** Include a docstring for every public module, class, and function.
 - **Formatting:** Follow [PEP 8](https://peps.python.org/pep-0008/) conventions.

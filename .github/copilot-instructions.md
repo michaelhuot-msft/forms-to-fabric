@@ -17,7 +17,7 @@ All PRs must pass CI before merge. The CI pipeline validates:
 
 ## Code Style
 
-- Python 3.10+, type hints on all function signatures, docstrings on all public functions.
+- Python 3.11+, type hints on all function signatures, docstrings on all public functions.
 - Use `ruff` for linting and formatting (configured via pyproject.toml).
 - Bicep files follow Azure naming conventions with `@description` decorators.
 - Commit messages follow Conventional Commits format.

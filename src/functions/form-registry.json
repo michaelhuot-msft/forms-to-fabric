@@ -78,6 +78,13 @@
           "field_type": null
         }
       ]
+    },
+    {
+      "form_id": "ePzQbQgk1kOiVUOD-9o_dsPlwRCEj7FPnRtFkImatDVUNTdYSDRDUk5ETFNVRDM3QlFLRUJSSUhQTC4u",
+      "form_name": "Register Your Form for Analytics",
+      "target_table": "registration_intake",
+      "status": "active",
+      "fields": []
     }
   ]
 }

@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Form Registry",
+  "description": "Schema for form-registry.json configuration file",
+  "type": "object",
+  "required": ["forms"],
+  "additionalProperties": false,
+  "properties": {
+    "forms": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/FormConfig"
+      }
+    }
+  },
+  "definitions": {
+    "FormConfig": {
+      "type": "object",
+      "required": ["form_id", "form_name", "target_table", "status", "fields"],
+      "additionalProperties": false,
+      "properties": {
+        "form_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique identifier for the form"
+        },
+        "form_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable form name"
+        },
+        "target_table": {
+          "type": "string",
+          "pattern": "^[a-z_]+$",
+          "description": "Target table name (lowercase letters and underscores only)"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "pending_review", "inactive"],
+          "description": "Registration status: active (processing), pending_review (awaiting IT), inactive (disabled)"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FieldConfig"
+          }
+        }
+      }
+    },
+    "FieldConfig": {
+      "type": "object",
+      "required": ["question_id", "field_name"],
+      "additionalProperties": false,
+      "properties": {
+        "question_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier for the question"
+        },
+        "field_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Column name in the target table"
+        },
+        "contains_phi": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this field contains protected health information"
+        },
+        "deid_method": {
+          "type": ["string", "null"],
+          "enum": ["hash", "redact", "generalize", null],
+          "description": "De-identification method to apply"
+        },
+        "field_type": {
+          "type": ["string", "null"],
+          "enum": ["date", "age", null],
+          "description": "Semantic type hint for generalize method"
+        }
+      }
+    }
+  }
+}

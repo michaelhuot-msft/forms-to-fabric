@@ -20,10 +20,18 @@ _CACHE_TTL_SECONDS: float = 300.0  # 5 minutes
 
 def _registry_path() -> str:
     """Return the path to the form-registry JSON file."""
-    return os.environ.get(
-        "FORM_REGISTRY_PATH",
-        str(Path(__file__).resolve().parents[3] / "config" / "form-registry.json"),
-    )
+    env_path = os.environ.get("FORM_REGISTRY_PATH")
+    if env_path:
+        return env_path
+
+    # Check alongside the function app (deployed on Azure)
+    local_path = Path(__file__).resolve().parent.parent / "form-registry.json"
+    if local_path.exists():
+        return str(local_path)
+
+    # Fall back to repo structure (local development)
+    repo_path = Path(__file__).resolve().parents[3] / "config" / "form-registry.json"
+    return str(repo_path)
 
 
 def _load_registry() -> dict[str, FormConfig]:

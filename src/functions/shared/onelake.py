@@ -72,18 +72,27 @@ def write_to_lakehouse(
     """
     response_id: str = data["response_id"]
 
-    # Flatten fields into a single row
-    flat_record: dict[str, str] = {
+    # Serialize all fields as a JSON string — stable schema across all responses
+    import json as _json
+    import uuid
+
+    fields_json = _json.dumps(data.get("fields", []))
+
+    # Use a UUID if response_id is empty or a memory-address fallback
+    if not response_id or response_id.startswith("raw-"):
+        response_id = str(uuid.uuid4())
+
+    row: dict[str, str] = {
         "response_id": response_id,
+        "form_id": data.get("form_id", ""),
         "submitted_at": str(data.get("submitted_at", "")),
         "respondent_email": str(data.get("respondent_email", "")),
         "ingested_at": datetime.now(timezone.utc).isoformat(),
+        "fields_json": fields_json,
     }
-    for field in data.get("fields", []):
-        flat_record[str(field["field_name"])] = str(field.get("value", ""))
 
     # Build PyArrow table (all string columns for simplicity)
-    table = pa.table({k: [v] for k, v in flat_record.items()})
+    table = pa.table({k: [v] for k, v in row.items()})
 
     table_uri = _get_table_uri(table_name, layer)
     storage_options = _get_storage_options()
@@ -93,6 +102,7 @@ def write_to_lakehouse(
             table_uri,
             table,
             mode="append",
+            schema_mode="merge",
             storage_options=storage_options,
         )
         logger.info("Wrote Delta row to %s (response_id=%s)", table_uri, response_id)

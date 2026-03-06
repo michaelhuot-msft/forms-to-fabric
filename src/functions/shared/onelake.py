@@ -1,54 +1,46 @@
-"""OneLake (ADLS Gen2) writer for the Forms to Fabric pipeline."""
+"""OneLake writer for the Forms to Fabric pipeline.
+
+Writes Delta Lake format to the Lakehouse Tables directory so data
+appears as managed tables in Fabric.
+"""
 
 from __future__ import annotations
 
-import io
 import logging
 import os
 from datetime import datetime, timezone
 from typing import Any
 
-import pandas as pd
 import pyarrow as pa
-import pyarrow.parquet as pq
 from azure.identity import DefaultAzureCredential
-from azure.storage.filedatalake import DataLakeServiceClient
+from deltalake import write_deltalake
 
 logger = logging.getLogger(__name__)
 
-_MAX_RETRIES = 3
 
-
-def _get_service_client() -> DataLakeServiceClient:
-    """Build an authenticated ``DataLakeServiceClient`` for OneLake."""
-    account_name = os.environ["ONELAKE_ACCOUNT_NAME"]
+def _get_storage_options() -> dict[str, str]:
+    """Build storage options for deltalake using managed identity."""
     credential = DefaultAzureCredential()
-    account_url = f"https://{account_name}.dfs.fabric.microsoft.com"
-    return DataLakeServiceClient(account_url=account_url, credential=credential)
+    token = credential.get_token("https://storage.azure.com/.default")
+    return {
+        "bearer_token": token.token,
+        "use_fabric_endpoint": "true",
+    }
 
 
-def _build_path(table_name: str, layer: str, response_id: str) -> str:
-    """Construct the OneLake file path for a response.
+def _get_table_uri(table_name: str, layer: str) -> str:
+    """Build the OneLake URI for a Delta table.
 
     Pattern::
 
-        Tables/{table_name}/{layer}/year={Y}/month={M}/day={D}/{response_id}.parquet
+        abfss://{workspace}@onelake.dfs.fabric.microsoft.com/{lakehouse}/Tables/{table_name}_{layer}
     """
-    now = datetime.now(timezone.utc)
+    workspace = os.environ["ONELAKE_WORKSPACE"]
+    lakehouse = os.environ["ONELAKE_LAKEHOUSE"]
     return (
-        f"Tables/{table_name}/{layer}"
-        f"/year={now.year}/month={now.month:02d}/day={now.day:02d}"
-        f"/{response_id}.parquet"
+        f"abfss://{workspace}@onelake.dfs.fabric.microsoft.com"
+        f"/{lakehouse}/Tables/{table_name}_{layer}"
     )
-
-
-def _records_to_parquet_bytes(records: list[dict[str, Any]]) -> bytes:
-    """Serialize a list of flat dicts into an in-memory Parquet file."""
-    df = pd.DataFrame(records)
-    table = pa.Table.from_pandas(df)
-    buf = io.BytesIO()
-    pq.write_table(table, buf)
-    return buf.getvalue()
 
 
 def write_to_lakehouse(
@@ -56,7 +48,7 @@ def write_to_lakehouse(
     table_name: str,
     layer: str,
 ) -> str:
-    """Write a single processed response to OneLake as a Parquet file.
+    """Write a single processed response to OneLake as a Delta table row.
 
     Parameters
     ----------
@@ -71,48 +63,40 @@ def write_to_lakehouse(
     Returns
     -------
     str
-        The full path of the written Parquet file.
+        The Delta table URI.
 
     Raises
     ------
     RuntimeError
-        If the write fails after all retry attempts.
+        If the write fails.
     """
-    workspace = os.environ["ONELAKE_WORKSPACE"]
-    lakehouse = os.environ["ONELAKE_LAKEHOUSE"]
     response_id: str = data["response_id"]
 
-    flat_record: dict[str, Any] = {
+    # Flatten fields into a single row
+    flat_record: dict[str, str] = {
         "response_id": response_id,
-        "submitted_at": data.get("submitted_at"),
-        "respondent_email": data.get("respondent_email"),
+        "submitted_at": str(data.get("submitted_at", "")),
+        "respondent_email": str(data.get("respondent_email", "")),
+        "ingested_at": datetime.now(timezone.utc).isoformat(),
     }
     for field in data.get("fields", []):
-        flat_record[field["field_name"]] = field["value"]
+        flat_record[str(field["field_name"])] = str(field.get("value", ""))
 
-    parquet_bytes = _records_to_parquet_bytes([flat_record])
-    file_path = _build_path(table_name, layer, response_id)
+    # Build PyArrow table (all string columns for simplicity)
+    table = pa.table({k: [v] for k, v in flat_record.items()})
 
-    last_exc: Exception | None = None
-    for attempt in range(1, _MAX_RETRIES + 1):
-        try:
-            service_client = _get_service_client()
-            fs_client = service_client.get_file_system_client(workspace)
-            dir_path = file_path.rsplit("/", 1)[0]
-            dir_client = fs_client.get_directory_client(f"{lakehouse}/{dir_path}")
-            dir_client.create_directory()
+    table_uri = _get_table_uri(table_name, layer)
+    storage_options = _get_storage_options()
 
-            file_client = dir_client.get_file_client(f"{response_id}.parquet")
-            file_client.upload_data(parquet_bytes, overwrite=True)
-
-            logger.info("Wrote %s/%s (attempt %d)", lakehouse, file_path, attempt)
-            return f"{lakehouse}/{file_path}"
-        except Exception as exc:  # noqa: BLE001
-            last_exc = exc
-            logger.warning(
-                "OneLake write attempt %d/%d failed: %s", attempt, _MAX_RETRIES, exc
-            )
-
-    raise RuntimeError(
-        f"Failed to write to OneLake after {_MAX_RETRIES} attempts"
-    ) from last_exc
+    try:
+        write_deltalake(
+            table_uri,
+            table,
+            mode="append",
+            storage_options=storage_options,
+        )
+        logger.info("Wrote Delta row to %s (response_id=%s)", table_uri, response_id)
+        return table_uri
+    except Exception as exc:
+        logger.exception("Delta write failed for %s", table_uri)
+        raise RuntimeError(f"Failed to write to Delta table: {exc}") from exc

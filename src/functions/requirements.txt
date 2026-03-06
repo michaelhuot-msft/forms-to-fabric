@@ -1,10 +1,10 @@
 azure-functions
 azure-identity
-azure-storage-file-datalake
+azure-storage-blob
 azure-keyvault-secrets
 azure-mgmt-web
 pydantic>=2.0
 pyarrow
-pandas
+deltalake
 httpx
 requests

@@ -1,4 +1,0 @@
-{
-  "form_id": "test123",
-  "raw_response": @{outputs('Get_response_details')?['body']}
-}

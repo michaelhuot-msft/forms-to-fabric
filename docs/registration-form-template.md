@@ -36,6 +36,8 @@ Microsoft Forms does not support regex validation natively, but you can add a **
 
 The Azure Function performs server-side validation and will reject malformed links with a clear error returned to the Power Automate flow.
 
+> ⚠️ **Important:** The Azure Function extracts fields from the raw response **by position** (1st field = form URL, 2nd = description, 3rd = patient info). Do not reorder the questions in the form — the registration will fail if the order changes.
+
 ---
 
 ## Form Settings

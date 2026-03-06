@@ -70,6 +70,7 @@ forms-to-fabric/
 ├── scripts/            # Admin CLI tools
 │   ├── manage_registry.py      # Form registry management
 │   ├── rotate_function_key.py  # Key rotation automation
+│   ├── Generate-FlowBody.ps1   # PA flow body generator
 │   ├── Setup-Environment.ps1   # One-command environment setup
 │   ├── Setup-FabricWorkspace.ps1  # Fabric workspace provisioning
 │   └── Post-Deploy.ps1         # Post-deploy: Fabric access + key storage

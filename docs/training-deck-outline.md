@@ -96,7 +96,7 @@ Self-service registration — no emails, no tickets:
 `[Screenshot: Where to find the Share button and copy the form link]`
 
 ### Speaker Notes
-> Once your form is ready, you need to register it — this is a one-time step. Go to our registration form, paste in your form's share link, add a quick description if you want, and answer one question: does your form collect patient information? Then hit Submit. If there's no patient info, your form gets connected automatically — you'll get an email confirmation right away. If it does have patient info, your organization's IT team will review it and get back to you within a day or two. Either way, you never need to do this step again for that form.
+> Once your form is ready, you need to register it — this is a one-time step. Go to the registration form, paste in your form's share link, add a quick description if you want, and answer one question: does your form collect patient information? Then hit Submit. If there's no patient info, your form gets connected automatically — you'll get an email confirmation right away. If it does have patient info, your organization's IT team will review it and get back to you within a day or two. Either way, you never need to do this step again for that form.
 
 ---
 

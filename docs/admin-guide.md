@@ -258,7 +258,7 @@ Use the `generate-flow` admin endpoint to produce a ready-to-import flow definit
 5. Add a **Get response details** action to retrieve the full response.
 6. Add an **HTTP** action to call the Azure Function:
    - **Method:** POST
-   - **URI:** `https://<your-function-app>.azurewebsites.net/api/process_response`
+   - **URI:** `https://<your-function-app>.azurewebsites.net/api/process-response`
    - **Headers:** `x-functions-key: <function-key-from-key-vault>`
    - **Body:** The response details JSON from the previous step, including `form_id`
 7. Save and test the flow.
@@ -440,7 +440,7 @@ requests
 ```kql
 requests
 | where timestamp > ago(24h)
-| where name == "process_response"
+| where name == "process-response"
 | extend formId = tostring(customDimensions["form_id"])
 | summarize avgDuration=avg(duration), p95Duration=percentile(duration, 95), count() by formId
 | order by avgDuration desc

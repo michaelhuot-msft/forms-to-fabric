@@ -26,6 +26,12 @@ param keyVaultName string
 @description('Microsoft Fabric OneLake endpoint URL.')
 param onelakeEndpoint string
 
+@description('Fabric workspace ID for OneLake writes.')
+param fabricWorkspaceId string = ''
+
+@description('Fabric Lakehouse ID for OneLake writes.')
+param fabricLakehouseId string = ''
+
 // ──────────────────────────────────────────────
 // Existing resources
 // ──────────────────────────────────────────────
@@ -111,6 +117,18 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'ONELAKE_ENDPOINT'
           value: onelakeEndpoint
+        }
+        {
+          name: 'ONELAKE_ACCOUNT_NAME'
+          value: 'onelake'
+        }
+        {
+          name: 'ONELAKE_WORKSPACE'
+          value: fabricWorkspaceId
+        }
+        {
+          name: 'ONELAKE_LAKEHOUSE'
+          value: fabricLakehouseId
         }
       ]
     }

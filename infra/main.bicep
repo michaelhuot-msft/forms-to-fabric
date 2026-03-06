@@ -16,6 +16,12 @@ param tags object = {}
 @description('Microsoft Fabric OneLake endpoint URL.')
 param onelakeEndpoint string = 'https://onelake.dfs.fabric.microsoft.com'
 
+@description('Fabric workspace ID (set by Setup-Environment.ps1 or azd env set FABRIC_WORKSPACE_ID).')
+param fabricWorkspaceId string = ''
+
+@description('Fabric Lakehouse ID (set by Setup-Environment.ps1 or azd env set FABRIC_LAKEHOUSE_ID).')
+param fabricLakehouseId string = ''
+
 @description('Name of the Fabric capacity to create. Alphanumeric only, no hyphens. Leave empty to skip capacity provisioning (use existingFabricCapacityId instead).')
 param fabricCapacityName string = ''
 
@@ -67,6 +73,8 @@ module functionApp 'modules/function-app.bicep' = {
     appInsightsConnectionString: appInsights.outputs.connectionString
     keyVaultName: keyVaultName
     onelakeEndpoint: onelakeEndpoint
+    fabricWorkspaceId: fabricWorkspaceId
+    fabricLakehouseId: fabricLakehouseId
   }
 }
 

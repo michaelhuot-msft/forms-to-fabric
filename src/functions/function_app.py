@@ -5,20 +5,36 @@ responses from Power Automate and writes them to Microsoft Fabric OneLake,
 and a timer-triggered function that monitors form schemas for changes.
 """
 
+import json
 import logging
+import traceback
 
 import azure.functions as func
-
-from process_response.handler import handle_form_response
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 logger = logging.getLogger(__name__)
 
 
+def _safe_handler(handler_func, req: func.HttpRequest) -> func.HttpResponse:
+    """Wrap a handler in a try/except that returns the full traceback on error."""
+    try:
+        return handler_func(req)
+    except Exception:
+        tb = traceback.format_exc()
+        logger.exception("Unhandled exception in %s", handler_func.__name__)
+        return func.HttpResponse(
+            json.dumps({"error": "Internal server error", "traceback": tb}),
+            status_code=500,
+            mimetype="application/json",
+        )
+
+
 @app.route(route="process-response", methods=["POST"])
 def process_response(req: func.HttpRequest) -> func.HttpResponse:
     """HTTP trigger that accepts a form response payload from Power Automate."""
-    return handle_form_response(req)
+    from process_response.handler import handle_form_response
+
+    return _safe_handler(handle_form_response, req)
 
 
 @app.timer_trigger(schedule="0 0 */6 * * *", arg_name="timer", run_on_startup=False)
@@ -50,7 +66,7 @@ def generate_flow(req: func.HttpRequest) -> func.HttpResponse:
     """Generate a Power Automate flow definition for a registered form."""
     from generate_flow.handler import handle_generate_flow
 
-    return handle_generate_flow(req)
+    return _safe_handler(handle_generate_flow, req)
 
 
 @app.route(route="register-form", methods=["POST"], auth_level=func.AuthLevel.FUNCTION)
@@ -58,7 +74,7 @@ def register_form(req: func.HttpRequest) -> func.HttpResponse:
     """Register a new form for pipeline processing."""
     from register_form.handler import handle_register_form
 
-    return handle_register_form(req)
+    return _safe_handler(handle_register_form, req)
 
 
 @app.route(route="activate-form", methods=["POST"], auth_level=func.AuthLevel.FUNCTION)
@@ -66,4 +82,4 @@ def activate_form(req: func.HttpRequest) -> func.HttpResponse:
     """Activate a form after IT review."""
     from activate_form.handler import handle_activate_form
 
-    return handle_activate_form(req)
+    return _safe_handler(handle_activate_form, req)

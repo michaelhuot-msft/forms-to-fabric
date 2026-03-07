@@ -163,6 +163,7 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
                 "target_table": target_table,
                 "status": status,
                 "field_count": len(fields),
+                "generate_flow_url": f"/api/generate-flow?form_id={form_id}",
             }
         ),
         status_code=200,

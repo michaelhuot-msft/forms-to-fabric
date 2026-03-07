@@ -105,10 +105,31 @@ The body is the same for all forms:
 }
 ```
 
-6. **+ New step** → **Condition** → `Status code` is not equal to `200`
+6. **+ New step** → **HTTP GET** to generate the data pipeline flow definition:
+
+| Field | Value |
+|---|---|
+| Method | `GET` |
+| URI | `https://<function-app>/api/generate-flow?form_id=@{body('HTTP')?['form_id']}` |
+| Headers | `x-functions-key` : same key as above |
+
+This returns a complete Power Automate flow definition for the registered form.
+
+7. **+ New step** → **Create Flow** (Power Automate Management connector):
+
+| Field | Value |
+|---|---|
+| Environment | Your Power Platform environment ID |
+| Display Name | `Forms to Fabric — @{body('HTTP')?['form_name']}` |
+| Definition | `@{body('HTTP_GET_generate_flow')}` (output from step 6) |
+| State | Enabled |
+
+> **Note:** The "Create Flow" action requires a **Power Automate Premium** license. If not available, the flow definition is still generated — you can manually import it from the generate-flow endpoint.
+
+8. **+ New step** → **Condition** → `Status code` is not equal to `200`
    - **If yes**: Send error email to admin
    - **If no**: Leave empty
-7. Save and enable
+9. Save and enable
 
 > **Tip:** The Function App URL and key are from `Post-Deploy.ps1` output (Step 3 of the setup guide). The function key is also stored in Key Vault.
 

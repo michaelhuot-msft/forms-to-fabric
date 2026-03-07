@@ -108,10 +108,7 @@ def _build_flow_definition(
                     },
                     "body": {
                         "form_id": form_config.form_id,
-                        "response_id": "@{triggerBody()?['resourceData']?['responseId']}",
-                        "submitted_at": "@{utcNow()}",
-                        "respondent_email": "@{body('Get_response_details')?['responder']}",
-                        "answers": "@{body('Get_response_details')?['responses']}",
+                        "raw_response": "@body('Get_response_details')",
                     },
                 },
             },

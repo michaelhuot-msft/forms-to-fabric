@@ -201,6 +201,18 @@ Decisions are numbered sequentially (D-001, D-002, …). Each entry records what
 
 ---
 
+### D-016
+
+| Field | Detail |
+|-------|--------|
+| **Decision** | Use Power Automate Management connector to auto-create data pipeline flows during registration |
+| **Date** | 2026-03 |
+| **Context** | Each Microsoft Form needs its own Power Automate flow (the Forms trigger is per-form). Manual flow creation was the biggest remaining admin burden. The registration flow now calls `/api/generate-flow` to get a flow definition and uses the PA Management connector's "Create Flow" action to deploy it automatically. |
+| **Alternatives considered** | Dataverse API from Azure Function (fragile undocumented clientdata format); timer-based polling (no Forms Graph API for responses); email import link to clinician (~2 min effort); universal flow for all forms (impossible — PA trigger is per-form) |
+| **How to change later** | If Microsoft adds a "trigger on any form" capability or a Forms webhook API, replace per-form flows with a single universal flow or direct webhook integration. |
+
+---
+
 ## How to Add a New Decision
 
 Copy the template below and append it to the appropriate section:

@@ -27,7 +27,7 @@
 | 2 | Set up environment + Fabric | `Setup-Environment.ps1` | ~10 min |
 | 3 | Deploy Azure infrastructure | `azd up` + `Post-Deploy.ps1` | ~15 min |
 | 4 | Set up self-service registration | Create registration form + PA flow | ~15 min |
-| 5 | Connect your first data form | Register via self-service → create PA data flow → test | ~15 min |
+| 5 | Test the pipeline | Submit a test response → verify both flows run → check Lakehouse | ~5 min |
 | 6 | Configure Power BI | Connect to Lakehouse | ~10 min |
 
 ---
@@ -189,43 +189,19 @@ Then build the flow:
 
 ---
 
-## Step 5: Test the Data Pipeline
+## Step 5: Test the Pipeline
 
-Use the registration form you just created as your first test form — no need to create a separate one.
+When you submitted the registration form in Step 4, the registration flow automatically:
+1. Registered the form in the pipeline
+2. Created a data pipeline flow for the form
 
-### 5.1 Register it as a data form
+To test:
 
-Open the registration form and submit a test entry:
-1. **Form link**: paste the registration form's own URL
-2. **Description**: "Test form"
-3. **Patient info**: No
-
-The registration flow (Step 4) processes this and registers the form automatically.
-
-### 5.2 Create the data pipeline flow
-
-Run the helper script with the registration form's URL:
-
-```powershell
-pwsh scripts/Generate-FlowBody.ps1 -FormUrl "https://forms.office.com/..."
-```
-
-Then build the data flow:
-
-1. **+ Create** → **Automated cloud flow**
-2. Name it: "Forms to Fabric — Registration Form Data"
-3. Trigger: **When a new response is submitted** → select the registration form
-4. **+ New step** → **Get response details** → same form, Response Id from trigger
-5. **+ New step** → **HTTP** — paste Method, URI, Headers, and Body from the script output
-6. **+ New step** → **Condition** → `Status code` ≠ `200` → send error email
-7. Save and enable
-
-### 5.3 Test end-to-end
-
-1. Submit another test entry via the registration form
-2. Check **both** PA flows ran successfully (registration intake + data pipeline)
-3. Check Fabric Lakehouse → Tables → verify data appears
-4. You now have a working pipeline — repeat 5.1–5.2 for any new data form
+1. Open your data form and submit a test response
+2. Check Power Automate → flow run history for **both** flows:
+   - "Forms to Fabric — Registration Intake" should show Succeeded
+   - "Forms to Fabric — {your form name}" should show Succeeded
+3. Check Fabric Lakehouse → Tables → verify data appears in the `{table_name}_raw` table
 
 ---
 

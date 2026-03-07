@@ -89,14 +89,14 @@ flowchart TD
     T -->|"Form: Register Your Form for Analytics"| G
 
     G[Action: Get response details]
-    G -->|"Form ID: see footnote 1"| H
+    G --> H
 
-    H["HTTP POST /api/register-form (see footnotes 2-4)"]
+    H["RegisterForm: HTTP POST /api/register-form"]
     H --> C
 
     C{Condition: Status code = 200?}
-    C -- Yes --> F["HTTP POST to Flow API (see footnote 5)"]
-    F --> OK[Done]
+    C -- Yes --> F["HTTP POST to Flow API"]
+    F -->|"Body: body'RegisterForm'?'flow_create_body'"| OK[Done]
     C -- No --> ERR[Send error email to admin]
 
     classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
@@ -141,7 +141,7 @@ Then build the flow:
 2. Name it: **"Forms to Fabric — Registration Intake"**
 3. Trigger: **When a new response is submitted** → select "Register Your Form for Analytics"
 4. **+ New step** → **Get response details** → same form, Response Id from trigger
-5. **+ New step** → **HTTP POST** to register-form — paste Method, URI, Headers from the script output. Body:
+5. **+ New step** → **HTTP POST** to register-form — paste Method, URI, Headers from the script output. **Rename this action to `RegisterForm`** (click `...` → Rename — no hyphens or spaces). Body:
 
 ```
 {
@@ -150,7 +150,9 @@ Then build the flow:
 }
 ```
 
-6. **+ New step** → **Condition** → `Status code` of register-form HTTP ≠ `200`
+> ⚠️ **Important:** The HTTP action MUST be renamed to `RegisterForm` (no hyphens, no spaces). The expression in step 6 references it by this exact name.
+
+6. **+ New step** → **Condition** → `Status code` of RegisterForm ≠ `200`
    - **If no** (success): Add an **HTTP POST** to create the data pipeline flow:
 
      | Field | Value |
@@ -158,7 +160,7 @@ Then build the flow:
      | Method | `POST` |
      | URI | `https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/<ENV-ID>/flows` (see footnote 5) |
      | Headers | `Content-Type: application/json` |
-     | Body | `@{body('HTTP')?['flow_create_body']}` |
+     | Body | `body('RegisterForm')?['flow_create_body']` (enter in the **Expression** tab, not Dynamic content) |
      | Authentication | Active Directory OAuth — Tenant: your tenant ID, Audience: `https://service.flow.microsoft.com` |
 
    - **If yes** (error): Add **Send an email V2** to notify admin

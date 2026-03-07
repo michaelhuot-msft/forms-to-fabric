@@ -81,23 +81,52 @@ Once the form is saved in Microsoft Forms, complete these steps to connect it to
 
 ### Step 2 — Create the Power Automate Flow
 
-First, run the helper script to get your exact HTTP action values:
+The registration flow is simple — only 4 steps. The Azure Function handles everything else (including auto-creating the data pipeline flow).
+
+```mermaid
+flowchart TD
+    subgraph "Power Automate Flow"
+        T["1. When a new response is submitted\n(Microsoft Forms)"]
+        G["2. Get response details\n(Microsoft Forms)"]
+        H["3. HTTP POST\n/api/register-form"]
+        C{"4. Condition\nStatus code = 200?"}
+        OK["No action needed\n(success)"]
+        ERR["Send error email\n(Office 365 Outlook)"]
+    end
+
+    T --> G
+    G --> H
+    H --> C
+    C -- Yes --> OK
+    C -- No --> ERR
+
+    style T fill:#dbeafe,color:#1e1e1e
+    style G fill:#dbeafe,color:#1e1e1e
+    style H fill:#e0f2fe,color:#1e1e1e
+    style C fill:#fff3bf,color:#1e1e1e
+    style OK fill:#d3f9d8,color:#1e1e1e
+    style ERR fill:#ffc9c9,color:#1e1e1e
+```
+
+**What happens inside step 3 (server-side):**
+- Registers the form in the blob storage registry
+- Auto-creates a data pipeline flow via the Flow Management API
+- Returns the form ID, name, and flow details
+
+Run the helper script to get the HTTP action values:
 
 ```powershell
 pwsh scripts/Generate-FlowBody.ps1 -Registration
 ```
 
-This outputs the URI, headers (including your function key), and body — ready to copy-paste.
-
 Then build the flow:
 
 1. Go to [flow.microsoft.com](https://flow.microsoft.com) → **+ Create** → **Automated cloud flow**
-2. Name it: "Forms to Fabric — Registration Intake"
+2. Name it: **"Forms to Fabric — Registration Intake"**
 3. Trigger: **When a new response is submitted** → select "Register Your Form for Analytics"
 4. **+ New step** → **Get response details** → same form, Response Id from trigger
-5. **+ New step** → **HTTP** — paste the Method, URI, Headers, and Body from the script output
+5. **+ New step** → **HTTP** — paste Method, URI, Headers from the script output. Body:
 
-The body is the same for all forms:
 ```
 {
   "form_id": "<YOUR-FORM-ID>",
@@ -105,40 +134,15 @@ The body is the same for all forms:
 }
 ```
 
-6. **+ New step** → **HTTP GET** to generate the data pipeline flow definition:
-
-| Field | Value |
-|---|---|
-| Method | `GET` |
-| URI | `https://<function-app>/api/generate-flow?form_id=@{body('HTTP')?['form_id']}` |
-| Headers | `x-functions-key` : same key as above |
-
-This returns a complete Power Automate flow definition for the registered form.
-
-7. **+ New step** → **Create Flow** (Power Automate Management connector):
-
-| Field | Value |
-|---|---|
-| Environment | Your Power Platform environment ID |
-| Display Name | `Forms to Fabric — @{body('HTTP')?['form_name']}` |
-| Definition | `@{body('HTTP_GET_generate_flow')}` (output from step 6) |
-| State | Enabled |
-
-> **Note:** The "Create Flow" action requires a **Power Automate Premium** license. If not available, the flow definition is still generated — you can manually import it from the generate-flow endpoint.
-
-8. **+ New step** → **Condition** → `Status code` is not equal to `200`
-   - **If yes**: Send error email to admin
-   - **If no**: Leave empty
-9. Save and enable
-
-> **Tip:** The Function App URL and key are from `Post-Deploy.ps1` output (Step 3 of the setup guide). The function key is also stored in Key Vault.
+6. **+ New step** → **Condition** → `Status code` of HTTP ≠ `200` → send error email
+7. **Save** and enable
 
 ### Step 3 — Test End-to-End
 
-1. Open the registration form and submit a test entry with a known form link, a description, and **No** for patient info.
-2. Verify the Power Automate flow runs successfully (check **Flow run history**).
-3. Confirm the form appears in `config/form-registry.json` with `status: "active"`.
-4. Repeat with **Yes** for patient info and verify the form appears with `status: "pending_review"`.
+1. Open the registration form and submit a test entry with a known form link, a description, and **No** for patient info
+2. Verify the Power Automate flow runs successfully (check **Flow run history**)
+3. Check the response body from the HTTP action — it should include `"data_flow"` with the auto-created flow ID
+4. Verify a new flow appears in Power Automate: **"Forms to Fabric — {form name}"**
 
 ---
 

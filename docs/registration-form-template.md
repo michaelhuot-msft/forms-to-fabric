@@ -86,12 +86,12 @@ The registration flow is simple — only 4 steps. The Azure Function handles eve
 ```mermaid
 flowchart TD
     subgraph "Power Automate Flow"
-        T["1. When a new response is submitted\n(Microsoft Forms)"]
-        G["2. Get response details\n(Microsoft Forms)"]
-        H["3. HTTP POST\n/api/register-form"]
-        C{"4. Condition\nStatus code = 200?"}
-        OK["No action needed\n(success)"]
-        ERR["Send error email\n(Office 365 Outlook)"]
+        T[1. When a new response is submitted]
+        G[2. Get response details]
+        H[3. HTTP POST /api/register-form]
+        C{4. Status code = 200?}
+        OK[Done — success]
+        ERR[Send error email]
     end
 
     T --> G
@@ -104,12 +104,10 @@ flowchart TD
     classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
     classDef warning fill:#ffd43b,stroke:#e67700,color:#1a1a2e
     classDef danger fill:#ff8787,stroke:#c92a2a,color:#1a1a2e
-    classDef info fill:#b197fc,stroke:#6741d9,color:#1a1a2e
-    classDef neutral fill:#ced4da,stroke:#495057,color:#1a1a2e
 
     T:::primary
     G:::primary
-    H:::info
+    H:::primary
     C:::warning
     OK:::success
     ERR:::danger

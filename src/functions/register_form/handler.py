@@ -157,6 +157,7 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
 
     # --- Auto-create the data pipeline PA flow --------------------------------
     flow_result = None
+    flow_error = None
     try:
         import os
 
@@ -176,9 +177,9 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
         )
         logger.info("Auto-created data pipeline flow: %s", flow_result)
     except Exception as exc:
+        flow_error = str(exc)
         logger.warning(
-            "Could not auto-create data pipeline flow for %s: %s. "
-            "Clinician can create it manually using /api/generate-flow.",
+            "Could not auto-create data pipeline flow for %s: %s",
             form_id,
             exc,
         )
@@ -193,6 +194,8 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
     }
     if flow_result:
         response_body["data_flow"] = flow_result
+    if flow_error:
+        response_body["data_flow_error"] = flow_error
 
     return func.HttpResponse(
         json.dumps(response_body),

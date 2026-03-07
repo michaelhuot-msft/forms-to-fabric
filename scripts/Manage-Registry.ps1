@@ -124,6 +124,10 @@ if ($Remove) {
 
     $registry = Get-Registry
     $before = $registry.forms.Count
+    # Find the form name before removing (for flow lookup)
+    $formEntry = $registry.forms | Where-Object { $_.form_id -eq $FormId }
+    $formName = if ($formEntry) { $formEntry.form_name } else { "" }
+
     $registry.forms = @($registry.forms | Where-Object { $_.form_id -ne $FormId })
     $after = $registry.forms.Count
 
@@ -133,7 +137,33 @@ if ($Remove) {
     }
 
     Save-Registry $registry
-    Write-Host "Removed form: $FormId" -ForegroundColor Green
+    Write-Host "Removed form from registry." -ForegroundColor Green
+
+    # Clean up the auto-created PA flow
+    if ($formName) {
+        $flowDisplayName = "Forms to Fabric — $formName"
+        Write-Host "Looking for PA flow: '$flowDisplayName'..." -ForegroundColor Cyan
+        try {
+            $token = az account get-access-token --resource "https://service.flow.microsoft.com" --query "accessToken" -o tsv 2>$null
+            if ($token) {
+                $envId = "Default-6dd0fc78-2408-43d6-a255-4383fbda3f76"
+                $flowHeaders = @{ "Authorization" = "Bearer $token"; "Accept" = "application/json" }
+                $flowsResp = Invoke-RestMethod -Uri "https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/$envId/flows" -Headers $flowHeaders -Method GET
+                $matchingFlow = $flowsResp.value | Where-Object { $_.properties.displayName -eq $flowDisplayName }
+                if ($matchingFlow) {
+                    $flowId = $matchingFlow.name
+                    Invoke-RestMethod -Uri "https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/$envId/flows/$flowId" -Headers $flowHeaders -Method DELETE | Out-Null
+                    Write-Host "Deleted PA flow: $flowDisplayName (ID: $flowId)" -ForegroundColor Green
+                } else {
+                    Write-Host "No matching PA flow found (may not have been auto-created)." -ForegroundColor Yellow
+                }
+            }
+        } catch {
+            Write-Host "Could not clean up PA flow: $($_.Exception.Message)" -ForegroundColor Yellow
+            Write-Host "You may need to delete '$flowDisplayName' manually in Power Automate." -ForegroundColor Yellow
+        }
+    }
+
     Write-Host "Registry now has $after forms." -ForegroundColor Cyan
     exit 0
 }
@@ -158,6 +188,29 @@ if ($Purge) {
     if ($confirm -ne 'PURGE') {
         Write-Host "Cancelled." -ForegroundColor Yellow
         exit 0
+    }
+
+    # Clean up auto-created PA flows
+    Write-Host "`nCleaning up PA flows..." -ForegroundColor Cyan
+    try {
+        $token = az account get-access-token --resource "https://service.flow.microsoft.com" --query "accessToken" -o tsv 2>$null
+        if ($token) {
+            $envId = "Default-6dd0fc78-2408-43d6-a255-4383fbda3f76"
+            $flowHeaders = @{ "Authorization" = "Bearer $token"; "Accept" = "application/json" }
+            $flowsResp = Invoke-RestMethod -Uri "https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/$envId/flows" -Headers $flowHeaders -Method GET
+            foreach ($form in $registry.forms) {
+                $flowDisplayName = "Forms to Fabric — $($form.form_name)"
+                $matchingFlow = $flowsResp.value | Where-Object { $_.properties.displayName -eq $flowDisplayName }
+                if ($matchingFlow) {
+                    $flowId = $matchingFlow.name
+                    Invoke-RestMethod -Uri "https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/$envId/flows/$flowId" -Headers $flowHeaders -Method DELETE | Out-Null
+                    Write-Host "  Deleted flow: $flowDisplayName" -ForegroundColor Green
+                }
+            }
+        }
+    } catch {
+        Write-Host "  Could not clean up flows: $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host "  Delete 'Forms to Fabric — ...' flows manually in Power Automate." -ForegroundColor Yellow
     }
 
     $registry.forms = @()

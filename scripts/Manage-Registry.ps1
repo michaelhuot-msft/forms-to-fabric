@@ -16,6 +16,7 @@ param(
     [switch]$List,
     [switch]$Remove,
     [switch]$Purge,
+    [switch]$Help,
     [string]$FormId = "",
     [string]$StorageAccount = "stformsec4zlsle",
     [string]$Container = "form-registry",
@@ -23,6 +24,31 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+# ── Help ─────────────────────────────────────────────────────────────────────
+
+if ($Help -or (-not $List -and -not $Remove -and -not $Purge)) {
+    Write-Host ""
+    Write-Host "  Manage-Registry.ps1 — Admin tool for the form registry" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  Commands:" -ForegroundColor White
+    Write-Host "    -List                List all registered forms" -ForegroundColor Gray
+    Write-Host "    -Remove              Interactive: pick a form to remove" -ForegroundColor Gray
+    Write-Host "    -Remove -FormId <id> Remove a specific form by ID" -ForegroundColor Gray
+    Write-Host "    -Purge               Remove ALL forms (requires confirmation)" -ForegroundColor Gray
+    Write-Host "    -Help                Show this help" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  Examples:" -ForegroundColor White
+    Write-Host "    pwsh scripts/Manage-Registry.ps1 -List" -ForegroundColor Gray
+    Write-Host "    pwsh scripts/Manage-Registry.ps1 -Remove" -ForegroundColor Gray
+    Write-Host "    pwsh scripts/Manage-Registry.ps1 -Purge" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "  Options:" -ForegroundColor White
+    Write-Host "    -StorageAccount <name>  Override storage account (default: stformsec4zlsle)" -ForegroundColor Gray
+    Write-Host "    -Container <name>       Override blob container (default: form-registry)" -ForegroundColor Gray
+    Write-Host ""
+    exit 0
+}
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -139,11 +165,3 @@ if ($Purge) {
     Write-Host "Purged all $count forms from registry." -ForegroundColor Green
     exit 0
 }
-
-# ── No action ────────────────────────────────────────────────────────────────
-
-Write-Host "Usage:" -ForegroundColor Cyan
-Write-Host "  pwsh scripts/Manage-Registry.ps1 -List" -ForegroundColor White
-Write-Host "  pwsh scripts/Manage-Registry.ps1 -Remove" -ForegroundColor White
-Write-Host "  pwsh scripts/Manage-Registry.ps1 -Remove -FormId '<id>'" -ForegroundColor White
-Write-Host "  pwsh scripts/Manage-Registry.ps1 -Purge" -ForegroundColor White

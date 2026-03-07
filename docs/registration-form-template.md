@@ -92,13 +92,11 @@ flowchart TD
     G -->|"Form ID: see footnote 1"| H
 
     H["HTTP POST /api/register-form (see footnotes 2-4)"]
-    H --> F
+    H --> C
 
-    F["HTTP POST to Flow API — create data flow (see footnote 5)"]
-    F --> C
-
-    C{Condition: register-form status = 200?}
-    C -- Yes --> OK[Done]
+    C{Condition: Status code = 200?}
+    C -- Yes --> F["HTTP POST to Flow API (see footnote 5)"]
+    F --> OK[Done]
     C -- No --> ERR[Send error email to admin]
 
     classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
@@ -110,8 +108,8 @@ flowchart TD
     T:::primary
     G:::primary
     H:::primary
-    F:::info
     C:::warning
+    F:::info
     OK:::success
     ERR:::danger
 ```
@@ -152,24 +150,25 @@ Then build the flow:
 }
 ```
 
-6. **+ New step** → **HTTP POST** to create the data pipeline flow (uses your PA user context):
+6. **+ New step** → **Condition** → `Status code` of register-form HTTP ≠ `200`
+   - **If no** (success): Add an **HTTP POST** to create the data pipeline flow:
 
-| Field | Value |
-|---|---|
-| Method | `POST` |
-| URI | `https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/<ENV-ID>/flows` (see footnote 5) |
-| Headers | `Content-Type: application/json` |
-| Body | `@{body('HTTP')?['flow_create_body']}` |
-| Authentication | Active Directory OAuth — Tenant: your tenant ID, Audience: `https://service.flow.microsoft.com` |
+     | Field | Value |
+     |---|---|
+     | Method | `POST` |
+     | URI | `https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/<ENV-ID>/flows` (see footnote 5) |
+     | Headers | `Content-Type: application/json` |
+     | Body | `@{body('HTTP')?['flow_create_body']}` |
+     | Authentication | Active Directory OAuth — Tenant: your tenant ID, Audience: `https://service.flow.microsoft.com` |
 
-7. **+ New step** → **Condition** → `Status code` of step 5 (register-form) ≠ `200` → send error email
-8. **Save** and enable
+   - **If yes** (error): Add **Send an email V2** to notify admin
+7. **Save** and enable
 
 | # | Field | Value |
 |---|-------|-------|
 | 5 | **Environment ID** | `Default-<your-tenant-id>` — find at [admin.powerplatform.microsoft.com](https://admin.powerplatform.microsoft.com) → Environments |
 
-> **Note:** Step 6 creates the data pipeline flow under your user account. If you skip step 6, the form is still registered — clinicians can create the flow manually using `Generate-FlowBody.ps1`.
+> **Note:** The flow creation step runs inside the success branch of the condition. If registration fails, no flow is created. If you skip the flow creation step entirely, the form is still registered — clinicians can create the flow manually using `Generate-FlowBody.ps1`.
 
 ### Step 3 — Test End-to-End
 

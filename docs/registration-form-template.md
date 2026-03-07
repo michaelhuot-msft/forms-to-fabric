@@ -85,19 +85,13 @@ The registration flow is simple — only 4 actions. The Azure Function handles e
 
 ```mermaid
 flowchart TD
-    T[Trigger: When a new response is submitted]
-    T -->|"Form: Register Your Form for Analytics"| G
-
-    G[Action: Get response details]
-    G --> H
-
-    H["RegisterForm: HTTP POST /api/register-form"]
-    H --> C
-
-    C{Condition: Status code = 200?}
-    C -- Yes --> F["HTTP POST to Flow API"]
-    F -->|"Body: body'RegisterForm'?'flow_create_body'"| OK[Done]
-    C -- No --> ERR[Send error email to admin]
+    T[1. Trigger: When a new response is submitted]
+    T --> G[2. Get response details]
+    G --> H[3. RegisterForm: HTTP POST to /api/register-form]
+    H --> C{4. Status code = 200?}
+    C -- Yes --> F[5. HTTP POST to Flow API — create data flow]
+    C -- No --> ERR[5. Send error email]
+    F --> OK[Done]
 
     classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
     classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e

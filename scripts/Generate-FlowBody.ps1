@@ -110,30 +110,46 @@ $json = @"
 
 # ── Output ───────────────────────────────────────────────────────────────────
 
+# Get tenant ID for Flow API config
+$tenantId = az account show --query "tenantId" -o tsv 2>$null
+if (-not $tenantId) { $tenantId = "<your-tenant-id>" }
+$envId = "Default-$tenantId"
+
 Write-Host "`n========================================" -ForegroundColor Green
-Write-Host "  HTTP Action Configuration" -ForegroundColor Green
+Write-Host "  Registration Flow Configuration" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 
-Write-Host "`nMethod: POST" -ForegroundColor White
-Write-Host "URI:    $endpoint" -ForegroundColor White
-Write-Host "`nHeaders:" -ForegroundColor White
-Write-Host "  Content-Type:    application/json" -ForegroundColor White
-Write-Host "  x-functions-key: $FunctionKey" -ForegroundColor White
-
-Write-Host "`nBody (copy and paste into Power Automate):" -ForegroundColor Yellow
+Write-Host "`n── Step 5: RegisterForm (HTTP POST) ──" -ForegroundColor Cyan
+Write-Host "  Rename this action to: RegisterForm" -ForegroundColor Yellow
+Write-Host "  Method:  POST" -ForegroundColor White
+Write-Host "  URI:     $endpoint" -ForegroundColor White
+Write-Host "  Headers:" -ForegroundColor White
+Write-Host "    Content-Type:    application/json" -ForegroundColor White
+Write-Host "    x-functions-key: $FunctionKey" -ForegroundColor White
+Write-Host "  Body:" -ForegroundColor White
 Write-Host "────────────────────────────────────────" -ForegroundColor DarkGray
 Write-Host $json -ForegroundColor White
 Write-Host "────────────────────────────────────────" -ForegroundColor DarkGray
 
-# Also save to file
+Write-Host "`n── Step 6: Condition (Status code = 200?) ──" -ForegroundColor Cyan
+Write-Host "  If yes (success) → add HTTP POST below" -ForegroundColor White
+Write-Host "  If no (error) → Send error email" -ForegroundColor White
+
+Write-Host "`n── Inside Yes branch: Create Data Flow (HTTP POST) ──" -ForegroundColor Cyan
+Write-Host "  Method:  POST" -ForegroundColor White
+Write-Host "  URI:     https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/$envId/flows" -ForegroundColor White
+Write-Host "  Headers:" -ForegroundColor White
+Write-Host "    Content-Type: application/json" -ForegroundColor White
+Write-Host "  Body (enter in Expression tab):" -ForegroundColor White
+Write-Host "    body('RegisterForm')?['flow_create_body']" -ForegroundColor Yellow
+Write-Host "  Authentication:" -ForegroundColor White
+Write-Host "    Type:     Active Directory OAuth" -ForegroundColor White
+Write-Host "    Authority: https://login.microsoftonline.com" -ForegroundColor White
+Write-Host "    Tenant:   $tenantId" -ForegroundColor White
+Write-Host "    Audience: https://service.flow.microsoft.com" -ForegroundColor White
+Write-Host "    Client ID: (leave blank)" -ForegroundColor White
+
+# Save to file
 $outPath = "power-automate-body.json"
 $json | Out-File -FilePath $outPath -Encoding utf8
-Write-Host "`nAlso saved to: $outPath" -ForegroundColor Green
-
-Write-Host "`nSteps in Power Automate:" -ForegroundColor Yellow
-Write-Host "  1. In the HTTP action, set Method = POST" -ForegroundColor White
-Write-Host "  2. Set URI = $endpoint" -ForegroundColor White
-Write-Host "  3. Add header: Content-Type = application/json" -ForegroundColor White
-Write-Host "  4. Add header: x-functions-key = $FunctionKey" -ForegroundColor White
-Write-Host "  5. Paste the body JSON above into the Body field" -ForegroundColor White
-Write-Host "  6. Power Automate will auto-detect the @{...} expressions" -ForegroundColor White
+Write-Host "`nBody also saved to: $outPath" -ForegroundColor Green

@@ -71,10 +71,11 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
             field_values.append(str(value) if value is not None else "")
 
         form_url = field_values[0] if len(field_values) > 0 else ""
-        # field_values[1] is description (logged but not used for registration logic)
+        description = field_values[1] if len(field_values) > 1 else ""
         has_phi_raw = field_values[2] if len(field_values) > 2 else "No"
     else:
         form_url = body.get("form_url")
+        description = body.get("description", "")
         has_phi_raw = body.get("has_phi")
 
     if not form_url:
@@ -123,8 +124,8 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json",
         )
 
-    # Derive form_name and target_table from form_id (no Graph API needed)
-    form_name = form_id[:40] if len(form_id) > 40 else form_id
+    # Use description as form name (clinician-provided), fall back to truncated form_id
+    form_name = description.strip() if description and description.strip() else (form_id[:40] if len(form_id) > 40 else form_id)
     target_table = _slugify(form_name)
 
     # Register with empty fields — they'll be auto-discovered from raw_response

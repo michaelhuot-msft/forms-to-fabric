@@ -81,39 +81,67 @@ Once the form is saved in Microsoft Forms, complete these steps to connect it to
 
 ### Step 2 — Create the Power Automate Flow
 
-The registration flow is simple — only 4 steps. The Azure Function handles everything else (including auto-creating the data pipeline flow).
+The registration flow is simple — only 4 actions. The Azure Function handles everything else (including auto-creating the data pipeline flow).
 
 ```mermaid
 flowchart TD
-    subgraph "Power Automate Flow"
-        T[1. When a new response is submitted]
-        G[2. Get response details]
-        H[3. HTTP POST /api/register-form]
-        C{4. Status code = 200?}
-        OK[Done — success]
-        ERR[Send error email]
-    end
+    T[Trigger: When a new response is submitted]
+    T -->|Form: Register Your Form for Analytics| G
 
-    T --> G
-    G --> H
-    H --> C
-    C -- Yes --> OK
-    C -- No --> ERR
+    G[Action: Get response details]
+    G -->|Form ID: see footnote 1| H
+
+    subgraph "HTTP Action"
+        H[Method: POST]
+        H1[URI: see footnote 2]
+        H2["Header: Content-Type = application/json"]
+        H3[Header: x-functions-key = see footnote 3]
+        H4["Body: see footnote 4"]
+    end
+    G --> H1
+    H1 --- H2
+    H2 --- H3
+    H3 --- H4
+    H4 --> C
+
+    C{Condition: Status code = 200?}
+    C -- Yes --> OK[No action]
+    C -- No --> ERR[Send an email V2]
+    ERR --> ERR1[To: admin email]
+    ERR --> ERR2[Subject: Registration Error]
+    ERR --> ERR3["Body: Status code + response body"]
 
     classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
     classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
     classDef warning fill:#ffd43b,stroke:#e67700,color:#1a1a2e
     classDef danger fill:#ff8787,stroke:#c92a2a,color:#1a1a2e
+    classDef neutral fill:#ced4da,stroke:#495057,color:#1a1a2e
 
     T:::primary
     G:::primary
     H:::primary
+    H1:::neutral
+    H2:::neutral
+    H3:::neutral
+    H4:::neutral
     C:::warning
     OK:::success
     ERR:::danger
+    ERR1:::neutral
+    ERR2:::neutral
+    ERR3:::neutral
 ```
 
-**What happens inside step 3 (server-side):**
+**Footnotes — dynamic values:**
+
+| # | Field | How to get the value |
+|---|-------|---------------------|
+| 1 | **Form ID** | Select "Register Your Form for Analytics" from the dropdown in the trigger |
+| 2 | **URI** | `pwsh scripts/Generate-FlowBody.ps1 -Registration` → copy URI from output |
+| 3 | **x-functions-key** | `pwsh scripts/Generate-FlowBody.ps1 -Registration` → copy key from output |
+| 4 | **Body** | Paste exactly: `{"form_id":"<YOUR-FORM-ID>","raw_response":@{outputs('Get_response_details')?['body']}}` — replace `<YOUR-FORM-ID>` with the registration form's ID (from the browser URL `?id=` parameter) |
+
+**What happens inside the HTTP action (server-side):**
 - Registers the form in the blob storage registry
 - Auto-creates a data pipeline flow via the Flow Management API
 - Returns the form ID, name, and flow details

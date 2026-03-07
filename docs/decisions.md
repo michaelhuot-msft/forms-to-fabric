@@ -213,6 +213,16 @@ Decisions are numbered sequentially (D-001, D-002, …). Each entry records what
 
 ---
 
+### D-017
+
+| Field | Detail |
+|-------|--------|
+| **Decision** | Document hybrid workspace architecture (central raw + per-clinician curated) for future implementation; keep single workspace for current POC |
+| **Date** | 2026-03 |
+| **Context** | PHI data and curated data should be physically separated into different Fabric workspaces for stronger isolation. Per-clinician curated workspaces give each clinician their own view without cross-contamination. The current single-workspace model works for POC but doesn't provide workspace-level PHI isolation. |
+| **Alternatives considered** | Single workspace with row-level security (current, simpler but weaker isolation); two workspaces (raw + shared curated, no per-clinician separation); per-department workspaces (fewer workspaces but shared within department) |
+| **How to change later** | Implement the architecture documented in `docs/workspace-architecture.md`. The migration is incremental — current model continues to work while hybrid is built alongside. Key changes: register-form creates workspaces via Fabric API, onelake writer routes data by workspace ID from form config. |
+
 ## How to Add a New Decision
 
 Copy the template below and append it to the appropriate section:

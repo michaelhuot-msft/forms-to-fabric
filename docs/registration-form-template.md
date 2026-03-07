@@ -118,10 +118,9 @@ Run `pwsh scripts/Generate-FlowBody.ps1 -Registration` to get values for footnot
 | 2 | **RegisterForm URI** | Copy from script output (e.g., `https://func-forms-dev-ec4zls.azurewebsites.net/api/register-form`) |
 | 3 | **x-functions-key** | Copy from script output |
 | 4 | **RegisterForm Body** | `{"form_id":"<YOUR-FORM-ID>","raw_response":@{outputs('Get_response_details')?['body']}}` — replace `<YOUR-FORM-ID>` with the registration form's ID from the browser URL `?id=` parameter |
-| 5 | **Flow API URI** | `https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/Default-<TENANT-ID>/flows` |
+| 5 | **Flow API URL** | `/providers/Microsoft.ProcessSimple/environments/Default-<TENANT-ID>/flows` — replace `<TENANT-ID>` with footnote 8 |
 | 6 | **Flow API Body** | `body('RegisterForm')?['flow_create_body']` — enter in the **Expression** tab |
-| 7 | **Flow API Auth** | Active Directory OAuth — Authority: `https://login.microsoftonline.com`, Tenant: `<TENANT-ID>`, Audience: `https://service.flow.microsoft.com`, Client ID: leave blank |
-| 8 | **Tenant ID** | Your Azure AD tenant ID (e.g., `6dd0fc78-2408-43d6-a255-4383fbda3f76`) — find at Azure Portal → Azure Active Directory → Overview |
+| 7 | **Tenant ID** | Your Entra ID tenant ID (e.g., `6dd0fc78-...`) — find at Azure Portal → Microsoft Entra ID → Overview |
 
 **What the HTTP action returns:**
 - Registers the form in the blob storage registry
@@ -151,15 +150,18 @@ Then build the flow:
 > ⚠️ **Important:** The HTTP action MUST be renamed to `RegisterForm` (no hyphens, no spaces). The expression in step 6 references it by this exact name.
 
 6. **+ New step** → **Condition** → `Status code` of RegisterForm ≠ `200`
-   - **If no** (success): Add an **HTTP POST** to create the data pipeline flow:
+   - **If no** (success): Add **Invoke an HTTP request** using the **HTTP with Microsoft Entra ID** connector:
 
      | Field | Value |
      |---|---|
-     | Method | `POST` |
-     | URI | See footnote 5 |
-     | Headers | `Content-Type: application/json` |
-     | Body | See footnote 6 |
-     | Authentication | See footnote 7 |
+     | **Connector** | HTTP with Microsoft Entra ID (preauthorized) |
+     | **Base Resource URL** | `https://api.flow.microsoft.com` |
+     | **Entra ID Resource URI** | `https://service.flow.microsoft.com` |
+     | **Method** | `POST` |
+     | **URL of the request** | `/providers/Microsoft.ProcessSimple/environments/Default-<TENANT-ID>/flows` (see footnote 5) |
+     | **Body** | See footnote 6 |
+
+     > No app registration needed — this connector uses your PA connection's identity.
 
    - **If yes** (error): Add **Send an email V2** to notify admin
 7. **Save** and enable

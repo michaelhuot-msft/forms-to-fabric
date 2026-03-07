@@ -135,19 +135,14 @@ Write-Host "`n── Step 6: Condition (Status code = 200?) ──" -ForegroundC
 Write-Host "  If yes (success) → add HTTP POST below" -ForegroundColor White
 Write-Host "  If no (error) → Send error email" -ForegroundColor White
 
-Write-Host "`n── Inside Yes branch: Create Data Flow (HTTP POST) ──" -ForegroundColor Cyan
+Write-Host "`n── Inside Yes branch: Create Data Flow ──" -ForegroundColor Cyan
+Write-Host "  Connector: HTTP with Microsoft Entra ID (preauthorized)" -ForegroundColor Yellow
+Write-Host "  Base Resource URL:   https://api.flow.microsoft.com" -ForegroundColor White
+Write-Host "  Entra ID Resource:   https://service.flow.microsoft.com" -ForegroundColor White
 Write-Host "  Method:  POST" -ForegroundColor White
-Write-Host "  URI:     https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/$envId/flows" -ForegroundColor White
-Write-Host "  Headers:" -ForegroundColor White
-Write-Host "    Content-Type: application/json" -ForegroundColor White
+Write-Host "  URL:     /providers/Microsoft.ProcessSimple/environments/$envId/flows" -ForegroundColor White
 Write-Host "  Body (enter in Expression tab):" -ForegroundColor White
 Write-Host "    body('RegisterForm')?['flow_create_body']" -ForegroundColor Yellow
-Write-Host "  Authentication:" -ForegroundColor White
-Write-Host "    Type:     Active Directory OAuth" -ForegroundColor White
-Write-Host "    Authority: https://login.microsoftonline.com" -ForegroundColor White
-Write-Host "    Tenant:   $tenantId" -ForegroundColor White
-Write-Host "    Audience: https://service.flow.microsoft.com" -ForegroundColor White
-Write-Host "    Client ID: (leave blank)" -ForegroundColor White
 
 # Save to file
 $outPath = "power-automate-body.json"

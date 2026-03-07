@@ -81,6 +81,8 @@ class TestRegisterForm:
 
     def test_duplicate_form_id(self) -> None:
         existing_config = MagicMock()
+        existing_config.form_name = "Existing Form"
+        existing_config.target_table = "existing_form"
         req = _make_request({"form_url": VALID_FORM_URL, "has_phi": False})
 
         with (
@@ -95,7 +97,9 @@ class TestRegisterForm:
         ):
             resp = handle_register_form(req)
 
-        assert resp.status_code == 409
+        assert resp.status_code == 200
+        result = json.loads(resp.get_body())
+        assert result["status"] == "already_registered"
 
     def test_missing_form_url(self) -> None:
         req = _make_request({"has_phi": False})

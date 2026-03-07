@@ -111,8 +111,15 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
     existing = get_form_config(form_id)
     if existing is not None:
         return func.HttpResponse(
-            json.dumps({"error": f"Form '{form_id}' is already registered"}),
-            status_code=409,
+            json.dumps({
+                "status": "already_registered",
+                "message": "This form is already connected to the analytics pipeline. "
+                "No action needed — responses are already being captured.",
+                "form_id": form_id,
+                "form_name": existing.form_name,
+                "target_table": existing.target_table,
+            }),
+            status_code=200,
             mimetype="application/json",
         )
 

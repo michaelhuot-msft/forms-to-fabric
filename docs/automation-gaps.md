@@ -155,5 +155,5 @@ These 16 touchpoints remain manual because they require human judgment, governan
 ### What Could Be Better
 1. **Registry is a JSON file** — Works for low-volume, but at scale should move to a database (Cosmos DB or Fabric table)
 2. **Power Automate flow per form** — Creates N flows for N forms; a single flow with dynamic form ID would be simpler but requires Premium connector
-3. **No automatic PA flow creation** — Admin still imports a generated JSON; Power Automate's API doesn't support programmatic flow creation with Forms connector
+3. **~~No automatic PA flow creation~~** — Resolved: Option A (PA Management connector) now auto-creates data pipeline flows during registration. See [zero-admin-options.md](zero-admin-options.md) for details.
 4. **Manual E2E testing** — Still requires a human to submit a test response and visually verify the dashboard

@@ -93,6 +93,8 @@ Microsoft Forms has **no public API for webhooks or subscriptions**. The only wa
 
 ## Recommendation
 
+> **Status:** Option A has been implemented. See the registration flow setup in [setup-guide.md](setup-guide.md) Step 4.
+
 **Option A (PA Management Connector)** is the best path if Premium licensing is available. It's:
 - Zero-effort for clinicians
 - Zero-effort for admins

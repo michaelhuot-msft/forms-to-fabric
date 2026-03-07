@@ -16,6 +16,7 @@
 | **Azure CLI** | Latest — [install](https://learn.microsoft.com/cli/azure/install-azure-cli) |
 | **PowerShell 7+** | [install](https://learn.microsoft.com/powershell/scripting/install/installing-powershell) |
 | **Python** | 3.11+ |
+| **Power Automate Premium** | Required for auto flow creation. Standard license works for manual import. |
 
 ---
 
@@ -154,11 +155,11 @@ This automatically:
 
 ## Step 4: Set Up Self-Service Registration
 
-Clinicians register their data collection forms by filling out a simple 3-question registration form. This step creates that registration form and connects it to the pipeline.
+The registration form + flow handles everything: form registration, data pipeline flow creation, and notifications.
 
 ### 4.1 Create the registration form
 
-Follow [Registration Form Template](registration-form-template.md) to create a "Register Your Form for Analytics" form in Microsoft Forms with 3 questions:
+Follow [Registration Form Template](registration-form-template.md) to create a "Register Your Form for Analytics" form with 3 questions:
 1. Paste your form's share link
 2. Briefly describe what this form is for
 3. Does this form collect any patient information? (Yes / No)
@@ -171,37 +172,41 @@ Run the helper script to get the HTTP action values:
 pwsh scripts/Generate-FlowBody.ps1 -Registration
 ```
 
-Then build the flow:
+Then build the flow with these steps:
 
-1. Go to [flow.microsoft.com](https://flow.microsoft.com) → **+ Create** → **Automated cloud flow**
-2. Name it: "Forms to Fabric — Registration Intake"
-3. Trigger: **When a new response is submitted** → select "Register Your Form for Analytics"
-4. **+ New step** → **Get response details** → same form, Response Id from trigger
-5. **+ New step** → **HTTP** — paste Method, URI, Headers, and Body from the script output
-6. **+ New step** → **Condition** → `Status code` ≠ `200` → send error email
-7. Save and enable
+1. **Trigger**: When a new response is submitted → select "Register Your Form for Analytics"
+2. **Get response details** → same form, Response Id from trigger
+3. **HTTP POST** to `/api/register-form` — paste URI, headers, body from the script output
+4. **HTTP GET** to generate the data pipeline flow:
+   - URI: `https://<function-app>/api/generate-flow?form_id=@{body('HTTP')?['form_id']}`
+   - Headers: `x-functions-key` (same key)
+5. **Create Flow** (Power Automate Management connector):
+   - Environment: your Power Platform environment ID
+   - Display Name: `Forms to Fabric — @{body('HTTP')?['form_name']}`
+   - Definition: `@{body('HTTP_2')}` (output from step 4)
+6. **Condition** → Status code of step 3 ≠ 200 → send error email
+7. **Save** and enable
+
+> ⚠️ **The "Create Flow" action (step 5) requires Power Automate Premium.** If not available, clinicians can manually import the flow definition from the generate-flow endpoint. See [Registration Form Template](registration-form-template.md) for details.
 
 ### 4.3 Test the registration flow
 
-1. Open the registration form and submit a test entry with a real data form URL
+1. Submit a test entry via the registration form with a real form URL
 2. Check Power Automate flow run history → should show Succeeded
-3. Verify the form appears in the registry: `python scripts/manage_registry.py list`
+3. Verify TWO things were created:
+   - The form appears in the registry: `az storage blob download --account-name <storage> --container-name form-registry --name registry.json --auth-mode key --file -`
+   - A new data pipeline flow appears in Power Automate: "Forms to Fabric — {form name}"
 
 ---
 
 ## Step 5: Test the Pipeline
 
-When you submitted the registration form in Step 4, the registration flow automatically:
-1. Registered the form in the pipeline
-2. Created a data pipeline flow for the form
-
-To test:
-
 1. Open your data form and submit a test response
-2. Check Power Automate → flow run history for **both** flows:
-   - "Forms to Fabric — Registration Intake" should show Succeeded
-   - "Forms to Fabric — {your form name}" should show Succeeded
-3. Check Fabric Lakehouse → Tables → verify data appears in the `{table_name}_raw` table
+2. Check Power Automate → flow run history for "Forms to Fabric — {form name}" → should show Succeeded
+3. Check Fabric Lakehouse → Tables → look for `{table_name}_raw`
+4. If the form has PHI fields classified, also check `{table_name}_curated`
+
+> **Note:** Tables are named `{target_table}_raw` and `{target_table}_curated` in Delta Lake format. The `target_table` is auto-derived from the form name during registration.
 
 ---
 

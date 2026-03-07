@@ -47,8 +47,8 @@ graph LR
 - [ ] Form IDs collected and documented
 - [ ] Field-level sensitivity classification completed
 - [ ] De-identification rules configured and reviewed with privacy officer
-- [ ] Form registration entries added to `config/form-registry.json`
-- [ ] Configuration deployed (`azd deploy`)
+- [ ] Form registration entries added via `/api/register-form` or CLI (saved to Azure Blob Storage automatically)
+- [ ] Registry entry confirmed in blob storage (runtime registry changes are saved to Azure Blob Storage automatically; `azd deploy` is only needed for code changes)
 
 ## Infrastructure & Access
 

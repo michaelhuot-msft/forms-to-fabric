@@ -4,7 +4,7 @@
 
 This guide covers day-to-day administration of the Healthcare Forms to Fabric pipeline. As an admin, your responsibilities include registering new Microsoft Forms, configuring de-identification rules for PHI, managing Fabric workspace access, monitoring pipeline health, handling schema changes, rotating secrets, and planning for backup and recovery.
 
-The pipeline flow is: **Microsoft Forms → Power Automate → Azure Function (`src/functions/process_response`) → Microsoft Fabric Lakehouse**. Configuration lives in `config/form-registry.json`, shared modules (de-identification, Fabric client) are in `src/functions/shared/`, and infrastructure is defined as Bicep templates in `infra/`.
+The pipeline flow is: **Microsoft Forms → Power Automate → Azure Function (`src/functions/process_response`) → Microsoft Fabric Lakehouse**. Configuration is stored in Azure Blob Storage (container `form-registry`, blob `registry.json` in the Function App's storage account). A copy at `config/form-registry.json` exists for local development. Shared modules (de-identification, Fabric client) are in `src/functions/shared/`, and infrastructure is defined as Bicep templates in `infra/`.
 
 ```mermaid
 flowchart LR
@@ -143,9 +143,9 @@ If you prefer to edit the JSON directly, follow the manual steps below.
    ```
 3. Copy the Form ID — you'll need it for the registry entry.
 
-### Step 2: Add an Entry to `config/form-registry.json`
+### Step 2: Add an Entry to the Form Registry
 
-Open `config/form-registry.json` and add a new object to the forms array. Each entry maps a Microsoft Form to a Fabric Lakehouse table and defines how each field should be processed.
+Open `config/form-registry.json` (local development) to add a new object to the forms array. At runtime the registry is read from Azure Blob Storage; changes made via the `/api/register-form` endpoint or CLI are saved there automatically. Each entry maps a Microsoft Form to a Fabric Lakehouse table and defines how each field should be processed.
 
 ### Step 3: Define the Full Configuration Entry
 
@@ -209,17 +209,11 @@ Below is a complete example entry:
 
 ### Step 4: Deploy the Updated Configuration
 
-After updating `config/form-registry.json`, deploy the changes:
+Runtime registry changes (via `/api/register-form`, `/api/activate-form`, or the CLI) are saved to Azure Blob Storage automatically — no deploy step is needed for registry-only changes.
 
-```bash
-# Using Azure Developer CLI (recommended)
-azd deploy
+If you edited `config/form-registry.json` locally for development, upload the file to blob storage or use the CLI to sync. `azd deploy` is only required for **code** changes (Function App source, shared modules, Bicep infrastructure).
 
-# Or update the configuration directly in the Azure Portal:
-# Function App → Configuration → Application settings
-```
-
-Commit the updated registry to Git first so changes are tracked:
+Commit registry changes to Git so they are version-controlled:
 
 ```bash
 git add config/form-registry.json
@@ -474,7 +468,7 @@ union requests, dependencies, exceptions
 
 ### Automated Schema Change Detection
 
-The `monitor_schema` function runs every 6 hours and automatically detects when clinicians modify their forms. It compares the live form structure (via Microsoft Graph API) against the registered configuration in `form-registry.json`.
+The `monitor_schema` function (timer-triggered, runs every 6 hours) automatically detects when clinicians modify their forms. This is the only component that uses Microsoft Graph API — it checks for form structure changes by comparing the live form schema against the registered configuration in blob storage. Graph API is **not** used during form registration or response processing.
 
 **What it detects:**
 - **Added questions** — new questions not yet in the registry
@@ -500,7 +494,7 @@ traces
 1. Review the change report in Application Insights
 2. Update `form-registry.json` using the CLI: `python scripts/manage_registry.py add-field ...`
 3. Classify any new fields for sensitivity and de-identification
-4. Deploy: `azd deploy`
+4. CLI changes are saved to Azure Blob Storage automatically — no deploy needed for registry updates
 5. Test with a sample submission
 
 ### Automated RBAC Compliance Audit
@@ -549,7 +543,7 @@ traces
 | order by timestamp desc
 ```
 
-### Step 2: Update `config/form-registry.json`
+### Step 2: Update the Form Registry
 
 1. Open the form in Microsoft Forms to see the current questions.
 2. Compare with the existing registry entry.
@@ -575,13 +569,14 @@ traces
 - **Removed fields**: Historical data is preserved in the Lakehouse. New submissions will have `null` for the removed field.
 - **Reordered fields**: No impact — fields are matched by `question_id`, not position.
 
-### Step 4: Redeploy the Configuration
+### Step 4: Save the Configuration
+
+CLI changes are saved to Azure Blob Storage automatically — no `azd deploy` needed for registry updates. Commit the change to Git for version control:
 
 ```bash
 git add config/form-registry.json
 git commit -m "Update schema: Patient Satisfaction Survey — added q4, deprecated q_old"
 git push
-azd deploy
 ```
 
 ### Step 5: Test with the Modified Form
@@ -728,7 +723,7 @@ If you hit throttling limits:
 ### Multi-Form Scaling
 
 - Each form gets its own Power Automate flow.
-- The Azure Function in `src/functions/process_response` handles routing — it reads the `form_id` from the request and looks up the matching configuration in `config/form-registry.json`.
+- The Azure Function in `src/functions/process_response` handles routing — it reads the `form_id` from the request and looks up the matching configuration in Azure Blob Storage (the runtime registry).
 - Adding more forms does not require code changes, only configuration updates.
 
 ```mermaid
@@ -758,7 +753,7 @@ These components are stored in this repository and can be redeployed at any time
 
 | Component | Location | Recovery Method |
 |---|---|---|
-| Form registry configuration | `config/form-registry.json` | `git checkout` + `azd deploy` |
+| Form registry configuration | Azure Blob Storage (`form-registry/registry.json`); local copy at `config/form-registry.json` | Re-upload blob from Git copy, or re-register forms via API |
 | Azure Function code | `src/functions/` | `git checkout` + `azd deploy` |
 | Shared modules | `src/functions/shared/` | `git checkout` + `azd deploy` |
 | Infrastructure (Bicep) | `infra/` | `git checkout` + `azd up` |

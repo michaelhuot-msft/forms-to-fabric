@@ -18,8 +18,11 @@ def _build_flow_definition(
     form_config: FormConfig,
     function_app_url: str,
     key_vault_name: str,
+    admin_email: str = "",
 ) -> dict:
     """Return a complete Power Automate / Logic Apps workflow definition dict."""
+    if not admin_email:
+        admin_email = os.environ.get("ADMIN_EMAIL", "admin@contoso.com")
     return {
         "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
         "contentVersion": "1.0.0.0",
@@ -141,7 +144,7 @@ def _build_flow_definition(
                             "method": "post",
                             "path": "/v2/Mail",
                             "body": {
-                                "To": "admin@contoso.com",
+                                "To": admin_email,
                                 "Subject": f"Forms to Fabric Error — {form_config.form_name}",
                                 "Body": (
                                     "<p><strong>Pipeline Error</strong></p>"

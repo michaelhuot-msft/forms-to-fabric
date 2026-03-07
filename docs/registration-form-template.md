@@ -152,16 +152,24 @@ Then build the flow:
 6. **+ New step** → **Condition** → `Status code` of RegisterForm ≠ `200`
    - **If no** (success): Add **Invoke an HTTP request** using the **HTTP with Microsoft Entra ID** connector:
 
-     | Field | Value |
+     On first use, PA will prompt you to create a connection:
+
+     | Connection prompt | Value |
      |---|---|
-     | **Connector** | HTTP with Microsoft Entra ID (preauthorized) |
+     | **Connection Name** | `Flow API` (any name) |
+     | **Auth Type** | Leave as default |
+     | **MS Entra ID Resource URI (Application ID URI)** | `https://service.flow.microsoft.com` |
      | **Base Resource URL** | `https://api.flow.microsoft.com` |
-     | **Entra ID Resource URI** | `https://service.flow.microsoft.com` |
+
+     Then configure the action:
+
+     | Action field | Value |
+     |---|---|
      | **Method** | `POST` |
      | **URL of the request** | `/providers/Microsoft.ProcessSimple/environments/Default-<TENANT-ID>/flows` (see footnote 5) |
      | **Body** | See footnote 6 |
 
-     > No app registration needed — this connector uses your PA connection's identity.
+     > No app registration needed — this connector uses your signed-in identity.
 
    - **If yes** (error): Add **Send an email V2** to notify admin
 7. **Save** and enable

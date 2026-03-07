@@ -147,19 +147,21 @@ This returns a complete Power Automate flow definition for the registered form.
 ```mermaid
 flowchart TD
     A[Clinician submits registration form] --> B[Power Automate triggers]
-    B --> C[Azure Function processes request]
-    C --> D{Collects patient info?}
-    D -- No --> E[Status: active]
-    D -- Yes --> F[Status: pending review]
-    F --> G[IT receives notification]
-    G --> H[IT reviews and classifies fields]
-    H --> I[IT activates form]
-    I --> J[Status: active]
+    B --> C[Get response details]
+    C --> D[HTTP POST /api/register-form]
+    D --> E[Form registered in blob storage]
+    E --> F[Azure Function calls Flow API]
+    F --> G[Data pipeline flow auto-created]
+    G --> H{Collects patient info?}
+    H -- No --> I[All fields in raw + curated]
+    H -- Yes --> J[All fields in raw, unclassified excluded from curated]
+    J --> K[IT classifies PHI fields later]
+    K --> I
 
     style A fill:#dbeafe,color:#1e1e1e
-    style E fill:#d3f9d8,color:#1e1e1e
-    style J fill:#d3f9d8,color:#1e1e1e
-    style F fill:#fff3bf,color:#1e1e1e
+    style G fill:#d3f9d8,color:#1e1e1e
+    style I fill:#d3f9d8,color:#1e1e1e
+    style J fill:#fff3bf,color:#1e1e1e
 ```
 
 ### Flow Details

@@ -45,8 +45,22 @@ Responses typically show up in your Power BI dashboard within **a few minutes** 
 
 Yes, you can make changes to your form anytime:
 
-- **Small changes** (fixing a typo, updating a question's wording, reordering questions) — go ahead, no need to tell anyone
-- **Bigger changes** (adding new questions, removing questions, changing question types) — please let IT know at **[your-it-support-email]** so we can update your dashboard to match
+- **Small changes** (fixing a typo, updating a question's wording) — go ahead, no action needed
+- **Adding new questions** — the new answers are captured automatically in the raw data. The system detects the change and notifies your organization's IT team to update dashboards
+- **Removing questions** — historical data for removed questions is preserved. New responses will simply not include that field
+- **Reordering questions** — no impact; fields are matched by ID, not position
+
+You do **not** need to re-register your form after making changes.
+
+---
+
+### What if I accidentally register the same form twice?
+
+No problem — the system recognizes it's already registered and returns a confirmation:
+
+> "This form is already connected to the analytics pipeline. No action needed — responses are already being captured."
+
+No duplicate entries are created. Your existing data flow continues to work.
 
 ---
 

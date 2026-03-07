@@ -307,4 +307,34 @@ All components operate within the Microsoft cloud ecosystem. No data traverses t
 
 ---
 
+---
+
+## Known Limitations and Recommendations
+
+### Re-registration does not update existing entries
+
+If a clinician re-registers a form that is already in the pipeline, the system returns a success confirmation but does **not** update the existing registry entry. This means:
+
+- **Changed PHI status** — If a clinician initially registered as "No patient info" but later added PHI fields and re-registers with "Yes", the registry is not updated. The schema monitor will detect the new fields and IT can classify them manually.
+- **Recommendation for future:** Add an "update" path where re-registration with a different PHI flag updates the existing entry and triggers an IT review notification.
+
+### New form fields are captured but not classified
+
+When a clinician adds new questions to an already-registered form:
+
+- **Raw layer** — New fields are captured automatically via the `raw_response` passthrough (no data loss)
+- **Curated layer** — New fields are excluded until IT classifies them with de-identification methods
+- **Schema monitor** — Detects changes every 6 hours and alerts IT
+- **Recommendation:** This is the intended "safe by default" behavior. No code changes needed.
+
+### Data pipeline flow uses the registering user's connections
+
+When the Azure Function auto-creates a data pipeline flow via the Flow Management API:
+
+- The flow is created under the Function App's identity
+- The Forms trigger connector may require the form owner to authorize the connection
+- **Recommendation:** Verify that auto-created flows have valid connections. If the Forms connector needs user authorization, the clinician may need to open the flow once and authorize.
+
+---
+
 *This document should be reviewed and updated whenever the pipeline architecture changes or new compliance requirements are introduced.*

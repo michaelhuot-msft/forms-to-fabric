@@ -77,14 +77,33 @@ if ($List) {
     if ($forms.Count -eq 0) {
         Write-Host "  (no forms registered)" -ForegroundColor Yellow
     } else {
+        # Look up deployed flows
+        $deployedFlows = @{}
+        try {
+            $token = az account get-access-token --resource "https://service.flow.microsoft.com" --query "accessToken" -o tsv 2>$null
+            if ($token) {
+                $envId = "Default-6dd0fc78-2408-43d6-a255-4383fbda3f76"
+                $flowHeaders = @{ "Authorization" = "Bearer $token"; "Accept" = "application/json" }
+                $flowsResp = Invoke-RestMethod -Uri "https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/$envId/flows" -Headers $flowHeaders -Method GET
+                foreach ($f in $flowsResp.value) {
+                    $deployedFlows[$f.properties.displayName] = $f.properties.state
+                }
+            }
+        } catch {}
+
         $i = 1
         foreach ($form in $forms) {
             $idShort = if ($form.form_id.Length -gt 30) { $form.form_id.Substring(0,30) + "..." } else { $form.form_id }
+            $flowName = "Forms to Fabric — $($form.form_name)"
+            $flowStatus = if ($deployedFlows.ContainsKey($flowName)) { $deployedFlows[$flowName] } else { "Not deployed" }
+            $flowColor = if ($flowStatus -eq "Started") { "Green" } elseif ($flowStatus -eq "Stopped") { "Yellow" } else { "Red" }
+
             Write-Host "  $i. $($form.form_name)" -ForegroundColor White
             Write-Host "     ID:     $idShort" -ForegroundColor Gray
             Write-Host "     Table:  $($form.target_table)" -ForegroundColor Gray
             Write-Host "     Status: $($form.status)" -ForegroundColor Gray
             Write-Host "     Fields: $($form.fields.Count)" -ForegroundColor Gray
+            Write-Host "     Flow:   $flowStatus" -ForegroundColor $flowColor
             Write-Host ""
             $i++
         }
@@ -165,6 +184,11 @@ if ($Remove) {
     }
 
     Write-Host "Registry now has $after forms." -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Note: Data tables in Fabric Lakehouse are NOT deleted automatically." -ForegroundColor Yellow
+    Write-Host "To remove the data, go to your Fabric Lakehouse and delete:" -ForegroundColor Yellow
+    Write-Host "  Tables/$($formEntry.target_table)_raw" -ForegroundColor White
+    Write-Host "  Tables/$($formEntry.target_table)_curated (if it exists)" -ForegroundColor White
     exit 0
 }
 
@@ -213,8 +237,18 @@ if ($Purge) {
         Write-Host "  Delete 'Forms to Fabric — ...' flows manually in Power Automate." -ForegroundColor Yellow
     }
 
+    # Save table names before purging (for the reminder)
+    $tableNames = $registry.forms | ForEach-Object { $_.target_table }
+
     $registry.forms = @()
     Save-Registry $registry
     Write-Host "Purged all $count forms from registry." -ForegroundColor Green
+    Write-Host ""
+    Write-Host "Note: Data tables in Fabric Lakehouse are NOT deleted automatically." -ForegroundColor Yellow
+    Write-Host "To remove the data, go to your Fabric Lakehouse and delete these tables:" -ForegroundColor Yellow
+    foreach ($t in $tableNames) {
+        Write-Host "  Tables/${t}_raw" -ForegroundColor White
+        Write-Host "  Tables/${t}_curated" -ForegroundColor White
+    }
     exit 0
 }

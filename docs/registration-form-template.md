@@ -114,16 +114,20 @@ flowchart TD
     ERR:::danger
 ```
 
-**Footnotes — HTTP action configuration:**
+**Footnotes — configuration values:**
 
 Run `pwsh scripts/Generate-FlowBody.ps1 -Registration` to get values for footnotes 2–3.
 
 | # | Field | Value |
 |---|-------|-------|
 | 1 | **Trigger Form** | Select "Register Your Form for Analytics" from the dropdown |
-| 2 | **URI** | Copy from script output (e.g., `https://func-forms-dev-ec4zls.azurewebsites.net/api/register-form`) |
+| 2 | **RegisterForm URI** | Copy from script output (e.g., `https://func-forms-dev-ec4zls.azurewebsites.net/api/register-form`) |
 | 3 | **x-functions-key** | Copy from script output |
-| 4 | **Body** | `{"form_id":"<YOUR-FORM-ID>","raw_response":@{outputs('Get_response_details')?['body']}}` — replace `<YOUR-FORM-ID>` with the registration form's ID from the browser URL `?id=` parameter |
+| 4 | **RegisterForm Body** | `{"form_id":"<YOUR-FORM-ID>","raw_response":@{outputs('Get_response_details')?['body']}}` — replace `<YOUR-FORM-ID>` with the registration form's ID from the browser URL `?id=` parameter |
+| 5 | **Flow API URI** | `https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/Default-<TENANT-ID>/flows` |
+| 6 | **Flow API Body** | `body('RegisterForm')?['flow_create_body']` — enter in the **Expression** tab |
+| 7 | **Flow API Auth** | Active Directory OAuth — Authority: `https://login.microsoftonline.com`, Tenant: `<TENANT-ID>`, Audience: `https://service.flow.microsoft.com`, Client ID: leave blank |
+| 8 | **Tenant ID** | Your Azure AD tenant ID (e.g., `6dd0fc78-2408-43d6-a255-4383fbda3f76`) — find at Azure Portal → Azure Active Directory → Overview |
 
 **What the HTTP action returns:**
 - Registers the form in the blob storage registry
@@ -158,17 +162,13 @@ Then build the flow:
      | Field | Value |
      |---|---|
      | Method | `POST` |
-     | URI | `https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/<ENV-ID>/flows` (see footnote 5) |
+     | URI | See footnote 5 |
      | Headers | `Content-Type: application/json` |
-     | Body | `body('RegisterForm')?['flow_create_body']` (enter in the **Expression** tab, not Dynamic content) |
-     | Authentication | Active Directory OAuth — Tenant: your tenant ID, Audience: `https://service.flow.microsoft.com` |
+     | Body | See footnote 6 |
+     | Authentication | See footnote 7 |
 
    - **If yes** (error): Add **Send an email V2** to notify admin
 7. **Save** and enable
-
-| # | Field | Value |
-|---|-------|-------|
-| 5 | **Environment ID** | `Default-<your-tenant-id>` — find at [admin.powerplatform.microsoft.com](https://admin.powerplatform.microsoft.com) → Environments |
 
 > **Note:** The flow creation step runs inside the success branch of the condition. If registration fails, no flow is created. If you skip the flow creation step entirely, the form is still registered — clinicians can create the flow manually using `Generate-FlowBody.ps1`.
 

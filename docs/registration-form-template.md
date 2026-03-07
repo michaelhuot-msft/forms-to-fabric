@@ -86,60 +86,41 @@ The registration flow is simple — only 4 actions. The Azure Function handles e
 ```mermaid
 flowchart TD
     T[Trigger: When a new response is submitted]
-    T -->|Form: Register Your Form for Analytics| G
+    T -->|"Form: Register Your Form for Analytics"| G
 
     G[Action: Get response details]
-    G -->|Form ID: see footnote 1| H
+    G -->|"Form ID: see footnote 1"| H
 
-    subgraph "HTTP Action"
-        H[Method: POST]
-        H1[URI: see footnote 2]
-        H2["Header: Content-Type = application/json"]
-        H3[Header: x-functions-key = see footnote 3]
-        H4["Body: see footnote 4"]
-    end
-    G --> H1
-    H1 --- H2
-    H2 --- H3
-    H3 --- H4
-    H4 --> C
+    H["HTTP — POST to /api/register-form (see footnotes 2-4)"]
+    H --> C
 
     C{Condition: Status code = 200?}
-    C -- Yes --> OK[No action]
-    C -- No --> ERR[Send an email V2]
-    ERR --> ERR1[To: admin email]
-    ERR --> ERR2[Subject: Registration Error]
-    ERR --> ERR3["Body: Status code + response body"]
+    C -- Yes --> OK[No action needed]
+    C -- No --> ERR[Send an email V2 to admin]
 
     classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
     classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
     classDef warning fill:#ffd43b,stroke:#e67700,color:#1a1a2e
     classDef danger fill:#ff8787,stroke:#c92a2a,color:#1a1a2e
-    classDef neutral fill:#ced4da,stroke:#495057,color:#1a1a2e
 
     T:::primary
     G:::primary
     H:::primary
-    H1:::neutral
-    H2:::neutral
-    H3:::neutral
-    H4:::neutral
     C:::warning
     OK:::success
     ERR:::danger
-    ERR1:::neutral
-    ERR2:::neutral
-    ERR3:::neutral
 ```
 
-**Footnotes — dynamic values:**
+**Footnotes — HTTP action configuration:**
 
-| # | Field | How to get the value |
-|---|-------|---------------------|
-| 1 | **Form ID** | Select "Register Your Form for Analytics" from the dropdown in the trigger |
-| 2 | **URI** | `pwsh scripts/Generate-FlowBody.ps1 -Registration` → copy URI from output |
-| 3 | **x-functions-key** | `pwsh scripts/Generate-FlowBody.ps1 -Registration` → copy key from output |
-| 4 | **Body** | Paste exactly: `{"form_id":"<YOUR-FORM-ID>","raw_response":@{outputs('Get_response_details')?['body']}}` — replace `<YOUR-FORM-ID>` with the registration form's ID (from the browser URL `?id=` parameter) |
+Run `pwsh scripts/Generate-FlowBody.ps1 -Registration` to get values for footnotes 2–3.
+
+| # | Field | Value |
+|---|-------|-------|
+| 1 | **Trigger Form** | Select "Register Your Form for Analytics" from the dropdown |
+| 2 | **URI** | Copy from script output (e.g., `https://func-forms-dev-ec4zls.azurewebsites.net/api/register-form`) |
+| 3 | **x-functions-key** | Copy from script output |
+| 4 | **Body** | `{"form_id":"<YOUR-FORM-ID>","raw_response":@{outputs('Get_response_details')?['body']}}` — replace `<YOUR-FORM-ID>` with the registration form's ID from the browser URL `?id=` parameter |
 
 **What happens inside the HTTP action (server-side):**
 - Registers the form in the blob storage registry

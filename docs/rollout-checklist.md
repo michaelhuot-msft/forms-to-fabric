@@ -11,13 +11,20 @@ graph LR
     E --> F["Go-Live"]
     F --> G["Post-Launch"]
 
-    style A fill:#e0e7ff,stroke:#4f46e5
-    style B fill:#dbeafe,stroke:#2563eb
-    style C fill:#e0f2fe,stroke:#0284c7
-    style D fill:#ccfbf1,stroke:#0d9488
-    style E fill:#fff3bf,stroke:#ca8a04
-    style F fill:#dcfce7,stroke:#16a34a
-    style G fill:#f3e8ff,stroke:#9333ea
+    classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
+    classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
+    classDef warning fill:#ffd43b,stroke:#e67700,color:#1a1a2e
+    classDef danger fill:#ff8787,stroke:#c92a2a,color:#1a1a2e
+    classDef info fill:#b197fc,stroke:#6741d9,color:#1a1a2e
+    classDef neutral fill:#ced4da,stroke:#495057,color:#1a1a2e
+
+    A:::neutral
+    B:::primary
+    C:::primary
+    D:::warning
+    E:::info
+    F:::danger
+    G:::success
 ```
 
 ## Department Information

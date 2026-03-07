@@ -24,17 +24,42 @@ All PRs must pass CI before merge. The CI pipeline validates:
 
 ## Mermaid Diagrams
 
-Do **not** use `<br>` or literal `\n` inside Mermaid node labels — they render inconsistently across GitHub, VS Code preview, and other Markdown renderers. Instead, use short single-line labels or split content across multiple connected nodes.
+- Use Mermaid syntax for architecture and flow diagrams in markdown.
+- Do NOT use `<br>` or literal `\n` inside Mermaid node labels.
 
-## Diagram Accessibility (WCAG 2.1 AA)
+### Standard Dual-Mode Palette
 
-All diagrams (Mermaid and Excalidraw) must meet WCAG 2.1 AA standards:
+Use this palette for all Mermaid diagrams. Every color is WCAG AA compliant (≥4.5:1 text contrast) and visible on both light and dark backgrounds.
 
-- **Color contrast** — Text and meaningful graphical elements must have a contrast ratio of at least **4.5:1** against their background. Use dark stroke colors (`#1e1e1e`) on light fills. Avoid white text on medium-toned backgrounds.
-- **Don't rely on color alone** — Convey meaning with labels, shapes, or patterns in addition to color.
-- **Alt text** — When embedding diagram images (PNG/SVG exports), always include descriptive `alt` text.
-- **Readable font sizes** — Use a minimum font size of 12px in Excalidraw diagrams.
-- **Safe Mermaid style combos** — Use `fill:#dbeafe,color:#1e1e1e` (light fill, dark text), not `fill:#4472C4,color:#fff` (fails contrast).
+| Role | Fill | Stroke | Text | Use For |
+|---|---|---|---|---|
+| **Primary** | `#4dabf7` | `#1864ab` | `#1a1a2e` | Main flow, default nodes |
+| **Success** | `#69db7c` | `#2b8a3e` | `#1a1a2e` | Completed, healthy, valid |
+| **Warning** | `#ffd43b` | `#e67700` | `#1a1a2e` | Caution, pending review |
+| **Danger** | `#ff8787` | `#c92a2a` | `#1a1a2e` | Errors, critical, blocked |
+| **Info** | `#b197fc` | `#6741d9` | `#1a1a2e` | Metadata, supporting info |
+| **Neutral** | `#ced4da` | `#495057` | `#1a1a2e` | Background, inactive, optional |
+
+Copy this `classDef` block into Mermaid diagrams:
+
+```
+classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
+classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
+classDef warning fill:#ffd43b,stroke:#e67700,color:#1a1a2e
+classDef danger fill:#ff8787,stroke:#c92a2a,color:#1a1a2e
+classDef info fill:#b197fc,stroke:#6741d9,color:#1a1a2e
+classDef neutral fill:#ced4da,stroke:#495057,color:#1a1a2e
+```
+
+Do **not** use: `fill:#dbeafe` (invisible on dark), `fill:#d3f9d8` (invisible on dark), `fill:#1e1e1e` (invisible on dark), or any pastel fills without strokes.
+
+### Accessibility (WCAG 2.1 AA)
+
+All diagrams must meet WCAG 2.1 AA:
+- **Color contrast** ≥ 4.5:1 for text on backgrounds
+- **No color-only meaning** — use labels, shapes, or patterns
+- **Alt text** for embedded images
+- **Font size** ≥ 12px in Excalidraw
 
 ## Architecture
 

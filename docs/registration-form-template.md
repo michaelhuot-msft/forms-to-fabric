@@ -100,12 +100,19 @@ flowchart TD
     C -- Yes --> OK
     C -- No --> ERR
 
-    style T fill:#dbeafe,color:#1e1e1e
-    style G fill:#dbeafe,color:#1e1e1e
-    style H fill:#e0f2fe,color:#1e1e1e
-    style C fill:#fff3bf,color:#1e1e1e
-    style OK fill:#d3f9d8,color:#1e1e1e
-    style ERR fill:#ffc9c9,color:#1e1e1e
+    classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
+    classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
+    classDef warning fill:#ffd43b,stroke:#e67700,color:#1a1a2e
+    classDef danger fill:#ff8787,stroke:#c92a2a,color:#1a1a2e
+    classDef info fill:#b197fc,stroke:#6741d9,color:#1a1a2e
+    classDef neutral fill:#ced4da,stroke:#495057,color:#1a1a2e
+
+    T:::primary
+    G:::primary
+    H:::info
+    C:::warning
+    OK:::success
+    ERR:::danger
 ```
 
 **What happens inside step 3 (server-side):**
@@ -162,10 +169,24 @@ flowchart TD
     J --> K[IT classifies PHI fields later]
     K --> I
 
-    style A fill:#dbeafe,color:#1e1e1e
-    style G fill:#d3f9d8,color:#1e1e1e
-    style I fill:#d3f9d8,color:#1e1e1e
-    style J fill:#fff3bf,color:#1e1e1e
+    classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
+    classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
+    classDef warning fill:#ffd43b,stroke:#e67700,color:#1a1a2e
+    classDef danger fill:#ff8787,stroke:#c92a2a,color:#1a1a2e
+    classDef info fill:#b197fc,stroke:#6741d9,color:#1a1a2e
+    classDef neutral fill:#ced4da,stroke:#495057,color:#1a1a2e
+
+    A:::primary
+    B:::primary
+    C:::primary
+    D:::primary
+    E:::info
+    F:::success
+    G:::success
+    H:::warning
+    I:::success
+    J:::warning
+    K:::info
 ```
 
 ### Flow Details

@@ -67,11 +67,13 @@ def _load_from_blob() -> dict:
 
 def _save_to_blob(registry_data: dict) -> None:
     """Save registry JSON to Azure Blob Storage."""
+    from azure.storage.blob import ContentSettings
+
     blob_client = _get_blob_client()
     blob_client.upload_blob(
         json.dumps(registry_data, indent=2),
         overwrite=True,
-        content_settings={"content_type": "application/json"},
+        content_settings=ContentSettings(content_type="application/json"),
     )
     logger.info("Registry saved to blob storage.")
 

@@ -162,14 +162,12 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
         status,
     )
 
-    # --- Auto-create the data pipeline PA flow --------------------------------
-    flow_result = None
-    flow_error = None
+    # --- Generate the data pipeline flow definition ----------------------------
+    flow_definition = None
     try:
         import os
 
         from generate_flow.handler import generate_flow_definition
-        from shared.flow_api_client import create_data_pipeline_flow
 
         function_app_url = os.environ.get(
             "FUNCTION_APP_URL",
@@ -177,19 +175,10 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
         )
         key_vault_name = os.environ.get("KEY_VAULT_NAME", "")
 
-        flow_def = generate_flow_definition(form_id, function_app_url, key_vault_name)
-        flow_result = create_data_pipeline_flow(
-            flow_definition=flow_def,
-            display_name=f"Forms to Fabric — {form_name}",
-        )
-        logger.info("Auto-created data pipeline flow: %s", flow_result)
+        flow_definition = generate_flow_definition(form_id, function_app_url, key_vault_name)
+        logger.info("Generated flow definition for %s", form_id)
     except Exception as exc:
-        flow_error = str(exc)
-        logger.warning(
-            "Could not auto-create data pipeline flow for %s: %s",
-            form_id,
-            exc,
-        )
+        logger.warning("Could not generate flow definition for %s: %s", form_id, exc)
 
     response_body = {
         "form_id": form_id,
@@ -199,10 +188,14 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
         "field_count": len(fields),
         "generate_flow_url": f"/api/generate-flow?form_id={form_id}",
     }
-    if flow_result:
-        response_body["data_flow"] = flow_result
-    if flow_error:
-        response_body["data_flow_error"] = flow_error
+    if flow_definition:
+        response_body["flow_create_body"] = {
+            "properties": {
+                "displayName": f"Forms to Fabric — {form_name}",
+                "definition": flow_definition,
+                "state": "Started",
+            }
+        }
 
     return func.HttpResponse(
         json.dumps(response_body),

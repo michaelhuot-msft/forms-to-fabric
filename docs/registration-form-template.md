@@ -91,21 +91,26 @@ flowchart TD
     G[Action: Get response details]
     G -->|"Form ID: see footnote 1"| H
 
-    H["HTTP — POST to /api/register-form (see footnotes 2-4)"]
-    H --> C
+    H["HTTP POST /api/register-form (see footnotes 2-4)"]
+    H --> F
 
-    C{Condition: Status code = 200?}
-    C -- Yes --> OK[No action needed]
-    C -- No --> ERR[Send an email V2 to admin]
+    F["HTTP POST to Flow API — create data flow (see footnote 5)"]
+    F --> C
+
+    C{Condition: register-form status = 200?}
+    C -- Yes --> OK[Done]
+    C -- No --> ERR[Send error email to admin]
 
     classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
     classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
     classDef warning fill:#ffd43b,stroke:#e67700,color:#1a1a2e
     classDef danger fill:#ff8787,stroke:#c92a2a,color:#1a1a2e
+    classDef info fill:#b197fc,stroke:#6741d9,color:#1a1a2e
 
     T:::primary
     G:::primary
     H:::primary
+    F:::info
     C:::warning
     OK:::success
     ERR:::danger
@@ -122,10 +127,9 @@ Run `pwsh scripts/Generate-FlowBody.ps1 -Registration` to get values for footnot
 | 3 | **x-functions-key** | Copy from script output |
 | 4 | **Body** | `{"form_id":"<YOUR-FORM-ID>","raw_response":@{outputs('Get_response_details')?['body']}}` — replace `<YOUR-FORM-ID>` with the registration form's ID from the browser URL `?id=` parameter |
 
-**What happens inside the HTTP action (server-side):**
+**What the HTTP action returns:**
 - Registers the form in the blob storage registry
-- Auto-creates a data pipeline flow via the Flow Management API
-- Returns the form ID, name, and flow details
+- Returns `flow_create_body` — a ready-to-use payload for creating the data pipeline flow
 
 Run the helper script to get the HTTP action values:
 
@@ -139,7 +143,7 @@ Then build the flow:
 2. Name it: **"Forms to Fabric — Registration Intake"**
 3. Trigger: **When a new response is submitted** → select "Register Your Form for Analytics"
 4. **+ New step** → **Get response details** → same form, Response Id from trigger
-5. **+ New step** → **HTTP** — paste Method, URI, Headers from the script output. Body:
+5. **+ New step** → **HTTP POST** to register-form — paste Method, URI, Headers from the script output. Body:
 
 ```
 {
@@ -148,15 +152,31 @@ Then build the flow:
 }
 ```
 
-6. **+ New step** → **Condition** → `Status code` of HTTP ≠ `200` → send error email
-7. **Save** and enable
+6. **+ New step** → **HTTP POST** to create the data pipeline flow (uses your PA user context):
+
+| Field | Value |
+|---|---|
+| Method | `POST` |
+| URI | `https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/<ENV-ID>/flows` (see footnote 5) |
+| Headers | `Content-Type: application/json` |
+| Body | `@{body('HTTP')?['flow_create_body']}` |
+| Authentication | Active Directory OAuth — Tenant: your tenant ID, Audience: `https://service.flow.microsoft.com` |
+
+7. **+ New step** → **Condition** → `Status code` of step 5 (register-form) ≠ `200` → send error email
+8. **Save** and enable
+
+| # | Field | Value |
+|---|-------|-------|
+| 5 | **Environment ID** | `Default-<your-tenant-id>` — find at [admin.powerplatform.microsoft.com](https://admin.powerplatform.microsoft.com) → Environments |
+
+> **Note:** Step 6 creates the data pipeline flow under your user account. If you skip step 6, the form is still registered — clinicians can create the flow manually using `Generate-FlowBody.ps1`.
 
 ### Step 3 — Test End-to-End
 
 1. Open the registration form and submit a test entry with a known form link, a description, and **No** for patient info
 2. Verify the Power Automate flow runs successfully (check **Flow run history**)
-3. Check the response body from the HTTP action — it should include `"data_flow"` with the auto-created flow ID
-4. Verify a new flow appears in Power Automate: **"Forms to Fabric — {form name}"**
+3. Verify a new flow appears in Power Automate: **"Forms to Fabric — {form name}"**
+4. Submit a response to the registered form and check that data appears in Fabric Lakehouse
 
 ---
 

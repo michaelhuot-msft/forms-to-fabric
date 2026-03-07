@@ -220,17 +220,15 @@ Then build the flow with these steps:
 
 ---
 
-## Fallback: Manual Registration (CLI)
+## Fallback: Manual Registration
 
-If the scripts or self-service aren't available:
+If the self-service registration form isn't available, use the PowerShell script to list existing forms and manage the registry:
 
 ```powershell
-python scripts/manage_registry.py add-form --form-url "https://forms.office.com/..."
-python scripts/manage_registry.py validate
-azd deploy
+pwsh scripts/Manage-Registry.ps1 -List
 ```
 
-See the [Admin Guide](admin-guide.md) for full CLI documentation.
+To register a new form manually, use the self-service registration form or call the `POST /api/register-form` endpoint directly. See the [Admin Guide](admin-guide.md) for details.
 
 ---
 
@@ -241,9 +239,9 @@ See the [Admin Guide](admin-guide.md) for full CLI documentation.
 | 401 Unauthorized | Invalid function key | Check Key Vault secret or regenerate key |
 | 404 on function endpoint | Functions not registered | See "Functions not loading" below |
 | Data not in Lakehouse | Managed identity lacks access | Grant Function App Contributor on workspace |
-| De-id not applied | Missing field config | Check registry: `manage_registry.py validate` |
+| De-id not applied | Missing field config | Edit the blob registry to add field configuration |
 | Function timeout | Large payload | Increase `functionTimeout` in `host.json` |
-| Form not registered | form_id mismatch | Verify form_id: `manage_registry.py list` |
+| Form not registered | form_id mismatch | Verify form_id: `pwsh scripts/Manage-Registry.ps1 -List` |
 | Storage 403 Forbidden | Subscription blocks shared key access | Add `SecurityControl=Ignore` tag to storage account |
 
 ### Functions not loading after deployment

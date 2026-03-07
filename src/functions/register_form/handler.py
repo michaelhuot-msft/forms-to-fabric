@@ -128,7 +128,7 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
     target_table = _slugify(form_name)
 
     # Register with empty fields — they'll be auto-discovered from raw_response
-    # at processing time, or manually configured via manage_registry.py
+    # at processing time, or manually configured via the blob registry
     fields: list[FieldConfig] = []
 
     # Determine status

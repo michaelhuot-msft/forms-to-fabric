@@ -12,8 +12,7 @@ All PRs must pass CI before merge. The CI pipeline validates:
 2. **Python linting** — `ruff check src/functions/ tests/` must pass with no errors.
 3. **Python formatting** — `ruff format --check src/functions/ tests/` must pass.
 4. **Bicep linting** — `az bicep build --file infra/main.bicep` must succeed with no errors.
-5. **JSON schema validation** — `config/form-registry.json` must be valid against `config/form-registry.schema.json`.
-6. **Credential scanning** — Automated secret/credential detection (gitleaks) must pass. No secrets, keys, or connection strings may be committed.
+5. **Credential scanning** — Automated secret/credential detection (gitleaks) must pass. No secrets, keys, or connection strings may be committed.
 
 ## Code Style
 
@@ -65,7 +64,7 @@ All diagrams must meet WCAG 2.1 AA:
 
 - `src/functions/` — Python Azure Functions (v2 programming model)
 - `infra/` — Bicep infrastructure-as-code
-- `scripts/` — Admin CLI tools (manage_registry.py, rotate_function_key.py)
+- `scripts/` — Admin CLI tools (Manage-Registry.ps1, rotate_function_key.py)
 - `config/` — Form registry configuration + JSON schema
 - `power-automate/` — Power Automate flow templates
 - `docs/` — All documentation

@@ -68,7 +68,7 @@ forms-to-fabric/
 │   ├── generate_flow/      # HTTP trigger — generates PA flow definitions
 │   └── shared/             # Shared modules (de-id, config, Graph, Fabric)
 ├── scripts/            # Admin CLI tools
-│   ├── manage_registry.py      # Form registry management
+│   ├── Manage-Registry.ps1     # Form registry management
 │   ├── rotate_function_key.py  # Key rotation automation
 │   ├── Generate-FlowBody.ps1   # PA flow body generator
 │   ├── Setup-Environment.ps1   # One-command environment setup

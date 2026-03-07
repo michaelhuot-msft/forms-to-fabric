@@ -225,7 +225,7 @@ flowchart TD
 | 3 | Azure Function | Validates the link, extracts the form ID, creates a registry entry |
 | 4a | System (no PHI) | Sets status to `active`; the form's responses will start flowing into the pipeline |
 | 4b | System (PHI) | Sets status to `pending_review`; sends a notification email to the IT team |
-| 5 | IT Admin | Reviews the form, classifies PHI fields, and activates via `manage_registry.py` |
+| 5 | IT Admin | Reviews the form, classifies PHI fields, and activates via `POST /api/activate-form` |
 | 6 | System | Once activated, responses flow into the raw (restricted) layer; PHI fields are excluded from the curated (de-identified) layer |
 
 > **Note:** If a registered form's structure changes later, the Schema Monitor function detects the change, notifies IT, and quarantines new fields in the raw layer only until reviewed. See [Architecture — Schema Monitor](architecture.md) and [Decisions Log — D-014](decisions.md#d-014).

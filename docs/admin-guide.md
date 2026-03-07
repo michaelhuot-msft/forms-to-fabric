@@ -51,18 +51,9 @@ When a clinician registers a form that collects patient information, IT receives
 
 1. **Open the form link** in the Teams notification and review the questions. Identify which fields contain PHI (names, dates of birth, MRNs, etc.).
 
-2. **Classify PHI fields** using the registry CLI. For each sensitive field, specify the appropriate de-identification method:
+2. **Classify PHI fields** by editing the blob registry directly. For each sensitive field, add the appropriate de-identification configuration to the form's entry in blob storage. This is a future enhancement — a streamlined CLI for field classification is planned.
 
-   ```bash
-   python scripts/manage_registry.py add-field \
-     --form-id "<form-id-from-notification>" \
-     --question-id "q1" \
-     --field-name "patient_name" \
-     --contains-phi \
-     --deid-method "redact"
-   ```
-
-   Repeat for each PHI field. See the [De-Identification Rules](#configuring-de-identification-rules) section below for method choices.
+   See the [De-Identification Rules](#configuring-de-identification-rules) section below for method choices.
 
 3. **Activate the form** by calling the activate endpoint or using the CLI:
 
@@ -85,52 +76,17 @@ When a clinician registers a form that collects patient information, IT receives
 
 ## Registering a New Form
 
-### Recommended: Use the Registry CLI
+### Recommended: Use Self-Service Registration
 
-The `manage_registry.py` CLI tool provides a validated, error-proof way to manage form registrations. The clinician sends you their form link — you paste it in and you're done.
+Forms are registered via the self-service registration form — clinicians fill out a short "Register Your Form" Microsoft Form (3 questions), and a Power Automate flow handles the rest. See [Self-Service Registration](#self-service-registration) above.
 
-**Register a form (just paste the URL):**
+To list all registered forms:
 
-```bash
-python scripts/manage_registry.py add-form \
-  --form-url "https://forms.office.com/Pages/DesignPageV2.aspx?id=aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890ABCDEFG.u&origin=lprLink"
+```powershell
+pwsh scripts/Manage-Registry.ps1 -List
 ```
 
-The form ID, form name, and table name are all derived automatically. Override any of them if needed:
-
-```bash
-python scripts/manage_registry.py add-form \
-  --form-url "https://forms.office.com/..." \
-  --target-table "custom_table_name" \
-  --form-name "Custom Display Name"
-```
-
-**Add fields to the form:**
-
-```bash
-python scripts/manage_registry.py add-field \
-  --form-id "aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890ABCDEFG.u" \
-  --question-id "q1" \
-  --field-name "patient_name" \
-  --contains-phi \
-  --deid-method "redact"
-```
-
-**Validate the registry:**
-
-```bash
-python scripts/manage_registry.py validate
-```
-
-**List all registered forms:**
-
-```bash
-python scripts/manage_registry.py list
-```
-
-> **Tip:** Always run `validate` before deploying. The CLI catches syntax errors, missing fields, and configuration conflicts that would break the pipeline.
-
-If you prefer to edit the JSON directly, follow the manual steps below.
+If you need to edit field configurations or de-identification rules, edit the blob registry directly (download from Azure Blob Storage, modify, and re-upload). See the manual steps below for the JSON structure.
 
 ### Step 1: Get the Form ID from Microsoft Forms
 
@@ -492,9 +448,9 @@ traces
 
 **What to do when changes are detected:**
 1. Review the change report in Application Insights
-2. Update `form-registry.json` using the CLI: `python scripts/manage_registry.py add-field ...`
+2. Update the blob registry to add field configurations for new fields. Field classification via CLI is a future enhancement — for now, edit the blob registry directly.
 3. Classify any new fields for sensitivity and de-identification
-4. CLI changes are saved to Azure Blob Storage automatically — no deploy needed for registry updates
+4. Registry changes in blob storage are picked up automatically — no deploy needed
 5. Test with a sample submission
 
 ### Automated RBAC Compliance Audit

@@ -273,23 +273,15 @@ For full security documentation, refer to the [architecture documentation](archi
 
 ### Is there a tool to manage form registrations without editing JSON?
 
-Yes! The `manage_registry.py` CLI tool provides validated commands for adding forms, adding fields, and checking your configuration:
+Yes! Forms are registered via the **self-service registration form** — clinicians fill out a short 3-question form, and a Power Automate flow handles the rest. Non-PHI forms are activated instantly; PHI forms are routed to IT for review.
 
-```bash
-# Add a new form
-python scripts/manage_registry.py add-form --form-id "my-form-id" --form-name "My Survey" --target-table "my_survey"
+To list all registered forms:
 
-# Add a field with PHI protection
-python scripts/manage_registry.py add-field --form-id "my-form-id" --question-id "q1" --field-name "patient_name" --contains-phi --deid-method "redact"
-
-# Validate the entire registry
-python scripts/manage_registry.py validate
-
-# List all registered forms
-python scripts/manage_registry.py list
+```powershell
+pwsh scripts/Manage-Registry.ps1 -List
 ```
 
-This prevents JSON syntax errors and catches configuration mistakes before deployment.
+For field-level configuration changes, edit the blob registry directly. See the [Admin Guide](admin-guide.md) for details.
 
 ---
 
@@ -312,7 +304,7 @@ This reduces setup from ~15 minutes to ~2 minutes and eliminates common configur
 When a clinician fills out the registration form, a Power Automate flow picks up the submission and calls the `POST /api/register-form` endpoint on the Azure Function. The endpoint creates a new entry in `form-registry.json` and returns a status:
 
 - **Non-PHI forms** are activated immediately (`status: active`). The clinician receives an email confirmation, and a response-processing flow can be generated right away.
-- **PHI forms** are set to `status: pending_review`. IT receives a Teams adaptive card notification with the form details. An admin must review the form, classify PHI fields using `manage_registry.py add-field`, and call `POST /api/activate-form` (or use the CLI) to activate it. The clinician is notified by email once activation is complete.
+- **PHI forms** are set to `status: pending_review`. IT receives a Teams adaptive card notification with the form details. An admin must review the form, classify PHI fields by editing the blob registry directly (field classification via CLI is a future enhancement), and call `POST /api/activate-form` to activate it. The clinician is notified by email once activation is complete.
 
 See [docs/registration-form-template.md](registration-form-template.md) for the registration form setup and `power-automate/registration-flow-template.json` for the flow reference.
 
@@ -320,7 +312,7 @@ See [docs/registration-form-template.md](registration-form-template.md) for the 
 
 ### What happens to new fields added after a form is registered?
 
-New fields are captured in the **raw layer** of the Lakehouse but are **excluded from the curated layer** until they are classified. This means the data is safely stored but won't appear in dashboards or reports until an admin adds the field configuration using `manage_registry.py add-field`. The schema monitor function runs every 6 hours and will alert IT when unregistered fields are detected.
+New fields are captured in the **raw layer** of the Lakehouse but are **excluded from the curated layer** until they are classified. This means the data is safely stored but won't appear in dashboards or reports until an admin adds the field configuration to the blob registry. Field classification via CLI is a future enhancement — for now, edit the blob registry directly. The schema monitor function runs every 6 hours and will alert IT when unregistered fields are detected.
 
 ---
 

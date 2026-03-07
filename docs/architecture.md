@@ -75,7 +75,7 @@ Three automated functions run alongside the core processing pipeline to reduce m
 - **RBAC Auditor** checks Fabric workspace access daily at 8 AM UTC and flags unauthorized raw-layer access.
 - **Flow Generator** provides on-demand Power Automate flow definitions via HTTP GET, reducing flow creation from 15 minutes to 2 minutes.
 - **Self-Service Registration** allows clinicians to register forms via a simple 3-question Microsoft Form. A Power Automate flow calls the `register-form` endpoint, which auto-activates non-PHI forms and routes PHI forms to IT for review via Teams notification. IT activates PHI forms by calling the `activate-form` endpoint after classifying sensitive fields.
-- **Registry Management CLI** (`scripts/manage_registry.py`) validates and manages `form-registry.json` entries.
+- **Registry Management CLI** (`scripts/Manage-Registry.ps1`) lists and manages `form-registry.json` entries.
 - **Key Rotation Script** (`scripts/rotate_function_key.py`) automates function key rotation with zero-downtime.
 
 ```mermaid

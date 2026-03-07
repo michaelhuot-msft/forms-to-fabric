@@ -23,7 +23,7 @@ Open [Microsoft Forms](https://forms.office.com) and create a new form with the 
 | # | Question Text | Type | Required | Notes |
 |---|---------------|------|----------|-------|
 | 1 | Paste your form's share link (open your form in Microsoft Forms, click **Share**, and copy the link) | Text (short answer) | Yes | See validation guidance below |
-| 2 | Briefly describe what this form is for | Text (long answer) | No | Helps IT understand context when reviewing |
+| 2 | Give your form a short name (e.g., Patient Intake Survey) | Text (short answer) | Yes | Used as the display name for the data pipeline and dashboard |
 | 3 | Does this form collect any patient information? (names, dates of birth, medical record numbers, or other data that could identify a patient) | Choice: **Yes** / **No** | Yes | Determines whether the form requires IT approval before activation |
 
 ### Question 1 — Link Validation

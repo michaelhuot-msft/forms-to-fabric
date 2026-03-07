@@ -124,8 +124,11 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
             mimetype="application/json",
         )
 
-    # Use description as form name (clinician-provided), fall back to truncated form_id
-    form_name = description.strip() if description and description.strip() else (form_id[:40] if len(form_id) > 40 else form_id)
+    # Use clinician-provided name (question 2), truncate to 50 chars, fall back to form_id
+    if description and description.strip():
+        form_name = description.strip()[:50]
+    else:
+        form_name = form_id[:40] if len(form_id) > 40 else form_id
     target_table = _slugify(form_name)
 
     # Register with empty fields — they'll be auto-discovered from raw_response

@@ -155,17 +155,47 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
         status,
     )
 
+    # --- Auto-create the data pipeline PA flow --------------------------------
+    flow_result = None
+    try:
+        import os
+
+        from generate_flow.handler import generate_flow_definition
+        from shared.flow_api_client import create_data_pipeline_flow
+
+        function_app_url = os.environ.get(
+            "FUNCTION_APP_URL",
+            f"https://{os.environ.get('WEBSITE_HOSTNAME', 'localhost')}",
+        )
+        key_vault_name = os.environ.get("KEY_VAULT_NAME", "")
+
+        flow_def = generate_flow_definition(form_id, function_app_url, key_vault_name)
+        flow_result = create_data_pipeline_flow(
+            flow_definition=flow_def,
+            display_name=f"Forms to Fabric — {form_name}",
+        )
+        logger.info("Auto-created data pipeline flow: %s", flow_result)
+    except Exception as exc:
+        logger.warning(
+            "Could not auto-create data pipeline flow for %s: %s. "
+            "Clinician can create it manually using /api/generate-flow.",
+            form_id,
+            exc,
+        )
+
+    response_body = {
+        "form_id": form_id,
+        "form_name": form_name,
+        "target_table": target_table,
+        "status": status,
+        "field_count": len(fields),
+        "generate_flow_url": f"/api/generate-flow?form_id={form_id}",
+    }
+    if flow_result:
+        response_body["data_flow"] = flow_result
+
     return func.HttpResponse(
-        json.dumps(
-            {
-                "form_id": form_id,
-                "form_name": form_name,
-                "target_table": target_table,
-                "status": status,
-                "field_count": len(fields),
-                "generate_flow_url": f"/api/generate-flow?form_id={form_id}",
-            }
-        ),
+        json.dumps(response_body),
         status_code=200,
         mimetype="application/json",
     )

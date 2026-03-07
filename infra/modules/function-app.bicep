@@ -32,6 +32,9 @@ param fabricWorkspaceId string = ''
 @description('Fabric Lakehouse ID for OneLake writes.')
 param fabricLakehouseId string = ''
 
+@description('Power Platform environment ID for auto-creating PA flows.')
+param powerPlatformEnvironmentId string = ''
+
 // ──────────────────────────────────────────────
 // Existing resources
 // ──────────────────────────────────────────────
@@ -129,6 +132,10 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'ONELAKE_LAKEHOUSE'
           value: fabricLakehouseId
+        }
+        {
+          name: 'POWER_PLATFORM_ENVIRONMENT_ID'
+          value: powerPlatformEnvironmentId
         }
       ]
     }

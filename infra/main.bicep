@@ -22,6 +22,9 @@ param fabricWorkspaceId string = ''
 @description('Fabric Lakehouse ID (set by Setup-Environment.ps1 or azd env set FABRIC_LAKEHOUSE_ID).')
 param fabricLakehouseId string = ''
 
+@description('Power Platform environment ID for auto-creating PA flows. Auto-discovered if not set.')
+param powerPlatformEnvironmentId string = ''
+
 @description('Name of the Fabric capacity to create. Alphanumeric only, no hyphens. Leave empty to skip capacity provisioning (use existingFabricCapacityId instead).')
 param fabricCapacityName string = ''
 
@@ -75,6 +78,7 @@ module functionApp 'modules/function-app.bicep' = {
     onelakeEndpoint: onelakeEndpoint
     fabricWorkspaceId: fabricWorkspaceId
     fabricLakehouseId: fabricLakehouseId
+    powerPlatformEnvironmentId: powerPlatformEnvironmentId
   }
 }
 

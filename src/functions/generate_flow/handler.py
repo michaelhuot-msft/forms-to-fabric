@@ -27,6 +27,8 @@ def _build_flow_definition(
     func_url = f"{function_app_url.rstrip('/')}/api/process-response"
     func_key = os.environ.get("FUNCTION_APP_KEY", "")
 
+    alert_email = os.environ.get("ALERT_EMAIL", admin_email)
+
     return {
         "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
         "contentVersion": "1.0.0.0",
@@ -77,6 +79,45 @@ def _build_flow_definition(
                     "body": {
                         "form_id": form_config.form_id,
                         "raw_response": "@body('Get_response_details')",
+                    },
+                },
+                "runtimeConfiguration": {
+                    "contentTransfer": {"transferMode": "Chunked"},
+                },
+            },
+            "Send_failure_alert": {
+                "runAfter": {
+                    "HTTP_POST_to_Azure_Function": ["Failed", "TimedOut"],
+                },
+                "type": "OpenApiConnection",
+                "inputs": {
+                    "parameters": {
+                        "emailMessage/To": alert_email,
+                        "emailMessage/Subject": (
+                            f"Forms to Fabric - Pipeline failure: "
+                            f"{form_config.form_name}"
+                        ),
+                        "emailMessage/Body": (
+                            "<p><b>A form response failed to process.</b></p>"
+                            f"<p><b>Form:</b> {form_config.form_name}</p>"
+                            f"<p><b>Form ID:</b> {form_config.form_id}</p>"
+                            "<p><b>Error:</b> "
+                            "@{outputs('HTTP_POST_to_Azure_Function')?['statusCode']} "
+                            "- @{body('HTTP_POST_to_Azure_Function')?['message']}</p>"
+                            "<p><b>Response ID:</b> "
+                            "@{triggerOutputs()?['body/resourceData/responseId']}</p>"
+                            "<p><b>Time:</b> @{utcNow()}</p>"
+                            "<hr/>"
+                            "<p><i>This alert was sent by the Forms to Fabric pipeline. "
+                            "If the Fabric capacity is paused, resume it in the "
+                            "Azure Portal and re-run this flow.</i></p>"
+                        ),
+                        "emailMessage/Importance": "High",
+                    },
+                    "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                        "operationId": "SendEmailV2",
+                        "connectionName": "shared_office365",
                     },
                 },
             },

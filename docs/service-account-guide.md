@@ -33,7 +33,21 @@ In Microsoft Entra ID (Azure Portal → Microsoft Entra ID → Users):
 
 `[Screenshot placeholder: Entra ID new user creation form]`
 
-### 1.2 Assign licenses
+### 1.2 Create a shared mailbox for alerts
+
+In the Microsoft 365 Admin Center (admin.microsoft.com):
+
+1. Go to **Teams & groups** → **Shared mailboxes** → **+ Add a shared mailbox**
+2. Name: `Forms to Fabric Alerts`
+3. Email: `forms-fabric-alerts@yourdomain.com`
+4. Click **Create**
+5. Add the service account and admin users as members so they receive alert emails
+
+A shared mailbox requires no additional license and can receive failure notifications from the pipeline.
+
+`[Screenshot placeholder: Shared mailbox creation in M365 Admin Center]`
+
+### 1.3 Assign licenses
 
 The service account needs:
 - **Microsoft 365 license** (for Microsoft Forms access)
@@ -80,11 +94,25 @@ Even for service accounts, enable MFA or use Conditional Access policies to rest
 
 `[Screenshot placeholder: Power Automate Connections page with Forms connection]`
 
-### 2.3 Note the connection name
+### 2.3 Create an Office 365 Outlook connection
+
+This connection is used to send failure alert emails from auto-created data flows:
+
+1. Go to **Data** → **Connections** → **+ New connection**
+2. Search for **Office 365 Outlook**
+3. Click **Create** → sign in with the service account
+4. Note the connection ID from the URL (e.g., `shared-office365-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`)
+
+`[Screenshot placeholder: Office 365 Outlook connection in Power Automate]`
+
+### 2.4 Note the connection names
 
 1. Click on the newly created Forms connection
 2. The URL will contain the connection ID, e.g., `shared-microsoftform-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
-3. Copy this — you'll need it for the `FORMS_CONNECTION_NAME` environment variable
+3. Do the same for the Outlook connection
+4. Copy both — you'll need them for the environment variables:
+   - `FORMS_CONNECTION_NAME` — the Forms connection ID
+   - `OUTLOOK_CONNECTION_NAME` — the Outlook connection ID
 
 `[Screenshot placeholder: Connection details showing connection ID in URL]`
 
@@ -120,7 +148,9 @@ Update the Function App with the service account's connection name:
 az functionapp config appsettings set `
   --name <func-app-name> `
   --resource-group <rg-name> `
-  --settings "FORMS_CONNECTION_NAME=shared-microsoftform-<service-account-connection-id>"
+  --settings "FORMS_CONNECTION_NAME=shared-microsoftform-<service-account-connection-id>" `
+             "OUTLOOK_CONNECTION_NAME=shared-office365-<service-account-connection-id>" `
+             "ALERT_EMAIL=forms-fabric-alerts@yourdomain.com"
 ```
 
 Then redeploy:
@@ -224,12 +254,16 @@ So other admins can edit flows without the service account password:
 ## Checklist
 
 - [ ] Service account created in Entra ID
+- [ ] Shared mailbox created (`forms-fabric-alerts@yourdomain.com`)
 - [ ] M365 license assigned
 - [ ] Password set to not expire
 - [ ] MFA configured
 - [ ] Forms connection created under service account
+- [ ] Outlook connection created under service account
 - [ ] Registration flow created/transferred to service account
 - [ ] `FORMS_CONNECTION_NAME` updated in Function App
+- [ ] `OUTLOOK_CONNECTION_NAME` updated in Function App
+- [ ] `ALERT_EMAIL` updated in Function App
 - [ ] Redeployed (`pwsh scripts/Redeploy.ps1`)
 - [ ] Existing flows transferred or re-created
 - [ ] Service account has Fabric workspace access

@@ -197,6 +197,7 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
     }
     if flow_definition:
         forms_conn = os.environ.get("FORMS_CONNECTION_NAME", "shared_microsoftforms")
+        outlook_conn = os.environ.get("OUTLOOK_CONNECTION_NAME", "shared_office365")
         response_body["flow_create_body"] = {
             "properties": {
                 "displayName": f"Forms to Fabric - {form_name}",
@@ -206,6 +207,11 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
                     "shared_microsoftforms": {
                         "id": "/providers/Microsoft.PowerApps/apis/shared_microsoftforms",
                         "connectionName": forms_conn,
+                        "source": "Embedded",
+                    },
+                    "shared_office365": {
+                        "id": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                        "connectionName": outlook_conn,
                         "source": "Embedded",
                     },
                 },

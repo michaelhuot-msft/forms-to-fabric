@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 from urllib.parse import parse_qs, urlparse
 
@@ -171,8 +172,6 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
     # --- Generate the data pipeline flow definition ----------------------------
     flow_definition = None
     try:
-        import os
-
         from generate_flow.handler import generate_flow_definition
 
         function_app_url = os.environ.get(
@@ -197,6 +196,9 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
         "generate_flow_url": f"/api/generate-flow?form_id={form_id}",
     }
     if flow_definition:
+        forms_conn = os.environ.get(
+            "FORMS_CONNECTION_NAME", "shared_microsoftforms"
+        )
         response_body["flow_create_body"] = {
             "properties": {
                 "displayName": f"Forms to Fabric - {form_name}",
@@ -205,7 +207,7 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
                 "connectionReferences": {
                     "shared_microsoftforms": {
                         "id": "/providers/Microsoft.PowerApps/apis/shared_microsoftforms",
-                        "connectionName": "shared_microsoftforms",
+                        "connectionName": forms_conn,
                         "source": "Embedded",
                     },
                 },

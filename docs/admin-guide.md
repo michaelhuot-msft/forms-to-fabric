@@ -776,3 +776,82 @@ To recover the full pipeline in a new Azure region:
 | Key Vault secrets | 1 hour | 0 (soft-delete recovery) |
 
 > **Recommendation:** For production healthcare workloads, consider reducing the raw layer RPO to 1 hour by increasing snapshot frequency or enabling continuous replication if supported by your Fabric capacity.
+
+---
+
+## Teardown and Cleanup
+
+To completely remove all Forms to Fabric resources, use the `Destroy-Environment.ps1` script:
+
+```powershell
+pwsh scripts/Destroy-Environment.ps1 -ResourceGroup "rg-forms-to-fabric-dev"
+```
+
+### What Gets Deleted
+
+The script removes resources in dependency order:
+
+| Step | What | API/Method |
+|------|------|------------|
+| 1 | All "Forms to Fabric" Power Automate flows | Flow Management REST API |
+| 2 | Fabric workspace + all Lakehouse tables | Fabric REST API |
+| 3 | Azure resource group (Function App, Storage, Key Vault, App Insights, Fabric Capacity) | Azure Resource Manager |
+| 4 | azd environment variable values | Azure Developer CLI |
+
+```mermaid
+flowchart LR
+    A["PA Flows"] --> B["Fabric Workspace"]
+    B --> C["Azure Resource Group"]
+    C --> D["azd Environment"]
+
+    classDef danger fill:#ff8787,stroke:#c92a2a,color:#1a1a2e
+    class A,B,C,D danger
+```
+
+### Options
+
+| Flag | Effect |
+|------|--------|
+| `-Force` | Skip all confirmation prompts (for CI/automation) |
+| `-SkipFlows` | Keep Power Automate flows, delete everything else |
+| `-SkipFabric` | Keep Fabric workspace and data, delete everything else |
+| `-SkipAzure` | Keep Azure resources, only delete PA flows and Fabric |
+| `-FabricWorkspaceId` | Provide workspace ID if not in azd env |
+
+### Safety
+
+- **Two confirmations required** — you must type `DESTROY` and then confirm the RG deletion
+- **Resource group deletion is async** — Azure deletes resources in the background after the script exits
+- **Soft-delete protection** — Key Vault uses soft-delete by default; secrets are recoverable for 90 days
+- **No Git changes** — the script only removes deployed resources, not source code
+
+### Examples
+
+```powershell
+# Full teardown with confirmations
+pwsh scripts/Destroy-Environment.ps1 -ResourceGroup "rg-forms-to-fabric-dev"
+
+# Automation/CI mode (no prompts)
+pwsh scripts/Destroy-Environment.ps1 -ResourceGroup "rg-forms-to-fabric-dev" -Force
+
+# Only clean up PA flows (keep Azure and Fabric)
+pwsh scripts/Destroy-Environment.ps1 -SkipAzure -SkipFabric
+
+# Clean everything except Fabric data
+pwsh scripts/Destroy-Environment.ps1 -ResourceGroup "rg-forms-to-fabric-dev" -SkipFabric
+
+# Check resource group deletion status afterward
+az group show -n rg-forms-to-fabric-dev --query properties.provisioningState -o tsv
+```
+
+### Recreating After Teardown
+
+To stand up the environment again from scratch:
+
+```powershell
+pwsh scripts/Setup-Environment.ps1 -SubscriptionId "<sub-id>" -AdminEmail "you@org.com"
+azd up
+pwsh scripts/Post-Deploy.ps1
+```
+
+Then follow the [Setup Guide](setup-guide.md) from Step 4 to create the registration form and PA flow.

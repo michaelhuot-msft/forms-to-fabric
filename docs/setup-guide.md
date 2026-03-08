@@ -288,3 +288,13 @@ If `azd deploy` succeeds but endpoints return 404:
 - [Admin Guide](admin-guide.md) — Operations, monitoring, key rotation
 - [Architecture](architecture.md) — Design, security, compliance
 - [Pilot Program](pilot-program.md) — Planning a pilot rollout
+
+## Teardown
+
+To remove everything and start fresh:
+
+```powershell
+pwsh scripts/Destroy-Environment.ps1 -ResourceGroup "rg-forms-to-fabric-dev"
+```
+
+See the [Teardown and Cleanup](admin-guide.md#teardown-and-cleanup) section of the Admin Guide for full details.

@@ -90,14 +90,23 @@ If you need to edit field configurations or de-identification rules, edit the bl
 
 ### Step 1: Get the Form ID from Microsoft Forms
 
-1. Open [Microsoft Forms](https://forms.office.com) and navigate to the target form.
-2. Click **Share** or look at the browser URL. The Form ID is the GUID in the URL:
+For self-service registration, clinicians paste the form's **share link** and the `register-form` endpoint extracts the ID automatically. If you need the ID for manual review or activation, use one of these sources:
+
+1. **Preferred:** run `pwsh scripts/Manage-Registry.ps1 -List` or copy the `form_id` returned by `POST /api/register-form`.
+2. **Share link:** the public/respondent link uses the short `/r/<id>` format:
    ```
-   https://forms.office.com/Pages/DesignPageV2.aspx?id=aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890ABCDEFG.u&...
-                                                        ^^^^^^^^^^^^^^
-                                                        This is the Form ID
+   https://forms.office.com/r/AbCdEfGhIj
+                              ^^^^^^^^^^
+                              This is the extracted form_id
    ```
-3. Copy the Form ID — you'll need it for the registry entry.
+3. **Editor URL:** the Forms designer URL includes a longer `id=` value:
+   ```
+   https://forms.office.com/Pages/DesignPageV2.aspx?...&id=ePzQbQgk1kOiVUOD-9o_dsPlwRCEj...
+                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                                              This is also accepted
+   ```
+
+Use the exact value stored in the registry for manual JSON edits so it matches the ID sent by the Power Automate flow.
 
 ### Step 2: Add an Entry to the Form Registry
 
@@ -157,7 +166,7 @@ Below is a complete example entry:
 
 | Field | Purpose |
 |---|---|
-| `form_id` | The GUID from the Microsoft Forms URL |
+| `form_id` | The ID extracted from the Microsoft Forms share link or editor URL |
 | `target_table` | Destination table name in Fabric Lakehouse |
 | `question_id` | Maps to the question identifier in the Forms response JSON |
 | `sensitivity` | Determines de-identification behavior (see [Configuring De-Identification Rules](#configuring-de-identification-rules)) |

@@ -81,7 +81,7 @@ Once the form is saved in Microsoft Forms, complete these steps to connect it to
 
 ### Step 2 — Create the Power Automate Flow
 
-The registration flow is simple — only 4 actions. The Azure Function handles everything else (including auto-creating the data pipeline flow).
+The registration flow is simple — 5 actions total. The Azure Function registers the form and returns the `flow_create_body` payload, and the Power Automate flow uses that payload to create the per-form data pipeline flow.
 
 ```mermaid
 flowchart TD
@@ -98,6 +98,7 @@ flowchart TD
     classDef warning fill:#ffd43b,stroke:#e67700,color:#1a1a2e
     classDef danger fill:#ff8787,stroke:#c92a2a,color:#1a1a2e
     classDef info fill:#b197fc,stroke:#6741d9,color:#1a1a2e
+    classDef neutral fill:#ced4da,stroke:#495057,color:#1a1a2e
 
     T:::primary
     G:::primary
@@ -193,13 +194,14 @@ flowchart TD
     B --> C[Get response details]
     C --> D[HTTP POST /api/register-form]
     D --> E[Form registered in blob storage]
-    E --> F[Azure Function calls Flow API]
-    F --> G[Data pipeline flow auto-created]
-    G --> H{Collects patient info?}
-    H -- No --> I[All fields in raw + curated]
-    H -- Yes --> J[All fields in raw, unclassified excluded from curated]
-    J --> K[IT classifies PHI fields later]
-    K --> I
+    E --> F[Response includes flow_create_body]
+    F --> G[Power Automate posts payload to Flow API]
+    G --> H[Data pipeline flow created]
+    H --> I{Collects patient info?}
+    I -- No --> J[All fields in raw and curated]
+    I -- Yes --> K[All fields in raw, unclassified excluded from curated]
+    K --> L[IT classifies PHI fields later]
+    L --> J
 
     classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
     classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
@@ -213,12 +215,13 @@ flowchart TD
     C:::primary
     D:::primary
     E:::info
-    F:::success
+    F:::info
     G:::success
-    H:::warning
-    I:::success
-    J:::warning
-    K:::info
+    H:::success
+    I:::warning
+    J:::success
+    K:::warning
+    L:::info
 ```
 
 ### Flow Details

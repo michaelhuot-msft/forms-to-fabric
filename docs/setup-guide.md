@@ -40,6 +40,12 @@ git clone <YOUR_REPO_URL> forms-to-fabric
 cd forms-to-fabric
 ```
 
+Optional but recommended for contributors: install the local pre-commit hook so Bicep is validated before each commit.
+
+```bash
+sh scripts/install-hooks.sh
+```
+
 ---
 
 ## Step 2: Set Up Environment and Fabric
@@ -140,6 +146,8 @@ This automatically:
 - Grants the Function App managed identity **Contributor** access to your Fabric workspace
 - Retrieves the function key and stores it in Key Vault
 - Prints the Function App URL (needed for the Power Automate flow)
+
+**For later code-only updates:** use `pwsh scripts/Redeploy.ps1` to redeploy the Azure Function via remote build without reprovisioning infrastructure. Continue using `azd up` when you change Bicep or other Azure resources.
 
 **Resources created by `azd up`:**
 
@@ -243,6 +251,7 @@ To register a new form manually, use the self-service registration form or call 
 | Function timeout | Large payload | Increase `functionTimeout` in `host.json` |
 | Form not registered | form_id mismatch | Verify form_id: `pwsh scripts/Manage-Registry.ps1 -List` |
 | Storage 403 Forbidden | Subscription blocks shared key access | Add `SecurityControl=Ignore` tag to storage account |
+| Local commits miss Bicep validation | Git hook not installed | Run `sh scripts/install-hooks.sh` from the repo root |
 
 ### Functions not loading after deployment
 

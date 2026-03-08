@@ -1,14 +1,15 @@
 # Workspace Architecture — Hybrid Model
 
-> **Status:** Proposed (not yet implemented)
+> **Status:** Future-state reference only (not implemented in the current POC)
 > **Decision:** D-017 — Document architecture for future implementation
 > **Date:** 2026-03-07
+> **Current implementation:** The deployed POC still writes raw and curated tables to a single Fabric workspace and Lakehouse as documented in [Architecture](architecture.md).
 
 ---
 
 ## Overview
 
-The hybrid workspace model separates raw PHI data from curated de-identified data using different Fabric workspaces with different access controls.
+The hybrid workspace model separates raw PHI data from curated de-identified data using different Fabric workspaces with different access controls. This document describes a future design target, not the workflow implemented by the current Azure Functions, registry schema, or setup scripts.
 
 ```
 ┌─────────────────────────────────────────────┐

@@ -144,7 +144,7 @@ Collaborators can edit questions, view responses, and manage the form just like 
 
 ### How do I register my form?
 
-Go to the **[registration form link placeholder]** and fill out the short registration form. You'll need to paste your form's share link, add a brief description, and tell us whether your form collects patient information. That's it — just three questions, and you're done!
+Open your organization's **"Register Your Form for Analytics"** link and fill out the short registration form. If you don't have the link yet, ask your IT team to share it. You'll need to paste your form's share link, add a brief description, and tell us whether your form collects patient information. That's it — just three questions, and you're done!
 
 ---
 

@@ -39,7 +39,9 @@ graph LR
 # Clone and deploy
 git clone <repo-url>
 cd forms-to-fabric
+pwsh scripts/Setup-Environment.ps1
 azd up
+pwsh scripts/Post-Deploy.ps1
 ```
 
 See [docs/setup-guide.md](docs/setup-guide.md) for detailed deployment instructions.
@@ -52,8 +54,13 @@ See [docs/setup-guide.md](docs/setup-guide.md) for detailed deployment instructi
 | [Admin Guide](docs/admin-guide.md) | IT / Admins | Register forms, configure de-id, manage access |
 | [Architecture](docs/architecture.md) | IT Leadership | Data flow, security, and compliance |
 | [Setup Guide](docs/setup-guide.md) | DevOps | Step-by-step deployment instructions |
+| [Registration Form Template](docs/registration-form-template.md) | IT / Admins | Build the self-service intake form and registration flow |
 | [FAQ](docs/faq.md) | Everyone | Common questions and answers |
 | [Automation Gaps](docs/automation-gaps.md) | IT / DevOps | Admin burden assessment and remediation |
+| [Decisions Log](docs/decisions.md) | Stakeholders | Key architectural and workflow decisions |
+| [Pilot Program](docs/pilot-program.md) | Project leads | Suggested pilot rollout plan |
+| [Rollout Checklist](docs/rollout-checklist.md) | Project leads | Go-live checklist for rollout readiness |
+| [Workspace Architecture (Future State)](docs/workspace-architecture.md) | Architects | Proposed hybrid workspace model, not part of the current POC |
 | [POC Checklist](docs/poc-checklist.md) | Anyone | Reusable checklist for building POC/reference projects |
 
 ## Project Structure
@@ -73,11 +80,14 @@ forms-to-fabric/
 │   ├── Generate-FlowBody.ps1   # PA flow body generator
 │   ├── Setup-Environment.ps1   # One-command environment setup
 │   ├── Setup-FabricWorkspace.ps1  # Fabric workspace provisioning
-│   └── Post-Deploy.ps1         # Post-deploy: Fabric access + key storage
+│   ├── Post-Deploy.ps1         # Post-deploy: Fabric access + key storage
+│   ├── Redeploy.ps1            # Code-only Azure Functions redeploy
+│   └── install-hooks.sh        # Install local git hooks
 ├── config/             # Form registry configuration + JSON schema
 ├── power-automate/     # Power Automate flow templates
-├── power-bi/           # Power BI report templates
 ├── docs/               # Documentation
+│   └── diagrams/       # Excalidraw source diagrams
+├── hooks/              # Shared git hooks installed by install-hooks.sh
 ├── tests/              # Unit and integration tests
 └── azure.yaml          # Azure Developer CLI manifest
 ```

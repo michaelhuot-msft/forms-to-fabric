@@ -196,9 +196,7 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
         "generate_flow_url": f"/api/generate-flow?form_id={form_id}",
     }
     if flow_definition:
-        forms_conn = os.environ.get(
-            "FORMS_CONNECTION_NAME", "shared_microsoftforms"
-        )
+        forms_conn = os.environ.get("FORMS_CONNECTION_NAME", "shared_microsoftforms")
         response_body["flow_create_body"] = {
             "properties": {
                 "displayName": f"Forms to Fabric - {form_name}",

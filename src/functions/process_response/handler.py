@@ -16,7 +16,7 @@ from pydantic import ValidationError
 from shared.config import get_form_config
 from shared.deid import apply_deid
 from shared.models import Answer, FormResponse, ProcessingResult
-from shared.onelake import write_to_lakehouse
+from shared.onelake import FabricCapacityError, write_to_lakehouse
 
 logger = logging.getLogger(__name__)
 
@@ -160,6 +160,14 @@ def handle_form_response(req: func.HttpRequest) -> func.HttpResponse:
                 table_name=form_config.target_table,
                 layer="curated",
             )
+    except FabricCapacityError as exc:
+        logger.error("Fabric capacity unavailable: %s", exc)
+        return _error_response(
+            str(exc),
+            status_code=503,
+            form_id=form_response.form_id,
+            response_id=form_response.response_id,
+        )
     except RuntimeError as exc:
         logger.exception("OneLake write failed")
         return _error_response(

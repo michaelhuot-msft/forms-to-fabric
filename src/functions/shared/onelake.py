@@ -109,4 +109,14 @@ def write_to_lakehouse(
         return table_uri
     except Exception as exc:
         logger.exception("Delta write failed for %s", table_uri)
+        msg = str(exc)
+        if "capacity" in msg.lower() and "not available" in msg.lower():
+            raise FabricCapacityError(
+                "Fabric capacity is paused or unavailable. "
+                "Resume the capacity in Azure Portal before retrying."
+            ) from exc
         raise RuntimeError(f"Failed to write to Delta table: {exc}") from exc
+
+
+class FabricCapacityError(RuntimeError):
+    """Raised when the Fabric capacity is paused or unavailable."""

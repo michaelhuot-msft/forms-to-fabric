@@ -223,6 +223,16 @@ Decisions are numbered sequentially (D-001, D-002, …). Each entry records what
 | **Alternatives considered** | Single workspace with row-level security (current, simpler but weaker isolation); two workspaces (raw + shared curated, no per-clinician separation); per-department workspaces (fewer workspaces but shared within department) |
 | **How to change later** | Implement the architecture documented in `docs/workspace-architecture.md`. The migration is incremental — current model continues to work while hybrid is built alongside. Key changes: register-form creates workspaces via Fabric API, onelake writer routes data by workspace ID from form config. |
 
+### D-018
+
+| Field | Detail |
+|-------|--------|
+| **Decision** | Use a shared service account for all Power Automate flows and connections |
+| **Date** | 2026-03 |
+| **Context** | PA flows and connector connections are tied to the user who created them. If that person leaves the org, flows stop working. A service account (e.g., forms-pipeline@org.com) owns all flows and connections, eliminating single-admin dependency. |
+| **Alternatives considered** | Personal admin account with documented handoff (fragile, requires password transfer); application registration with client credentials (more complex, Forms connector doesn't support service principals for triggers) |
+| **How to change later** | If Microsoft adds service principal support for the Forms connector trigger, migrate to app-only authentication (no user account needed). Monitor the Power Platform roadmap for this capability. |
+
 ## How to Add a New Decision
 
 Copy the template below and append it to the appropriate section:
@@ -245,6 +255,7 @@ Copy the template below and append it to the appropriate section:
 
 - [Architecture](architecture.md) — System design shaped by these decisions
 - [Registration Form Template](registration-form-template.md) — Implements D-011, D-012, D-013
+- [Service Account Guide](service-account-guide.md) — Implements D-018
 - [Admin Guide](admin-guide.md) — Operational procedures
 - [Pilot Program](pilot-program.md) — Implements D-005
 

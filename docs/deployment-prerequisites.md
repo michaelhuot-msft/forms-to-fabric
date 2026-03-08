@@ -258,7 +258,8 @@ Scripts and workflows call these APIs (all authenticated via Azure CLI tokens):
 
 | Script | Purpose | Required Tools |
 |--------|---------|----------------|
-| `Setup-Environment.ps1` | One-command environment setup | az, azd, pwsh |
+| `Setup-Environment.ps1` | One-command environment setup plus preflight validation | az, azd, pwsh |
+| `Validate-Environment.ps1` | Validate subscription, region, Bicep inputs, and soft-deleted Key Vault conflicts before `azd up` | az, azd, pwsh |
 | `Post-Deploy.ps1` | Post-deployment config (RBAC, keys) | az, azd, pwsh |
 | `Redeploy.ps1` | Quick code redeploy | git, func, az, pwsh |
 | `Setup-FabricWorkspace.ps1` | Create Fabric workspace + Lakehouse | az, pwsh |

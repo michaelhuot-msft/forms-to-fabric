@@ -22,6 +22,8 @@
     Skip Fabric capacity creation (use if your org already has one)
 .PARAMETER CapacityName
     Fabric capacity name (alphanumeric only, no hyphens)
+.PARAMETER SkipValidation
+    Skip the final preflight validation before running azd up
 .EXAMPLE
     pwsh scripts/Setup-Environment.ps1 -SubscriptionId "7a5070f6-..." -AdminEmail "you@org.com"
 .EXAMPLE
@@ -38,12 +40,14 @@ param(
     [string]$SubscriptionId  = "",
     [string]$AdminEmail      = "",
     [switch]$SkipCapacity,
+    [switch]$SkipValidation,
     [string]$CapacityName    = "",
     [string]$ResourceGroup   = "",
     [string]$FabricSku       = "F2"
 )
 
 $ErrorActionPreference = "Stop"
+$usingDefaultLocation = -not $PSBoundParameters.ContainsKey("Location")
 
 Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "  Forms to Fabric — Environment Setup" -ForegroundColor Cyan
@@ -72,16 +76,48 @@ if (-not $AdminEmail) {
 if (-not $CapacityName) { $CapacityName = "formstofabric$EnvironmentName" }
 if (-not $ResourceGroup) { $ResourceGroup = "rg-forms-to-fabric-$EnvironmentName" }
 
-Write-Host "`nConfiguration:" -ForegroundColor White
+Write-Host "Selecting Azure subscription..." -ForegroundColor White
+az account set --subscription $SubscriptionId 2>$null
+if ($LASTEXITCODE -ne 0) {
+    throw "Could not select subscription '$SubscriptionId'. Verify access and try again."
+}
+$subscriptionName = (az account show --query "name" -o tsv 2>$null)
+Write-Host "  Using: $subscriptionName ($SubscriptionId)" -ForegroundColor Green
+
+Write-Host "`n────────────────────────────────────────" -ForegroundColor DarkGray
+Write-Host "  Configuration Summary" -ForegroundColor White
+Write-Host "────────────────────────────────────────" -ForegroundColor DarkGray
 Write-Host "  Environment:    $EnvironmentName"
 Write-Host "  Location:       $Location"
-Write-Host "  Subscription:   $SubscriptionId"
+Write-Host "  Subscription:   $subscriptionName ($SubscriptionId)"
 Write-Host "  Admin:          $AdminEmail"
 Write-Host "  Resource Group: $ResourceGroup"
 if (-not $SkipCapacity) {
     Write-Host "  Capacity:       $CapacityName ($FabricSku)"
 }
+Write-Host "────────────────────────────────────────" -ForegroundColor DarkGray
+
+if ($usingDefaultLocation) {
+    Write-Host "  Note: Location '$Location' is the script default." -ForegroundColor Yellow
+    Write-Host "  Pass -Location <region> to change it (e.g. -Location eastus)." -ForegroundColor Yellow
+}
 Write-Host ""
+
+$confirm = Read-Host "Proceed with these settings? (Y/n)"
+if ($confirm -and $confirm.Trim().ToLower() -notin @("y", "yes", "")) {
+    Write-Host "`nSetup cancelled. Re-run with the correct parameters, for example:" -ForegroundColor Yellow
+    Write-Host "  pwsh scripts/Setup-Environment.ps1 -Location eastus -AdminEmail you@org.com" -ForegroundColor White
+    Write-Host "`nAvailable parameters:" -ForegroundColor White
+    Write-Host "  -EnvironmentName <name>    azd environment (default: dev)" -ForegroundColor White
+    Write-Host "  -Location <region>         Azure region (default: canadaeast)" -ForegroundColor White
+    Write-Host "  -SubscriptionId <id>       Azure subscription ID" -ForegroundColor White
+    Write-Host "  -AdminEmail <email>        Admin email for alerts and capacity" -ForegroundColor White
+    Write-Host "  -SkipCapacity              Skip Fabric capacity creation" -ForegroundColor White
+    Write-Host "  -CapacityName <name>       Fabric capacity name" -ForegroundColor White
+    Write-Host "  -FabricSku <sku>           Fabric SKU (F2-F64)" -ForegroundColor White
+    Write-Host "  -ResourceGroup <name>      Azure resource group name" -ForegroundColor White
+    exit 0
+}
 
 # ── Step 1: azd environment ──────────────────────────────────────────────────
 
@@ -154,6 +190,21 @@ azd env set FABRIC_WORKSPACE_ID $workspaceId
 azd env set FABRIC_LAKEHOUSE_ID $lakehouseId
 Write-Host "  FABRIC_WORKSPACE_ID = $workspaceId" -ForegroundColor Green
 Write-Host "  FABRIC_LAKEHOUSE_ID = $lakehouseId" -ForegroundColor Green
+
+# ── Step 6: Validate azd deployment inputs ───────────────────────────────────
+
+if (-not $SkipValidation) {
+    Write-Host "`nStep 6: Validating deployment inputs..." -ForegroundColor Cyan
+    & "$scriptDir/Validate-Environment.ps1" `
+        -EnvironmentName $EnvironmentName `
+        -ResourceGroup $ResourceGroup `
+        -SubscriptionId $SubscriptionId `
+        -Location $Location `
+        -FabricWorkspaceId $workspaceId `
+        -FabricLakehouseId $lakehouseId
+} else {
+    Write-Host "`nStep 6: Skipping validation (-SkipValidation)." -ForegroundColor Yellow
+}
 
 # ── Done ────────────────────────────────────────────────────────────────────
 

@@ -77,7 +77,7 @@ az login
 pwsh scripts/Setup-Environment.ps1
 ```
 
-Subscription ID and admin email are auto-detected from your Azure CLI login.
+Subscription ID and admin email are auto-detected from your Azure CLI login. If you do not pass `-Location`, the script uses its built-in default of `canadaeast`, selects the target Azure subscription explicitly, and runs a preflight validation before it tells you to run `azd up`.
 
 **Common options:**
 
@@ -90,6 +90,9 @@ pwsh scripts/Setup-Environment.ps1 -SkipCapacity
 
 # Override all defaults
 pwsh scripts/Setup-Environment.ps1 -SubscriptionId "<id>" -AdminEmail "you@org.com" -Location eastus
+
+# Skip the final preflight validation if you need to troubleshoot manually
+pwsh scripts/Setup-Environment.ps1 -SkipValidation
 ```
 
 | Parameter | Default | Description |
@@ -99,10 +102,11 @@ pwsh scripts/Setup-Environment.ps1 -SubscriptionId "<id>" -AdminEmail "you@org.c
 | `-EnvironmentName` | `dev` | azd environment name |
 | `-Location` | `canadaeast` | Azure region |
 | `-SkipCapacity` | off | Skip Fabric capacity creation. You must attach the workspace to an existing capacity yourself. |
+| `-SkipValidation` | off | Skip the final `Validate-Environment.ps1` preflight check before `azd up` |
 | `-CapacityName` | `formstofabric{env}` | Capacity name (alphanumeric only) |
 | `-FabricSku` | `F2` | Fabric SKU (F2–F64) |
 
-The script outputs the workspace and Lakehouse IDs and sets them in your azd environment automatically.
+The script outputs the workspace and Lakehouse IDs, sets them in your azd environment automatically, and then validates the Bicep deployment inputs. If a soft-deleted Key Vault name would block deployment, the validation step prints the exact purge command before you run `azd up`.
 
 <details>
 <summary><strong>Manual alternative</strong></summary>

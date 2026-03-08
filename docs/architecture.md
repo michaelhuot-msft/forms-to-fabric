@@ -1,47 +1,58 @@
 # Forms to Fabric — Architecture
 
 > **Audience:** IT Leadership, Security, and Compliance Teams
-> **Last Updated:** 2026-03-05
+> **Last Updated:** 2026-03-08
 
 
 ---
 
 ## System Overview
 
-The Forms to Fabric pipeline enables clinicians to submit structured data through Microsoft Forms, which is automatically processed, de-identified, and delivered to a Microsoft Fabric Lakehouse for analytics and reporting. The pipeline is fully contained within the Microsoft cloud ecosystem, requires no third-party services, and enforces a two-layer data model that separates protected health information (PHI) from reporting-ready data.
+The Forms to Fabric pipeline enables clinicians to submit structured data through Microsoft Forms, which is automatically processed, de-identified, and delivered to a Microsoft Fabric Lakehouse for analytics and reporting. The pipeline is fully contained within the Microsoft cloud ecosystem, requires no third-party services, and enforces a two-layer data model that separates protected health information (PHI) from reporting-ready data. It also includes a self-service registration flow that creates per-form Power Automate pipelines and failure-alert emails for operators.
 
 All infrastructure is defined as code using Bicep and deployed via the Azure Developer CLI (`azd`). Secrets are managed through Azure Key Vault, and observability is provided by Application Insights.
 
 ### Architecture Diagram
 
 ```mermaid
-graph TB
-    subgraph M365["Microsoft 365 Tenant"]
-        forms["Microsoft Forms"]
-        pa["Power Automate"]
+flowchart TB
+    subgraph Control["Onboarding and control plane"]
+        RegForm["Registration form"]
+        RegFlow["Registration flow"]
+        Register["register-form endpoint"]
+        Activate["activate-form endpoint"]
+        FlowApi["Flow API"]
     end
 
-    subgraph Azure["Azure Subscription"]
-        func["Azure Function<br/>(process_response)"]
-        kv["Key Vault"]
-        ai["Application Insights"]
-        sa["Storage Account"]
+    subgraph Data["Data plane"]
+        Survey["Data collection forms"]
+        PerFlow["Per-form data flows"]
+        Process["process-response endpoint"]
+        Registry["Blob registry"]
+        Lakehouse["Fabric Lakehouse"]
+        Alerts["Failure alert email"]
+        PowerBI["Power BI DirectLake"]
     end
 
-    subgraph Fabric["Microsoft Fabric"]
-        subgraph LH["Lakehouse"]
-            raw["Raw Layer"]
-            curated["Curated Layer"]
-        end
-        pbi["Power BI<br/>(DirectLake mode)"]
-    end
+    RegForm --> RegFlow --> Register
+    Register --> Registry
+    Register --> FlowApi --> PerFlow
+    Activate --> Registry
+    Survey --> PerFlow --> Process
+    Process --> Registry
+    Process --> Lakehouse --> PowerBI
+    PerFlow --> Alerts
 
-    forms -->|"New submission"| pa
-    pa -->|"HTTPS POST"| func
-    func -->|"Write raw + curated"| LH
-    func -.->|"Managed Identity"| kv
-    func -.->|"Telemetry"| ai
-    curated -->|"DirectLake"| pbi
+    classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
+    classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
+    classDef warning fill:#ffd43b,stroke:#e67700,color:#1a1a2e
+    classDef danger fill:#ff8787,stroke:#c92a2a,color:#1a1a2e
+    classDef info fill:#b197fc,stroke:#6741d9,color:#1a1a2e
+
+    class RegForm,Survey primary
+    class RegFlow,Register,Activate,FlowApi,PerFlow,Process,Registry info
+    class Lakehouse,PowerBI success
+    class Alerts warning
 ```
 
 ---
@@ -51,7 +62,7 @@ graph TB
 | Component | Role | Key Details |
 |---|---|---|
 | **Microsoft Forms** | Data capture | Clinicians create and submit structured forms. Responses are transient; no PHI is stored long-term in Forms. Lives within the M365 tenant. |
-| **Power Automate** | Event-driven trigger | Detects new form submissions and retrieves full response details. Sends an HTTPS POST to the Azure Function. Handles error notifications to operations staff. |
+| **Power Automate** | Event-driven orchestration | The registration flow provisions per-form data flows, and each per-form flow retrieves Forms responses, posts them to the Azure Function, and sends failure email alerts when processing fails. |
 | **Azure Function (Python)** | Core processing engine | Validates the incoming payload, looks up per-form configuration in `form-registry.json`, applies de-identification rules, and writes to both raw and curated Lakehouse layers. Runs on a Consumption plan. Authenticates to downstream services via managed identity. |
 | **Azure Key Vault** | Secrets management | Stores function keys, connection strings, and encryption keys. Accessed exclusively via managed identity — no credentials in code or configuration files. Soft-delete and purge protection enabled. |
 | **Application Insights** | Monitoring and diagnostics | Tracks function execution performance, error rates, and custom metrics (e.g., records processed, de-identification operations). Powers operational alerting and dashboards. |
@@ -59,11 +70,11 @@ graph TB
 | **Fabric Capacity** | Infrastructure | Fabric compute capacity (F2+ SKU) provisioned via Bicep (`infra/modules/fabric-capacity.bicep`). Assigned to the workspace that hosts the Lakehouse. Scales from F2 (dev) to F64 (production). |
 | **Microsoft Fabric Lakehouse** | Analytical data store | Two-layer architecture (raw + curated) built on OneLake. Data stored in Delta Lake format for ACID transactions, time travel, and schema enforcement. |
 | **Power BI** | Reporting and visualization | Connects to the Lakehouse in DirectLake mode for near-real-time queries without data duplication. Supports row-level security for department-scoped access. |
-| **Schema Monitor** (`monitor_schema`) | Automated compliance | Timer-triggered function (every 6 hours) that polls Microsoft Graph API to detect form structure changes. Alerts admins when clinicians add, remove, or rename questions. |
+| **Schema Monitor** (`monitor_schema`) | Automated compliance | Timer-triggered function (every 6 hours) that compares registered schemas and logs detected changes. The current implementation logs alerts and can be extended to send notifications. |
 | **RBAC Auditor** (`audit_rbac`) | Access compliance | Daily timer-triggered function that audits Fabric workspace role assignments. Flags any non-admin user with access to raw (PHI) layer and logs violations to Application Insights. |
-| **Flow Generator** (`generate_flow`) | Admin automation | HTTP endpoint that generates importable Power Automate flow definitions for registered forms, reducing manual flow creation from 15 minutes to 2 minutes. |
-| **Registration Endpoint** (`register_form`) | Self-service onboarding | HTTP POST endpoint (`/api/register-form`) that accepts a form URL, description, and PHI flag. Creates a form-registry entry and returns status: `active` (non-PHI, auto-activated) or `pending_review` (PHI, requires IT review). |
-| **Activation Endpoint** (`activate_form`) | Admin approval | HTTP POST endpoint (`/api/activate-form`) that transitions a form from `pending_review` to `active` status. Called by IT after reviewing and classifying PHI fields. Triggers clinician notification. |
+| **Flow Generator** (`generate_flow`) | Admin automation | HTTP endpoint that generates workflow-definition JSON for manual troubleshooting or custom automation. The normal registration path uses `flow_create_body` returned by `register_form`. |
+| **Registration Endpoint** (`register_form`) | Self-service onboarding | HTTP POST endpoint (`/api/register-form`) that accepts a form URL, short name, and PHI flag. Creates a form-registry entry and returns `flow_create_body` plus a status of `active` or `pending_review`. |
+| **Activation Endpoint** (`activate_form`) | Admin approval | HTTP POST endpoint (`/api/activate-form`) that transitions a form from `pending_review` to `active` after IT classifies PHI fields. |
 
 ---
 
@@ -71,22 +82,27 @@ graph TB
 
 Three automated functions run alongside the core processing pipeline to reduce manual administration:
 
-- **Schema Monitor** detects form structure changes every 6 hours by polling the Microsoft Graph API.
+- **Schema Monitor** detects form structure changes every 6 hours and logs the deltas for review.
 - **RBAC Auditor** checks Fabric workspace access daily at 8 AM UTC and flags unauthorized raw-layer access.
-- **Flow Generator** provides on-demand Power Automate flow definitions via HTTP GET, reducing flow creation from 15 minutes to 2 minutes.
-- **Self-Service Registration** allows clinicians to register forms via a simple 3-question Microsoft Form. A Power Automate flow calls the `register-form` endpoint, which auto-activates non-PHI forms and routes PHI forms to IT for review via Teams notification. IT activates PHI forms by calling the `activate-form` endpoint after classifying sensitive fields.
+- **Flow Generator** provides on-demand workflow-definition JSON for debugging or advanced/manual flow automation.
+- **Self-Service Registration** allows clinicians to register forms via a simple 3-question Microsoft Form. The registration flow calls `register-form`, stores the returned status, and posts `flow_create_body` to the Flow API to create the per-form flow. PHI forms remain `pending_review` until IT activates them.
+- **Fabric Capacity Workflow** suspends the capacity nightly and allows manual or deploy-time resume.
 - **Registry Management CLI** (`scripts/Manage-Registry.ps1`) lists and manages `form-registry.json` entries.
 - **Key Rotation Script** (`scripts/rotate_function_key.py`) automates function key rotation with zero-downtime.
 
 ```mermaid
-graph LR
-    subgraph "Automated Admin Functions"
-        SM[Schema Monitor<br/>Every 6 hours] -->|polls| GRAPH[Microsoft Graph API]
-        RA[RBAC Auditor<br/>Daily 8 AM] -->|checks| FABRIC[Fabric Workspace]
-        FG[Flow Generator<br/>On demand] -->|generates| PA[Power Automate Definitions]
-    end
-    SM -->|alerts| AI[Application Insights]
-    RA -->|alerts| AI
+flowchart LR
+    SM["Schema Monitor every 6 hours"] --> AI["Application Insights"]
+    RA["RBAC Auditor daily"] --> FABRIC["Fabric Workspace"]
+    FG["Flow Generator on demand"] --> DEF["Workflow definition JSON"]
+    CAP["GitHub Actions capacity workflow"] --> FABRIC
+
+    classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
+    classDef info fill:#b197fc,stroke:#6741d9,color:#1a1a2e
+    classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
+
+    class SM,RA,FG,CAP primary
+    class AI,FABRIC,DEF info
 ```
 
 ---
@@ -98,8 +114,9 @@ The following sequence describes the end-to-end processing of a single form subm
 1. **Clinician submits** a response via Microsoft Forms.
 2. **Power Automate trigger fires** automatically on the new submission event.
 3. **Power Automate retrieves** the full response details from the Forms service.
-4. **Power Automate sends an HTTP POST** to the Azure Function endpoint with the structured payload:
-   - `form_id`, `response_id`, `submitted_at`, `respondent_email`, `answers`
+4. **Power Automate sends an HTTP POST** to the Azure Function endpoint with the current raw-response payload:
+   - `form_id`
+   - `raw_response` (the full Forms response body)
 5. **Azure Function validates** the request and looks up the form configuration in `form-registry.json` to determine field-level processing rules.
 6. **Function writes the raw response** to the Lakehouse **raw layer** — all fields, unmodified — for audit and reprocessing purposes.
 7. **Function applies de-identification rules** per the field configuration (redact, hash, generalize, encrypt, or pass-through).
@@ -121,10 +138,10 @@ sequenceDiagram
     C->>MF: 1. Submit response
     MF->>PA: 2. Trigger fires on new submission
     PA->>MF: 3. Retrieve full response details
-    PA->>AF: 4. HTTP POST (form_id, response_id, answers)
+    PA->>AF: 4. HTTP POST (form_id, raw_response)
     AF->>FR: 5. Look up form config & field rules
     AF->>Raw: 6. Write raw response (all fields, unmodified)
-    Note over AF: 7. Apply de-identification rules<br/>(redact, hash, generalize, encrypt, none)
+    Note over AF: 7. Apply de-identification rules (redact, hash, generalize, encrypt, none)
     AF->>Cur: 8. Write de-identified response
     AF->>PA: 9. Return HTTP 200 OK
     PBI->>Cur: 10. DirectLake query reflects new data
@@ -184,16 +201,16 @@ The Azure Function applies one of the following de-identification methods to eac
 
 ```mermaid
 flowchart TD
-    A{"Is this field<br/>PHI or PII?"} -->|No| B["non_sensitive / none"]
-    A -->|Yes| C{"Does it directly<br/>identify a person?"}
+    A{"Is this field PHI or PII?"} -->|No| B["non_sensitive / none"]
+    A -->|Yes| C{"Does it directly identify a person?"}
     C -->|Yes| D["direct_identifier"]
     C -->|No| E["quasi_identifier"]
-    D --> F{"Need to link<br/>records?"}
+    D --> F{"Need to link records?"}
     F -->|Yes| G["hash"]
-    F -->|No| H{"Need original<br/>value later?"}
+    F -->|No| H{"Need original value later?"}
     H -->|Yes| I["encrypt"]
     H -->|No| J["redact"]
-    E --> K{"Aggregate analysis<br/>needed?"}
+    E --> K{"Aggregate analysis needed?"}
     K -->|Yes| L["generalize"]
     K -->|No| M["redact"]
 ```
@@ -210,15 +227,15 @@ flowchart TD
 ```mermaid
 flowchart LR
     subgraph RawAccess["Raw Layer (Restricted)"]
-        raw_layer["Raw Data<br/>🔒 Full PHI"]
+        raw_layer["Raw Data - Full PHI"]
     end
 
     subgraph CuratedAccess["Curated Layer (Shared)"]
-        curated_layer["De-identified Data<br/>🔓 PHI Removed"]
+        curated_layer["De-identified Data - PHI Removed"]
     end
 
     subgraph PBIAccess["Power BI (Row-Level Security)"]
-        pbi_rls["Department-Scoped<br/>Reports"]
+        pbi_rls["Department-Scoped Reports"]
     end
 
     admin["IT Admins"] --> raw_layer

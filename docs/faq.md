@@ -287,26 +287,26 @@ For field-level configuration changes, edit the blob registry directly. See the 
 
 ### How do I quickly set up a Power Automate flow for a new form?
 
-Use the flow generator endpoint instead of building flows manually:
+Use the **self-service registration flow** instead of building a per-form flow by hand:
 
-1. Call: `GET https://<function-app>/api/generate-flow?form_id=<your-form-id>`
-2. Save the returned JSON as a `.json` file
-3. In Power Automate, go to **My flows** → **Import** → upload the file
-4. Configure your Forms and Key Vault connections
-5. Save and enable the flow
+1. Submit the registration form with the form link, short name, and PHI flag
+2. The registration flow calls `POST /api/register-form`
+3. The response contains `flow_create_body`
+4. Power Automate posts `body('RegisterForm')?['flow_create_body']` to the Flow API
+5. A per-form data flow is created automatically
 
-This reduces setup from ~15 minutes to ~2 minutes and eliminates common configuration errors.
+If you need a manual fallback, use `pwsh scripts/Generate-FlowBody.ps1 -FormUrl "https://forms.office.com/..."` and build the flow manually.
 
 ---
 
 ### How does self-service registration work?
 
-When a clinician fills out the registration form, a Power Automate flow picks up the submission and calls the `POST /api/register-form` endpoint on the Azure Function. The endpoint creates a new entry in `form-registry.json` and returns a status:
+When a clinician fills out the registration form, a Power Automate flow picks up the submission and calls the `POST /api/register-form` endpoint on the Azure Function. The endpoint creates a new entry in `form-registry.json`, returns `flow_create_body`, and returns a status:
 
-- **Non-PHI forms** are activated immediately (`status: active`). The clinician receives an email confirmation, and a response-processing flow can be generated right away.
-- **PHI forms** are set to `status: pending_review`. IT receives a Teams adaptive card notification with the form details. An admin must review the form, classify PHI fields by editing the blob registry directly (field classification via CLI is a future enhancement), and call `POST /api/activate-form` to activate it. The clinician is notified by email once activation is complete.
+- **Non-PHI forms** are activated immediately (`status: active`). The per-form response-processing flow can start working right away.
+- **PHI forms** are set to `status: pending_review`. The per-form flow can still be created, but the Azure Function returns 403 until IT reviews the form, classifies PHI fields in the blob registry, and calls `POST /api/activate-form`.
 
-See [docs/registration-form-template.md](registration-form-template.md) for the registration form setup and `power-automate/registration-flow-template.json` for the flow reference.
+See [docs/registration-form-template.md](registration-form-template.md) for the registration form setup and [docs/admin-guide.md](admin-guide.md) for the PHI review process.
 
 ---
 

@@ -7,8 +7,24 @@ A solution that enables clinicians to create questionnaires using Microsoft Form
 ## Architecture Overview
 
 ```mermaid
-graph LR
-    A["Microsoft Forms"] --> B["Power Automate"] --> C["Azure Function"] --> D["Fabric Lakehouse"] --> E["Power BI"]
+flowchart LR
+    Clinician["Clinician"] --> Intake["Registration Form"]
+    Intake --> Registration["Registration Flow"]
+    Registration --> Register["POST /api/register-form"]
+    Register --> DataFlow["Per-form Data Flow"]
+    Clinician --> Survey["Data Collection Form"]
+    Survey --> DataFlow
+    DataFlow --> Process["POST /api/process-response"]
+    Process --> Lakehouse["Fabric Lakehouse"]
+    Lakehouse --> PowerBI["Power BI"]
+
+    classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
+    classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
+    classDef info fill:#b197fc,stroke:#6741d9,color:#1a1a2e
+
+    class Clinician,Intake,Survey primary
+    class Registration,Register,DataFlow,Process info
+    class Lakehouse,PowerBI success
 ```
 
 ### Key Features
@@ -37,6 +53,7 @@ graph LR
 
 ```bash
 # Clone and deploy
+az login
 git clone <repo-url>
 cd forms-to-fabric
 pwsh scripts/Setup-Environment.ps1
@@ -44,7 +61,11 @@ azd up
 pwsh scripts/Post-Deploy.ps1
 ```
 
-See [docs/setup-guide.md](docs/setup-guide.md) for detailed deployment instructions.
+Then follow:
+
+- [docs/setup-guide.md](docs/setup-guide.md) for the full deployment runbook
+- [docs/deployment-prerequisites.md](docs/deployment-prerequisites.md) for tool, API, and environment requirements
+- [docs/service-account-guide.md](docs/service-account-guide.md) for the recommended Power Automate service account setup
 
 ## Documentation
 
@@ -54,6 +75,8 @@ See [docs/setup-guide.md](docs/setup-guide.md) for detailed deployment instructi
 | [Admin Guide](docs/admin-guide.md) | IT / Admins | Register forms, configure de-id, manage access |
 | [Architecture](docs/architecture.md) | IT Leadership | Data flow, security, and compliance |
 | [Setup Guide](docs/setup-guide.md) | DevOps | Step-by-step deployment instructions |
+| [Deployment Prerequisites](docs/deployment-prerequisites.md) | DevOps / Admins | Required tools, packages, APIs, and environment variables |
+| [Service Account Guide](docs/service-account-guide.md) | IT / Admins | Recommended ownership model for flows, connectors, and alert mailbox |
 | [Registration Form Template](docs/registration-form-template.md) | IT / Admins | Build the self-service intake form and registration flow |
 | [FAQ](docs/faq.md) | Everyone | Common questions and answers |
 | [Automation Gaps](docs/automation-gaps.md) | IT / DevOps | Admin burden assessment and remediation |
@@ -82,6 +105,7 @@ forms-to-fabric/
 │   ├── Setup-FabricWorkspace.ps1  # Fabric workspace provisioning
 │   ├── Post-Deploy.ps1         # Post-deploy: Fabric access + key storage
 │   ├── Redeploy.ps1            # Code-only Azure Functions redeploy
+│   ├── Destroy-Environment.ps1 # Full teardown of Azure, Fabric, and PA flows
 │   └── install-hooks.sh        # Install local git hooks
 ├── config/             # Form registry configuration + JSON schema
 ├── power-automate/     # Power Automate flow templates

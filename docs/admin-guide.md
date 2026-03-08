@@ -8,48 +8,69 @@ The pipeline flow is: **Microsoft Forms → Power Automate → Azure Function (`
 
 ```mermaid
 flowchart LR
-    A["1. Get Form ID"] --> B["2. Add to Registry JSON"]
-    B --> C["3. Deploy Config"]
-    C --> D["4. Create Power Automate Flow"]
-    D --> E["5. Test Submission"]
-    E --> F["6. Notify Clinician"]
+    Intake["Registration form"] --> Registration["Registration flow"]
+    Registration --> Register["POST /api/register-form"]
+    Register --> Registry["Blob registry entry"]
+    Register --> CreateFlow["flow_create_body returned"]
+    CreateFlow --> DataFlow["Per-form data flow"]
+    DataFlow --> Process["POST /api/process-response"]
+    Process --> Lakehouse["Fabric Lakehouse"]
+    DataFlow --> Alerts["Failure alert email"]
+
+    classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
+    classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
+    classDef info fill:#b197fc,stroke:#6741d9,color:#1a1a2e
+    classDef danger fill:#ff8787,stroke:#c92a2a,color:#1a1a2e
+
+    class Intake,Registration primary
+    class Register,CreateFlow,DataFlow,Process,Registry info
+    class Lakehouse success
+    class Alerts danger
 ```
 
 ---
 
 ## Self-Service Registration
 
-Clinicians can now register their own forms without emailing IT. They fill out a short "Register Your Form" Microsoft Form (3 questions), and a Power Automate flow handles the rest. Non-PHI forms are activated instantly; PHI forms are routed to IT for review.
+Clinicians can now register their own forms without emailing IT. They fill out a short "Register Your Form" Microsoft Form (3 questions), and a Power Automate flow handles the rest. Non-PHI forms are activated instantly; PHI forms are stored as `pending_review` until IT classifies the fields and activates them.
 
 ### How It Works End-to-End
 
 ```mermaid
 flowchart TD
-    A["Clinician fills out<br/>Register Your Form"] --> B["Power Automate triggers"]
+    A["Clinician fills out Register Your Form"] --> B["Power Automate triggers"]
     B --> C["Flow calls POST /api/register-form"]
+    C --> E["Flow API creates per-form flow"]
     C --> D{"has_phi?"}
-    D -->|No| E["Status: active<br/>Auto-activated"]
-    D -->|Yes| F["Status: pending_review<br/>Quarantined"]
-    E --> G["📧 Confirmation email<br/>sent to clinician"]
-    F --> H["💬 Teams adaptive card<br/>posted to IT channel"]
-    H --> I["IT reviews form &<br/>classifies PHI fields"]
-    I --> J["IT calls POST /api/activate-form"]
-    J --> K["Status: active"]
-    K --> L["📧 Clinician notified"]
+    D -->|No| F["Status active"]
+    D -->|Yes| G["Status pending_review"]
+    F --> H["Responses accepted immediately"]
+    G --> I["IT reviews registry and flow history"]
+    I --> J["IT classifies PHI fields"]
+    J --> K["IT calls POST /api/activate-form"]
+    K --> H
+
+    classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
+    classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
+    classDef warning fill:#ffd43b,stroke:#e67700,color:#1a1a2e
+    classDef info fill:#b197fc,stroke:#6741d9,color:#1a1a2e
+
+    class A,B,C,E primary
+    class F,H,K success
+    class D,G,I,J warning
 ```
 
 ### What IT Sees for PHI Forms
 
-When a clinician registers a form that collects patient information, IT receives a **Teams adaptive card** in the configured review channel. The card includes:
+The current implementation does **not** send a built-in Teams review card or activation email. To find PHI forms waiting for review, use:
 
-- **Form name** and **form URL** (clickable link to open the form)
-- **Submitter's email** (the clinician who registered)
-- **Form ID** (for use with CLI tools and API calls)
-- **"Review in Admin Guide" button** linking to this documentation
+- `pwsh scripts/Manage-Registry.ps1 -List` to see forms with `status: pending_review`
+- The registration flow run history in Power Automate to inspect the original submission
+- The blob-backed registry (`form-registry/registry.json`) if you need to review the raw entry
 
 ### Steps to Review and Activate a PHI Form
 
-1. **Open the form link** in the Teams notification and review the questions. Identify which fields contain PHI (names, dates of birth, MRNs, etc.).
+1. **Open the form link** from the registration entry or Power Automate run history and review the questions. Identify which fields contain PHI (names, dates of birth, MRNs, etc.).
 
 2. **Classify PHI fields** by editing the blob registry directly. For each sensitive field, add the appropriate de-identification configuration to the form's entry in blob storage. This is a future enhancement — a streamlined CLI for field classification is planned.
 
@@ -65,12 +86,12 @@ When a clinician registers a form that collects patient information, IT receives
      -d '{"form_id": "<form-id>"}'
    ```
 
-4. **The clinician is notified** automatically — they receive an email confirming their form is now connected to the pipeline.
+4. **Test the form after activation** by submitting a sample response. The per-form flow already exists; once the status changes to `active`, new submissions should succeed.
 
 ### Reference
 
 - **Registration form setup:** See [docs/registration-form-template.md](registration-form-template.md) for creating the intake form.
-- **Flow template:** See `power-automate/registration-flow-template.json` for the Power Automate flow reference.
+- **Service account + connector ownership:** See [docs/service-account-guide.md](service-account-guide.md).
 
 ---
 
@@ -188,41 +209,23 @@ git push
 
 ### Step 5: Create the Power Automate Flow
 
-#### Option A: Generate and Import a Flow (Recommended)
+For the normal path, skip this section: the **registration flow creates the per-form data flow automatically** by posting `body('RegisterForm')?['flow_create_body']` to the Flow API.
 
-Use the `generate-flow` admin endpoint to produce a ready-to-import flow definition — this reduces setup from ~15 minutes to ~2 minutes.
+If you need a manual fallback, use the helper script and build the flow yourself:
 
-1. **Call the endpoint** to generate the flow JSON for your form:
+1. Run:
+   ```powershell
+   pwsh scripts/Generate-FlowBody.ps1 -FormUrl "https://forms.office.com/..."
    ```
-   GET https://<function-app>.azurewebsites.net/api/generate-flow?form_id=<id>&code=<function-key>
-   ```
-   You can also pass optional `function_app_url` and `key_vault_name` query parameters to override the defaults.
+2. In Power Automate, create an **Automated cloud flow**:
+   - Trigger: **When a new response is submitted**
+   - Action: **Get response details**
+   - Action: **HTTP** → `POST /api/process-response`
+3. Paste the URI, headers, and request body from the script output.
+4. Add **Send an email V2** on the failure branch if you want manual flows to mirror the generated alert behavior.
+5. Save and test the flow with a sample submission.
 
-2. **Save the response** as a `.json` file (e.g. `my-form-flow.json`).
-
-3. In **Power Automate**, go to **My Flows → Import → Import Package (Legacy)**.
-
-4. **Upload** the JSON file.
-
-5. **Configure connections** — you will be prompted to link your Microsoft Forms, Azure Key Vault, and Office 365 Outlook connections.
-
-6. **Done** — the flow is ready to use. Submit a test response to verify end-to-end processing.
-
-#### Option B: Create a Flow Manually (Fallback)
-
-1. Open [Power Automate](https://make.powerautomate.com).
-2. Create a new **Automated cloud flow**.
-3. Set the trigger to **When a new response is submitted** (Microsoft Forms connector).
-4. Select the form you registered.
-5. Add a **Get response details** action to retrieve the full response.
-6. Add an **HTTP** action to call the Azure Function:
-   - **Method:** POST
-   - **URI:** `https://<your-function-app>.azurewebsites.net/api/process-response`
-   - **Headers:** `x-functions-key: <function-key-from-key-vault>`
-   - **Body:** The response details JSON from the previous step, including `form_id`
-7. Save and test the flow.
-
-See the `power-automate/` directory for reference flow templates.
+The `GET /api/generate-flow` endpoint is still useful for diagnostics or custom automation, but it returns a workflow-definition JSON document, not a Power Automate import package.
 
 ### Step 6: Test with a Sample Submission
 
@@ -442,7 +445,7 @@ The `monitor_schema` function (timer-triggered, runs every 6 hours) automaticall
 
 **When changes are detected:**
 - A warning is logged to Application Insights (searchable via the KQL queries above)
-- If `ADMIN_ALERT_EMAIL` is configured, an email notification is sent
+- If `ADMIN_ALERT_EMAIL` is configured, the function logs that an email target exists, but actual delivery still needs to be wired to a notification service
 
 **KQL query to find schema change alerts:**
 
@@ -599,9 +602,12 @@ The script will:
 2. Store the new key in Key Vault as the secret `function-app-key`.
 3. Print the names of any old `power-automate-*` keys for manual cleanup.
 
-If your Power Automate flow uses the **Key Vault connector** (see `power-automate/flow-template-keyvault.json`), it reads the function key from Key Vault at runtime. After running the rotation script, **no flow edits are required** — every subsequent flow run automatically picks up the new key with zero downtime.
+The rotation script updates Azure and Key Vault, but the current **auto-created flows embed the `FUNCTION_APP_KEY` app setting value** when they are generated. If you rotate the key:
 
-> **Note:** The Key Vault secret `function-app-key` is deployed with a 90-day expiry attribute. Set a calendar reminder or Azure Monitor alert to rotate before it expires.
+1. Update the `FUNCTION_APP_KEY` Function App setting
+2. Recreate or update any per-form flows that still contain the old key value
+
+> **Note:** The script stores the latest key in Key Vault as `function-app-key`, but the secret is not automatically given a 90-day expiry and generated flows do not read it at runtime by default.
 
 #### Manual rotation (fallback)
 
@@ -670,6 +676,22 @@ For most healthcare forms workloads, the **Consumption plan** is sufficient. Swi
 - Monitor Capacity Unit (CU) usage in the Fabric admin portal → **Capacity settings**.
 - Each Lakehouse write consumes CUs — high-volume forms can impact other Fabric workloads.
 - Consider a dedicated capacity for the pipeline if it shares with other analytics workloads.
+
+```mermaid
+flowchart LR
+    Create["Create or reuse capacity"] --> Assign["Assign workspace to capacity"]
+    Assign --> Suspend["Nightly suspend via fabric-capacity.yml"]
+    Suspend --> Resume["Manual or deploy-time resume"]
+    Resume --> Delete["Destroy script resumes before workspace delete"]
+
+    classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
+    classDef warning fill:#ffd43b,stroke:#e67700,color:#1a1a2e
+    classDef danger fill:#ff8787,stroke:#c92a2a,color:#1a1a2e
+
+    class Create,Assign,Resume primary
+    class Suspend warning
+    class Delete danger
+```
 
 ### Power Automate Throttling Limits
 
@@ -800,12 +822,13 @@ The script removes resources in dependency order:
 
 ```mermaid
 flowchart LR
-    A["PA Flows"] --> B["Fabric Workspace"]
-    B --> C["Azure Resource Group"]
-    C --> D["azd Environment"]
+    A["PA flows including Registration Intake"] --> B["Resume capacity if needed"]
+    B --> C["Fabric workspace"]
+    C --> D["Azure resource group"]
+    D --> E["azd environment"]
 
     classDef danger fill:#ff8787,stroke:#c92a2a,color:#1a1a2e
-    class A,B,C,D danger
+    class A,B,C,D,E danger
 ```
 
 ### Options
@@ -817,6 +840,7 @@ flowchart LR
 | `-SkipFabric` | Keep Fabric workspace and data, delete everything else |
 | `-SkipAzure` | Keep Azure resources, only delete PA flows and Fabric |
 | `-FabricWorkspaceId` | Provide workspace ID if not in azd env |
+| `-EnvironmentId` | Override the Power Platform environment used for PA flow cleanup |
 
 ### Safety
 

@@ -113,16 +113,16 @@ Microsoft Forms has **no public API for webhooks or subscriptions**. The only wa
 
 ## Implementation for Option A
 
-The registration PA flow needs 2 additional steps after the `/api/register-form` call:
+The registration PA flow needs one additional success-path step after the `/api/register-form` call:
 
-1. **HTTP GET** to `/api/generate-flow?form_id={form_id}` — gets the flow definition JSON
-2. **"Create Flow"** action (PA Management connector):
-   - Environment: current environment ID
-   - Display Name: "Forms to Fabric — {form_name}"
-   - Definition: output from step 1
-   - State: Enabled
+1. **Invoke an HTTP request** using **HTTP with Microsoft Entra ID**
+   - Resource URI: `https://service.flow.microsoft.com`
+   - Base URL: `https://api.flow.microsoft.com`
+   - Method: `POST`
+   - URL: `/providers/Microsoft.ProcessSimple/environments/Default-<tenant-id>/flows`
+   - Body: `body('RegisterForm')?['flow_create_body']`
 
-The `generate-flow` endpoint already exists and produces valid definitions. The main work is configuring the PA Management connector action with proper connection references.
+The normal path does not call `GET /api/generate-flow`. The `register-form` response already includes `flow_create_body`, including the flow definition and connection references needed by the Flow API.
 
 ### Prerequisites for Option A
 1. Power Automate Premium license for the account running the registration flow

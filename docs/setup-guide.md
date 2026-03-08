@@ -33,6 +33,24 @@ For a comprehensive list of all tools, packages, APIs, and configurations, see [
 | 5 | Test the pipeline | Submit a test response → verify both flows run → check Lakehouse | ~5 min |
 | 6 | Configure Power BI | Connect to Lakehouse | ~10 min |
 
+```mermaid
+flowchart LR
+    Setup["Setup-Environment.ps1"] --> Deploy["azd up"]
+    Deploy --> PostDeploy["Post-Deploy.ps1"]
+    PostDeploy --> AppSettings["Configure flow app settings"]
+    AppSettings --> Registration["Create registration form and flow"]
+    Registration --> Test["Submit test registration and test response"]
+    Test --> Reporting["Connect Power BI to the Lakehouse"]
+
+    classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
+    classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
+    classDef info fill:#b197fc,stroke:#6741d9,color:#1a1a2e
+
+    class Setup,Deploy,PostDeploy info
+    class AppSettings,Registration primary
+    class Test,Reporting success
+```
+
 ---
 
 ## Step 1: Clone the Repository
@@ -80,7 +98,7 @@ pwsh scripts/Setup-Environment.ps1 -SubscriptionId "<id>" -AdminEmail "you@org.c
 | `-AdminEmail` | Auto-detected | Fabric admin + notification email |
 | `-EnvironmentName` | `dev` | azd environment name |
 | `-Location` | `canadaeast` | Azure region |
-| `-SkipCapacity` | off | Skip Fabric capacity creation |
+| `-SkipCapacity` | off | Skip Fabric capacity creation. You must attach the workspace to an existing capacity yourself. |
 | `-CapacityName` | `formstofabric{env}` | Capacity name (alphanumeric only) |
 | `-FabricSku` | `F2` | Fabric SKU (F2–F64) |
 
@@ -149,6 +167,29 @@ This automatically:
 - Retrieves the function key and stores it in Key Vault
 - Prints the Function App URL (needed for the Power Automate flow)
 
+### 3.1 Configure app settings for auto-created flows
+
+Before clinicians submit the registration form, set the Function App settings used when generating per-form flows:
+
+```powershell
+az functionapp config appsettings set `
+  --name <func-app-name> `
+  --resource-group <rg-name> `
+  --settings "FUNCTION_APP_KEY=<current-function-key>" `
+             "FORMS_CONNECTION_NAME=shared-microsoftform-<forms-connection-id>" `
+             "OUTLOOK_CONNECTION_NAME=shared-office365-<outlook-connection-id>" `
+             "ALERT_EMAIL=forms-fabric-alerts@yourdomain.com"
+```
+
+Where each value comes from:
+
+- `FUNCTION_APP_KEY` - the current host key retrieved by `Post-Deploy.ps1`
+- `FORMS_CONNECTION_NAME` - the Microsoft Forms connection owned by your service account
+- `OUTLOOK_CONNECTION_NAME` - the Office 365 Outlook connection used by the generated failure-alert action
+- `ALERT_EMAIL` - the mailbox or distribution list that should receive pipeline failure alerts
+
+> Recommended: complete [Service Account Guide](service-account-guide.md) before Step 4 so the Forms and Outlook connection IDs are already available.
+
 **For later code-only updates:** use `pwsh scripts/Redeploy.ps1` to redeploy the Azure Function via remote build without reprovisioning infrastructure. Continue using `azd up` when you change Bicep or other Azure resources.
 
 **Resources created by `azd up`:**
@@ -171,12 +212,12 @@ The registration form + flow handles everything: form registration, data pipelin
 
 Follow [Registration Form Template](registration-form-template.md) to create a "Register Your Form for Analytics" form with 3 questions:
 1. Paste your form's share link
-2. Briefly describe what this form is for
+2. Give your form a short name
 3. Does this form collect any patient information? (Yes / No)
 
 ### 4.2 Create the registration Power Automate flow
 
-Run the helper script to get the HTTP action values:
+Run the helper script to get the current HTTP action values:
 
 ```powershell
 pwsh scripts/Generate-FlowBody.ps1 -Registration
@@ -186,37 +227,41 @@ Then build the flow with these steps:
 
 1. **Trigger**: When a new response is submitted → select "Register Your Form for Analytics"
 2. **Get response details** → same form, Response Id from trigger
-3. **HTTP POST** to `/api/register-form` — paste URI, headers, body from the script output
-4. **HTTP GET** to generate the data pipeline flow:
-   - URI: `https://<function-app>/api/generate-flow?form_id=@{body('HTTP')?['form_id']}`
-   - Headers: `x-functions-key` (same key)
-5. **Create Flow** (Power Automate Management connector):
-   - Environment: your Power Platform environment ID
-   - Display Name: `Forms to Fabric — @{body('HTTP')?['form_name']}`
-   - Definition: `@{body('HTTP_2')}` (output from step 4)
-6. **Condition** → Status code of step 3 ≠ 200 → send error email
-7. **Save** and enable
+3. **HTTP POST** to `/api/register-form`:
+   - Paste the URI, headers, and body from `Generate-FlowBody.ps1 -Registration`
+   - Rename this action to **`RegisterForm`** so the expressions below work
+4. **Condition** → Status code of `RegisterForm` ≠ `200`
+5. **If no** (success): Add **Invoke an HTTP request** using **HTTP with Microsoft Entra ID**
+   - Resource URI: `https://service.flow.microsoft.com`
+   - Base URL: `https://api.flow.microsoft.com`
+   - Method: `POST`
+   - URL: `/providers/Microsoft.ProcessSimple/environments/Default-<TENANT-ID>/flows`
+   - Body (Expression tab): `body('RegisterForm')?['flow_create_body']`
+6. **If yes** (error): Add **Send an email V2** to notify the admin or support mailbox
+7. **Save** and enable the flow
 
-> ⚠️ **The "Create Flow" action (step 5) requires Power Automate Premium.** If not available, clinicians can manually import the flow definition from the generate-flow endpoint. See [Registration Form Template](registration-form-template.md) for details.
+> ⚠️ **The normal path does not call `GET /api/generate-flow`.** The `register-form` response already contains `flow_create_body`, which the Flow API step posts directly.
 
 ### 4.3 Test the registration flow
 
 1. Submit a test entry via the registration form with a real form URL
 2. Check Power Automate flow run history → should show Succeeded
 3. Verify TWO things were created:
-   - The form appears in the registry: `az storage blob download --account-name <storage> --container-name form-registry --name registry.json --auth-mode key --file -`
-   - A new data pipeline flow appears in Power Automate: "Forms to Fabric — {form name}"
+   - The form appears in the registry: `pwsh scripts/Manage-Registry.ps1 -List`
+   - A new data pipeline flow appears in Power Automate: `Forms to Fabric - {form name}`
 
 ---
 
 ## Step 5: Test the Pipeline
 
 1. Open your data form and submit a test response
-2. Check Power Automate → flow run history for "Forms to Fabric — {form name}" → should show Succeeded
+2. Check Power Automate → flow run history for "Forms to Fabric - {form name}" → should show Succeeded
 3. Check Fabric Lakehouse → Tables → look for `{table_name}_raw`
 4. If the form has PHI fields classified, also check `{table_name}_curated`
 
 > **Note:** Tables are named `{target_table}_raw` and `{target_table}_curated` in Delta Lake format. The `target_table` is auto-derived from the form name during registration.
+>
+> If the Fabric capacity is suspended, the generated per-form flow now sends a failure email to `ALERT_EMAIL`. Resume the capacity, then re-run the failed flow.
 
 ---
 
@@ -249,10 +294,12 @@ To register a new form manually, use the self-service registration form or call 
 | 401 Unauthorized | Invalid function key | Check Key Vault secret or regenerate key |
 | 404 on function endpoint | Functions not registered | See "Functions not loading" below |
 | Data not in Lakehouse | Managed identity lacks access | Grant Function App Contributor on workspace |
+| 503 Service Unavailable with "Fabric capacity is paused or unavailable" | Fabric capacity is suspended | Resume the capacity in Azure Portal or run the Fabric Capacity workflow |
 | De-id not applied | Missing field config | Edit the blob registry to add field configuration |
 | Function timeout | Large payload | Increase `functionTimeout` in `host.json` |
 | Form not registered | form_id mismatch | Verify form_id: `pwsh scripts/Manage-Registry.ps1 -List` |
 | Storage 403 Forbidden | Subscription blocks shared key access | Add `SecurityControl=Ignore` tag to storage account |
+| Auto-created flow fails before reaching the function | Missing `FUNCTION_APP_KEY`, `FORMS_CONNECTION_NAME`, `OUTLOOK_CONNECTION_NAME`, or `ALERT_EMAIL` | Set the Function App app settings from Step 3.1 and recreate the form flow |
 | Local commits miss Bicep validation | Git hook not installed | Run `sh scripts/install-hooks.sh` from the repo root |
 
 ### Functions not loading after deployment

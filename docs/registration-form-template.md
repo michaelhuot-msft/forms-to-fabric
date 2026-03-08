@@ -1,7 +1,7 @@
 # Registration Form Template — "Register Your Form for Analytics"
 
 > **Audience:** IT Administrators
-> **Last Updated:** 2026-03-05
+> **Last Updated:** 2026-03-08
 
 
 ---
@@ -83,6 +83,8 @@ Once the form is saved in Microsoft Forms, complete these steps to connect it to
 
 The registration flow is simple — 5 core steps plus an error email branch. The Azure Function registers the form and returns the `flow_create_body` payload, and the Power Automate flow uses that payload to create the per-form data pipeline flow.
 
+> Before clinicians use the registration form, set `FUNCTION_APP_KEY`, `FORMS_CONNECTION_NAME`, `OUTLOOK_CONNECTION_NAME`, and `ALERT_EMAIL` on the Function App. The generated per-form flows embed those values when `flow_create_body` is created. See [Setup Guide](setup-guide.md#31-configure-app-settings-for-auto-created-flows) and [Service Account Guide](service-account-guide.md).
+
 ```mermaid
 flowchart TD
     T[1. Trigger: When a new response is submitted]
@@ -136,7 +138,7 @@ pwsh scripts/Generate-FlowBody.ps1 -Registration
 Then build the flow:
 
 1. Go to [flow.microsoft.com](https://flow.microsoft.com) → **+ Create** → **Automated cloud flow**
-2. Name it: **"Forms to Fabric — Registration Intake"**
+2. Name it: **"Forms to Fabric - Registration Intake"**
 3. Trigger: **When a new response is submitted** → select "Register Your Form for Analytics"
 4. **+ New step** → **Get response details** → same form, Response Id from trigger
 5. **+ New step** → **HTTP POST** to register-form — paste Method, URI, Headers from the script output. **Rename this action to `RegisterForm`** (click `...` → Rename — no hyphens or spaces). Body:
@@ -181,7 +183,7 @@ Then build the flow:
 
 1. Open the registration form and submit a test entry with a known form link, a description, and **No** for patient info
 2. Verify the Power Automate flow runs successfully (check **Flow run history**)
-3. Verify a new flow appears in Power Automate: **"Forms to Fabric — {form name}"**
+3. Verify a new flow appears in Power Automate: **"Forms to Fabric - {form name}"**
 4. Submit a response to the registered form and check that data appears in Fabric Lakehouse
 
 ---
@@ -193,15 +195,16 @@ flowchart TD
     A[Clinician submits registration form] --> B[Power Automate triggers]
     B --> C[Get response details]
     C --> D[HTTP POST /api/register-form]
-    D --> E[Form registered in blob storage]
-    E --> F[Response includes flow_create_body]
+    D --> E[Blob registry updated]
+    D --> F[Response includes flow_create_body]
     F --> G[Power Automate posts payload to Flow API]
-    G --> H[Data pipeline flow created]
-    H --> I{Collects patient info?}
-    I -- No --> J[All fields in raw and curated]
-    I -- Yes --> K[All fields in raw, unclassified excluded from curated]
-    K --> L[IT classifies PHI fields later]
-    L --> J
+    G --> H[Per-form data flow created]
+    D --> I{Status}
+    I -- active --> J[Responses process immediately]
+    I -- pending_review --> K[Responses return 403 until activation]
+    K --> L[IT classifies PHI fields in registry]
+    L --> M[IT calls POST /api/activate-form]
+    M --> J
 
     classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
     classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
@@ -210,33 +213,28 @@ flowchart TD
     classDef info fill:#b197fc,stroke:#6741d9,color:#1a1a2e
     classDef neutral fill:#ced4da,stroke:#495057,color:#1a1a2e
 
-    A:::primary
-    B:::primary
-    C:::primary
-    D:::primary
-    E:::info
-    F:::info
-    G:::success
-    H:::success
-    I:::warning
-    J:::success
-    K:::warning
-    L:::info
+    class A,B,C,D primary
+    class E,F,G,H,M info
+    class I,K,L warning
+    class J success
 ```
 
 ### Flow Details
 
 | Step | Actor | What Happens |
 |------|-------|--------------|
-| 1 | Clinician | Fills out the registration form with their form link, description, and PHI flag |
-| 2 | Power Automate | Triggers automatically on new submission; calls the Azure Function |
-| 3 | Azure Function | Validates the link, extracts the form ID, creates a registry entry |
-| 4a | System (no PHI) | Sets status to `active`; the form's responses will start flowing into the pipeline |
-| 4b | System (PHI) | Sets status to `pending_review`; sends a notification email to the IT team |
-| 5 | IT Admin | Reviews the form, classifies PHI fields, and activates via `POST /api/activate-form` |
-| 6 | System | Once activated, responses flow into the raw (restricted) layer; PHI fields are excluded from the curated (de-identified) layer |
+| 1 | Clinician | Fills out the registration form with their form link, short name, and PHI flag |
+| 2 | Power Automate | Triggers automatically on new submission and calls `POST /api/register-form` |
+| 3 | Azure Function | Validates the link, extracts the form ID, writes the registry entry, and returns `flow_create_body` |
+| 4 | Power Automate | Posts `flow_create_body` to the Flow API to create the per-form data flow |
+| 5a | System (no PHI) | Sets status to `active`; the per-form flow can process submissions immediately |
+| 5b | System (PHI) | Sets status to `pending_review`; the per-form flow exists, but `process-response` rejects submissions until activation |
+| 6 | IT Admin | Reviews the form, classifies PHI fields, and activates it via `POST /api/activate-form` |
+| 7 | System | Once activated, responses flow into the raw layer and any configured curated layer |
 
-> **Note:** If a registered form's structure changes later, the Schema Monitor function detects the change, notifies IT, and quarantines new fields in the raw layer only until reviewed. See [Architecture — Schema Monitor](architecture.md) and [Decisions Log — D-014](decisions.md#d-014).
+> **Note:** There is no built-in PHI review notification in the current implementation. Admins should monitor `pending_review` forms in the registration flow run history or by using `pwsh scripts/Manage-Registry.ps1 -List`.
+>
+> If a registered form's structure changes later, the Schema Monitor function detects the change, logs it, and quarantines new fields in the raw layer only until reviewed. See [Architecture — Schema Monitor](architecture.md) and [Decisions Log — D-014](decisions.md#d-014).
 
 ---
 

@@ -35,8 +35,8 @@ Three rounds of automation reduced manual touchpoints from **32 to 16** and onbo
 | 5 | Select de-id method | 5-10 min | **Manual (PHI only)** | 5-10 min | Only for PHI forms; guided by decision tree |
 | 6 | Deploy config | 3 min | **ELIMINATED** | 0 | Register-form writes directly; no deploy needed |
 | 7 | Git commit | 2 min | **ELIMINATED** | 0 | Function writes registry at runtime |
-| 8 | Create Power Automate flow | 15 min | **ELIMINATED** | 0 | Registration flow handles this; generate-flow endpoint available for data pipeline flow |
-| 9 | Retrieve function key | 3 min | **ELIMINATED** | 0 | Key Vault connector in all flow templates |
+| 8 | Create Power Automate flow | 15 min | **ELIMINATED** | 0 | Registration flow posts `flow_create_body` to the Flow API; `generate-flow` remains a manual/debug fallback |
+| 9 | Retrieve function key | 3 min | **ELIMINATED** | 0 | No per-form key lookup; generated flows use the `FUNCTION_APP_KEY` app setting value already present on the Function App |
 | 10 | Add response details action | 5 min | **ELIMINATED** | 0 | Included in generated flow definitions |
 | 11 | Configure error notification | 2 min | **ELIMINATED** | 0 | Pre-configured in flow templates |
 | 12 | End-to-end test | 10 min | **Manual** | 10 min | Still requires human verification of dashboard |

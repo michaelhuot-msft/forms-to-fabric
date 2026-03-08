@@ -14,7 +14,7 @@
 | Python packages | 10 runtime + 4 dev | See [Python Dependencies](#python-dependencies) |
 | Bicep modules | 5 | Function App, Storage, Key Vault, App Insights, Fabric Capacity |
 | GitHub Actions | 5 | checkout, setup-python, setup-azd, login, gitleaks |
-| External APIs | 4 | Azure RM, Fabric, Power Automate, Flow Management |
+| External APIs | 6 | Azure RM, Fabric, Flow Management, OneLake endpoints |
 
 ---
 
@@ -36,6 +36,10 @@
 |------|---------|---------|
 | **Azure Functions Core Tools** (`func`) | [Install](https://learn.microsoft.com/azure/azure-functions/functions-run-local) | Local testing, `Redeploy.ps1` |
 | **Bicep CLI** | Auto-installed via `az bicep install` | IaC templates (handled by Azure CLI) |
+
+### PowerShell Modules
+
+No extra PowerShell modules are required. The `.ps1` scripts use built-in PowerShell cmdlets plus external CLIs such as `az`, `azd`, `git`, and `func`.
 
 ### Verify Installation
 
@@ -139,14 +143,19 @@ Set automatically by Bicep and post-deploy scripts:
 | `AzureWebJobsStorage__accountName` | Bicep | Managed identity storage auth |
 | `APPINSIGHTS_INSTRUMENTATIONKEY` | Bicep | Telemetry |
 | `KEY_VAULT_URL` | Bicep | Secret access |
-| `ONELAKE_WORKSPACE` | Post-Deploy | Fabric workspace GUID |
-| `ONELAKE_LAKEHOUSE` | Post-Deploy | Lakehouse GUID |
-| `POWER_PLATFORM_ENVIRONMENT_ID` | Post-Deploy | PA environment for flow creation |
+| `ONELAKE_WORKSPACE` | Bicep | Fabric workspace GUID |
+| `ONELAKE_LAKEHOUSE` | Bicep | Lakehouse GUID |
+| `POWER_PLATFORM_ENVIRONMENT_ID` | azd / Bicep input | PA environment for flow creation |
 | `FORMS_CONNECTION_NAME` | Manual | PA Forms connector ID |
 | `OUTLOOK_CONNECTION_NAME` | Manual | PA Outlook connector ID (alerts) |
-| `FUNCTION_APP_KEY` | Post-Deploy | Host key for PA flow HTTP calls |
+| `FUNCTION_APP_KEY` | Manual | Host key embedded into generated per-form flows |
 | `ADMIN_EMAIL` | Manual | Admin notification email |
 | `ALERT_EMAIL` | Manual | Failure alert recipient (defaults to ADMIN_EMAIL) |
+| `ADMIN_ALERT_EMAIL` | Manual (optional) | Schema monitor logging target |
+| `ALLOWED_RAW_ACCESS_GROUP` | Manual (optional) | Expected admin group for RBAC audit |
+| `FUNCTION_APP_MANAGED_IDENTITY_ID` | Manual (optional) | Managed identity identifier for RBAC audit filtering |
+
+> `Post-Deploy.ps1` retrieves the current function key and stores it in Key Vault, but it does **not** set `FUNCTION_APP_KEY` for you. If you rely on auto-created per-form flows, keep the `FUNCTION_APP_KEY` app setting in sync with the current host key.
 
 ---
 
@@ -164,8 +173,8 @@ Set automatically by Bicep and post-deploy scripts:
 | `FABRIC_RESOURCE_GROUP` | For capacity mgmt | `rg-forms-to-fabric-dev` | Capacity suspend/resume |
 | `FABRIC_CAPACITY_NAME` | For capacity mgmt | `formstofabricdev` | Capacity suspend/resume |
 | `FABRIC_CAPACITY_ID` | If existing | Resource ID | Skip capacity creation |
-| `FABRIC_WORKSPACE_ID` | Set by setup | GUID | Workspace provisioning |
-| `FUNCTION_APP_PRINCIPAL_ID` | Set by setup | GUID | Fabric RBAC |
+| `FABRIC_WORKSPACE_ID` | Optional | GUID | Workspace provisioning / CI setup |
+| `FUNCTION_APP_PRINCIPAL_ID` | Optional | GUID | Fabric RBAC |
 
 ### Authentication: OIDC Federated Credentials
 
@@ -174,6 +183,8 @@ No secrets stored in GitHub. Authentication uses a trust relationship:
 1. Create Azure AD app registration
 2. Add federated credential for the `production` environment
 3. Subject: `repo:michaelhuot-msft/forms-to-fabric:environment:production`
+
+> `Setup-Environment.ps1` populates your local `azd` environment. It does **not** sync values into GitHub repository environments; add the GitHub `production` variables separately in repository settings.
 
 ---
 

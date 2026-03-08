@@ -50,14 +50,14 @@ A shared mailbox requires no additional license and can receive failure notifica
 ### 1.3 Assign licenses
 
 The service account needs:
-- **Microsoft 365 license** (for Microsoft Forms access)
-- **Power Automate license** (included in most M365 business/enterprise plans)
+- **Microsoft 365 license** (for Microsoft Forms and Outlook access)
+- **Power Automate Premium** (required for the HTTP with Microsoft Entra ID connector used by the registration flow)
 
 Go to Microsoft Entra ID → Users → `forms-pipeline@yourdomain.com` → **Licenses** → **+ Assignments** → select the appropriate M365 license.
 
 `[Screenshot placeholder: License assignment page]`
 
-### 1.3 Set password to not expire
+### 1.4 Set password to not expire
 
 ```powershell
 # Connect to Microsoft Graph PowerShell
@@ -69,7 +69,7 @@ Update-MgUser -UserId "forms-pipeline@yourdomain.com" -PasswordPolicies "Disable
 
 Or in Entra ID → Users → `forms-pipeline@yourdomain.com` → **Authentication methods** → configure accordingly.
 
-### 1.4 Enable MFA (recommended)
+### 1.5 Enable MFA (recommended)
 
 Even for service accounts, enable MFA or use Conditional Access policies to restrict sign-in to trusted locations only.
 
@@ -120,6 +120,24 @@ This connection is used to send failure alert emails from auto-created data flow
 
 ## Step 3: Create the Registration Flow Under Service Account
 
+```mermaid
+flowchart LR
+    Service["Service account"] --> FormsConn["Microsoft Forms connection"]
+    Service --> OutlookConn["Office 365 Outlook connection"]
+    Service --> Registration["Registration flow"]
+    Registration --> FlowApi["Flow API call"]
+    FlowApi --> DataFlows["Auto-created data flows"]
+    DataFlows --> Alerts["Shared alert mailbox"]
+
+    classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
+    classDef info fill:#b197fc,stroke:#6741d9,color:#1a1a2e
+    classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
+
+    class Service primary
+    class FormsConn,OutlookConn,Registration,FlowApi info
+    class DataFlows,Alerts success
+```
+
 ### 3.1 While signed in as the service account
 
 Follow the instructions in [Registration Form Template](registration-form-template.md) to create the registration PA flow. All steps are the same, but done under the service account's identity.
@@ -142,22 +160,32 @@ The registration Microsoft Form must be accessible to clinicians:
 
 ## Step 4: Update Environment Variables
 
-Update the Function App with the service account's connection name:
+Update the Function App with the service account's connection names and alert settings:
 
 ```powershell
 az functionapp config appsettings set `
   --name <func-app-name> `
   --resource-group <rg-name> `
-  --settings "FORMS_CONNECTION_NAME=shared-microsoftform-<service-account-connection-id>" `
+  --settings "FUNCTION_APP_KEY=<current-function-key>" `
+             "ADMIN_EMAIL=forms-pipeline@yourdomain.com" `
+             "FORMS_CONNECTION_NAME=shared-microsoftform-<service-account-connection-id>" `
              "OUTLOOK_CONNECTION_NAME=shared-office365-<service-account-connection-id>" `
              "ALERT_EMAIL=forms-fabric-alerts@yourdomain.com"
 ```
 
-Then redeploy:
+Where:
+
+- `FUNCTION_APP_KEY` is the current host key used in generated per-form flows
+- `FORMS_CONNECTION_NAME` and `OUTLOOK_CONNECTION_NAME` come from the Power Automate connection URLs
+- `ALERT_EMAIL` points to the shared mailbox or support list that should receive failure alerts
+
+Then redeploy if you also changed code or other deployment assets:
 
 ```powershell
 pwsh scripts/Redeploy.ps1
 ```
+
+For app-setting-only changes, a redeploy is usually not required.
 
 ---
 
@@ -221,7 +249,7 @@ Add the service account details to your organization's IT documentation:
 | **MFA** | Enabled (or restricted by Conditional Access) |
 | **License** | Microsoft 365 E3/E5 (or equivalent) |
 | **Owned flows** | Registration Intake + all auto-created data flows |
-| **Owned connections** | Microsoft Forms, HTTP with Entra ID |
+| **Owned connections** | Microsoft Forms, Office 365 Outlook, HTTP with Entra ID |
 
 ---
 

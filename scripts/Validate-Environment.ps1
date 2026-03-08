@@ -149,7 +149,7 @@ if (-not $resourceGroupId) {
 Write-Host "  Resource group exists." -ForegroundColor Green
 
 Write-Host "`nStep 4: Building Bicep template..." -ForegroundColor Cyan
-az bicep build --file infra/main.bicep --output-stdout 1>$null
+az bicep build --file infra/main.bicep 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) {
     throw "Bicep build failed for infra/main.bicep."
 }

@@ -70,7 +70,7 @@ Before your form data can appear in a dashboard, you need to register it. This i
 
 ### What to Do
 
-1. Go to **[registration form link placeholder]**
+1. Open the **"Register Your Form for Analytics"** link provided by your IT or admin team. If you don't have it yet, ask them to share the registration form URL.
 2. **Paste your form's share link** — in Microsoft Forms, click the **"Share"** button and copy the link
 3. **Add a brief description** of what your form is for (optional, but helpful)
 4. **Tell us if your form collects patient information** — things like names, dates of birth, or medical record numbers
@@ -102,7 +102,15 @@ Once your form is registered, you're all set. Here's what happens behind the sce
 
 ```mermaid
 graph LR
-    A["📝 Create Form"] --> B["📋 Register Your Form"] --> C["🔄 Responses Flow<br/>Automatically"] --> D["📊 View Dashboard"]
+    A["Create form"] --> B["Register form"] --> C["Responses flow automatically"] --> D["View dashboard"]
+
+    classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
+    classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
+
+    A:::primary
+    B:::primary
+    C:::success
+    D:::success
 ```
 
 ---
@@ -157,9 +165,19 @@ If you have concerns about patient privacy, please contact your organization's c
 ```mermaid
 graph LR
     A["Form Response"] --> B["Azure Function"]
-    B --> C["🔒 Raw Data<br/>(Restricted — IT only)"]
-    B --> D["🔓 De-identified Data<br/>(Analysts & Leads)"]
+    B --> C["Raw data restricted to IT"]
+    B --> D["De-identified data for reporting"]
     D --> E["📊 Power BI Dashboard"]
+
+    classDef primary fill:#4dabf7,stroke:#1864ab,color:#1a1a2e
+    classDef danger fill:#ff8787,stroke:#c92a2a,color:#1a1a2e
+    classDef success fill:#69db7c,stroke:#2b8a3e,color:#1a1a2e
+
+    A:::primary
+    B:::primary
+    C:::danger
+    D:::success
+    E:::success
 ```
 
 ---

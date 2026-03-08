@@ -42,7 +42,7 @@ All PRs must pass these automated checks:
 2. **Ruff linter** — `ruff check src/functions/ tests/`
 3. **Ruff formatter** — `ruff format --check src/functions/ tests/`
 4. **Bicep validation** — `az bicep build --file infra/main.bicep`
-5. **JSON schema validation** — `config/form-registry.json` validated against `config/form-registry.schema.json`
+5. **JSON schema validation** — `config/form-registry.json` validated against `src/functions/form-registry.schema.json`
 6. **Credential scanning** — Gitleaks checks for leaked secrets in all commits
 
 > **Note:** PowerShell scripts in `scripts/` should be tested manually before PR — there are no automated PS tests in CI.

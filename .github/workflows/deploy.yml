@@ -124,7 +124,7 @@ jobs:
           python -c "
           import json, jsonschema
           with open('config/form-registry.json') as f: data = json.load(f)
-          with open('config/form-registry.schema.json') as f: schema = json.load(f)
+          with open('src/functions/form-registry.schema.json') as f: schema = json.load(f)
           jsonschema.validate(data, schema)
           print('✅ form-registry.json is valid')
           "

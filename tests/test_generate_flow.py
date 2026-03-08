@@ -63,16 +63,13 @@ class TestGenerateFlowDefinition:
             generate_flow_definition("nonexistent-form", _FUNC_URL, _KV_NAME)
 
     @patch("generate_flow.handler.get_form_config", return_value=_SAMPLE_CONFIG)
-    def test_flow_has_keyvault_step(self, _mock_cfg: MagicMock) -> None:
+    def test_flow_uses_correct_trigger_type(self, _mock_cfg: MagicMock) -> None:
         result = generate_flow_definition(
             "patient-satisfaction-001", _FUNC_URL, _KV_NAME
         )
-        actions = result["actions"]
-
-        assert "Get_secret" in actions
-        kv_action = actions["Get_secret"]
-        assert "keyvault" in json.dumps(kv_action)
-        assert "function-app-key" in json.dumps(kv_action)
+        trigger = result["triggers"]["When_a_new_response_is_submitted"]
+        assert trigger["type"] == "OpenApiConnectionWebhook"
+        assert trigger["inputs"]["host"]["operationId"] == "CreateFormWebhook"
 
     @patch("generate_flow.handler.get_form_config", return_value=_SAMPLE_CONFIG)
     def test_flow_body_has_form_id(self, _mock_cfg: MagicMock) -> None:

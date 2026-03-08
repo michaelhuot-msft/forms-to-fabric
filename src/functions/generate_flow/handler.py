@@ -20,94 +20,59 @@ def _build_flow_definition(
     key_vault_name: str,
     admin_email: str = "",
 ) -> dict:
-    """Return a complete Power Automate / Logic Apps workflow definition dict."""
+    """Return a Power Automate flow definition in the correct PA REST API format."""
     if not admin_email:
         admin_email = os.environ.get("ADMIN_EMAIL", "admin@contoso.com")
+
+    func_url = f"{function_app_url.rstrip('/')}/api/process-response"
+    func_key = os.environ.get("FUNCTION_APP_KEY", "")
+
     return {
         "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
         "contentVersion": "1.0.0.0",
         "parameters": {
-            "$connections": {
-                "defaultValue": {},
-                "type": "Object",
-            },
+            "$authentication": {"defaultValue": {}, "type": "SecureObject"},
+            "$connections": {"defaultValue": {}, "type": "Object"},
         },
         "triggers": {
             "When_a_new_response_is_submitted": {
-                "type": "OpenApiConnectionTrigger",
+                "splitOn": "@triggerOutputs()?['body/value']",
+                "type": "OpenApiConnectionWebhook",
                 "inputs": {
+                    "parameters": {"form_id": form_config.form_id},
                     "host": {
-                        "connection": {
-                            "name": "@parameters('$connections')['microsoftforms']['connectionId']",
-                        },
-                        "api": {
-                            "id": "/providers/Microsoft.PowerApps/apis/shared_microsoftforms",
-                        },
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_microsoftforms",
+                        "operationId": "CreateFormWebhook",
+                        "connectionName": "shared_microsoftforms",
                     },
-                    "method": "get",
-                    "path": "/trigger/api/forms/@{encodeURIComponent('"
-                    + form_config.form_id
-                    + "')}/response",
-                },
-                "splitOn": "@triggerBody()",
-                "recurrence": {
-                    "frequency": "Minute",
-                    "interval": 1,
-                },
-                "metadata": {
-                    "form_id": form_config.form_id,
-                    "form_name": form_config.form_name,
                 },
             },
         },
         "actions": {
             "Get_response_details": {
-                "type": "OpenApiConnection",
                 "runAfter": {},
-                "inputs": {
-                    "host": {
-                        "connection": {
-                            "name": "@parameters('$connections')['microsoftforms']['connectionId']",
-                        },
-                        "api": {
-                            "id": "/providers/Microsoft.PowerApps/apis/shared_microsoftforms",
-                        },
-                    },
-                    "method": "get",
-                    "path": "/api/forms/@{encodeURIComponent('"
-                    + form_config.form_id
-                    + "')}/responses/@{encodeURIComponent(triggerBody()?['resourceData']?['responseId'])}",
-                },
-            },
-            "Get_secret": {
                 "type": "OpenApiConnection",
-                "runAfter": {
-                    "Get_response_details": ["Succeeded"],
-                },
                 "inputs": {
-                    "host": {
-                        "connection": {
-                            "name": "@parameters('$connections')['keyvault']['connectionId']",
-                        },
-                        "api": {
-                            "id": "/providers/Microsoft.PowerApps/apis/shared_keyvault",
-                        },
+                    "parameters": {
+                        "form_id": form_config.form_id,
+                        "response_id": "@triggerOutputs()?['body/resourceData/responseId']",
                     },
-                    "method": "get",
-                    "path": "/secrets/@{encodeURIComponent('function-app-key')}/value",
+                    "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_microsoftforms",
+                        "operationId": "GetFormResponseById",
+                        "connectionName": "shared_microsoftforms",
+                    },
                 },
             },
             "HTTP_POST_to_Azure_Function": {
+                "runAfter": {"Get_response_details": ["Succeeded"]},
                 "type": "Http",
-                "runAfter": {
-                    "Get_secret": ["Succeeded"],
-                },
                 "inputs": {
                     "method": "POST",
-                    "uri": f"{function_app_url.rstrip('/')}/api/process-response",
+                    "uri": func_url,
                     "headers": {
                         "Content-Type": "application/json",
-                        "x-functions-key": "@body('Get_secret')?['value']",
+                        "x-functions-key": func_key,
                     },
                     "body": {
                         "form_id": form_config.form_id,
@@ -115,54 +80,8 @@ def _build_flow_definition(
                     },
                 },
             },
-            "Check_HTTP_status": {
-                "type": "If",
-                "runAfter": {
-                    "HTTP_POST_to_Azure_Function": ["Succeeded", "Failed", "TimedOut"],
-                },
-                "expression": {
-                    "not": {
-                        "equals": [
-                            "@outputs('HTTP_POST_to_Azure_Function')['statusCode']",
-                            200,
-                        ],
-                    },
-                },
-                "actions": {
-                    "Send_error_notification": {
-                        "type": "OpenApiConnection",
-                        "runAfter": {},
-                        "inputs": {
-                            "host": {
-                                "connection": {
-                                    "name": "@parameters('$connections')['office365']['connectionId']",
-                                },
-                                "api": {
-                                    "id": "/providers/Microsoft.PowerApps/apis/shared_office365",
-                                },
-                            },
-                            "method": "post",
-                            "path": "/v2/Mail",
-                            "body": {
-                                "To": admin_email,
-                                "Subject": f"Forms to Fabric Error — {form_config.form_name}",
-                                "Body": (
-                                    "<p><strong>Pipeline Error</strong></p>"
-                                    f"<p>Form: {form_config.form_name} ({form_config.form_id})</p>"
-                                    "<p>Response ID: @{triggerBody()?['resourceData']?['responseId']}</p>"
-                                    "<p>HTTP Status: @{outputs('HTTP_POST_to_Azure_Function')['statusCode']}</p>"
-                                    "<p>Details:</p><pre>@{body('HTTP_POST_to_Azure_Function')}</pre>"
-                                ),
-                                "Importance": "High",
-                            },
-                        },
-                    },
-                },
-                "else": {
-                    "actions": {},
-                },
-            },
         },
+        "outputs": {},
     }
 
 

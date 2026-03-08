@@ -146,19 +146,38 @@ if (-not $SkipFlows) {
 if (-not $SkipFabric) {
     Write-Host "Step 2: Deleting Fabric workspace..." -ForegroundColor Cyan
 
-    # Try to discover workspace ID
+    # Try to discover workspace ID from multiple sources
     if (-not $FabricWorkspaceId) {
-        try {
-            $FabricWorkspaceId = azd env get-value ONELAKE_WORKSPACE 2>$null
-        } catch {}
+        try { $FabricWorkspaceId = azd env get-value FABRIC_WORKSPACE_ID 2>$null } catch {}
+    }
+    if (-not $FabricWorkspaceId) {
+        try { $FabricWorkspaceId = azd env get-value ONELAKE_WORKSPACE 2>$null } catch {}
+    }
+    if (-not $FabricWorkspaceId) {
+        $FabricWorkspaceId = $env:FABRIC_WORKSPACE_ID
     }
     if (-not $FabricWorkspaceId) {
         $FabricWorkspaceId = $env:ONELAKE_WORKSPACE
     }
+    # Last resort: search by display name via the Fabric API
+    if (-not $FabricWorkspaceId) {
+        try {
+            $fabricToken = az account get-access-token --resource "https://api.fabric.microsoft.com" --query "accessToken" -o tsv 2>$null
+            if ($fabricToken) {
+                $fabricHeaders = @{ "Authorization" = "Bearer $fabricToken"; "Content-Type" = "application/json" }
+                $wsResp = Invoke-RestMethod -Uri "https://api.fabric.microsoft.com/v1/workspaces" -Headers $fabricHeaders -Method GET
+                $ws = $wsResp.value | Where-Object { $_.displayName -eq "Forms to Fabric Analytics" }
+                if ($ws) {
+                    $FabricWorkspaceId = $ws.id
+                    Write-Host "  Auto-discovered workspace: $($ws.displayName) ($FabricWorkspaceId)" -ForegroundColor Green
+                }
+            }
+        } catch {}
+    }
 
     if (-not $FabricWorkspaceId) {
         Write-Host "  No workspace ID found. Skipping Fabric cleanup." -ForegroundColor Yellow
-        Write-Host "  Provide -FabricWorkspaceId or set ONELAKE_WORKSPACE env var." -ForegroundColor Yellow
+        Write-Host "  Provide -FabricWorkspaceId or set FABRIC_WORKSPACE_ID env var." -ForegroundColor Yellow
         $results += @{ Step = "Fabric Workspace"; Status = "SKIPPED"; Detail = "No workspace ID" }
     } else {
         Write-Host "  Workspace ID: $FabricWorkspaceId" -ForegroundColor Gray
@@ -280,7 +299,8 @@ try {
         # Clear azd env values but don't delete the env (user might want to recreate)
         $envValues = @(
             "ONELAKE_WORKSPACE", "ONELAKE_LAKEHOUSE", "FABRIC_CAPACITY_ID",
-            "FABRIC_WORKSPACE_ID", "FUNCTION_APP_PRINCIPAL_ID", "FABRIC_CAPACITY_NAME"
+            "FABRIC_WORKSPACE_ID", "FABRIC_LAKEHOUSE_ID",
+            "FUNCTION_APP_PRINCIPAL_ID", "FABRIC_CAPACITY_NAME"
         )
         foreach ($key in $envValues) {
             azd env set $key "" 2>$null

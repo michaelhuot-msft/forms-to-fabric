@@ -112,14 +112,16 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
     existing = get_form_config(form_id)
     if existing is not None:
         return func.HttpResponse(
-            json.dumps({
-                "status": "already_registered",
-                "message": "This form is already connected to the analytics pipeline. "
-                "No action needed — responses are already being captured.",
-                "form_id": form_id,
-                "form_name": existing.form_name,
-                "target_table": existing.target_table,
-            }),
+            json.dumps(
+                {
+                    "status": "already_registered",
+                    "message": "This form is already connected to the analytics pipeline. "
+                    "No action needed — responses are already being captured.",
+                    "form_id": form_id,
+                    "form_name": existing.form_name,
+                    "target_table": existing.target_table,
+                }
+            ),
             status_code=200,
             mimetype="application/json",
         )
@@ -179,7 +181,9 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
         )
         key_vault_name = os.environ.get("KEY_VAULT_NAME", "")
 
-        flow_definition = generate_flow_definition(form_id, function_app_url, key_vault_name)
+        flow_definition = generate_flow_definition(
+            form_id, function_app_url, key_vault_name
+        )
         logger.info("Generated flow definition for %s", form_id)
     except Exception as exc:
         logger.warning("Could not generate flow definition for %s: %s", form_id, exc)

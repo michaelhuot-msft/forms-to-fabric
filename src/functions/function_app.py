@@ -83,11 +83,3 @@ def activate_form(req: func.HttpRequest) -> func.HttpResponse:
     from activate_form.handler import handle_activate_form
 
     return _safe_handler(handle_activate_form, req)
-
-
-@app.route(route="openapi", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
-def openapi(req: func.HttpRequest) -> func.HttpResponse:
-    """Serve the OpenAPI 3.0.3 specification for this Function App."""
-    from openapi_spec.handler import handle_openapi_spec
-
-    return _safe_handler(handle_openapi_spec, req)

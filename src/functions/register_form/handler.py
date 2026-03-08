@@ -202,6 +202,13 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
                 "displayName": f"Forms to Fabric - {form_name}",
                 "definition": flow_definition,
                 "state": "Started",
+                "connectionReferences": {
+                    "shared_microsoftforms": {
+                        "id": "/providers/Microsoft.PowerApps/apis/shared_microsoftforms",
+                        "connectionName": "shared_microsoftforms",
+                        "source": "Embedded",
+                    },
+                },
             }
         }
 

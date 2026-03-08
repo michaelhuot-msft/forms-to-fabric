@@ -195,7 +195,7 @@ def handle_register_form(req: func.HttpRequest) -> func.HttpResponse:
     if flow_definition:
         response_body["flow_create_body"] = {
             "properties": {
-                "displayName": f"Forms to Fabric — {form_name}",
+                "displayName": f"Forms to Fabric - {form_name}",
                 "definition": flow_definition,
                 "state": "Started",
             }

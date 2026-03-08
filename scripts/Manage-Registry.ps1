@@ -29,12 +29,12 @@ $ErrorActionPreference = "Stop"
 
 if ($Help -or (-not $List -and -not $Remove -and -not $Purge)) {
     Write-Host ""
-    Write-Host "  Manage-Registry.ps1 — Admin tool for the form registry" -ForegroundColor Cyan
+    Write-Host "  Manage-Registry.ps1 - Admin tool for the form registry" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "  Commands:" -ForegroundColor White
     Write-Host "    -List                List all registered forms" -ForegroundColor Gray
     Write-Host "    -Remove              Interactive: pick a form to remove" -ForegroundColor Gray
-    Write-Host "    -Remove -FormId <id> Remove a specific form by ID" -ForegroundColor Gray
+    Write-Host '    -Remove -FormId "x"  Remove a specific form by ID' -ForegroundColor Gray
     Write-Host "    -Purge               Remove ALL forms (requires confirmation)" -ForegroundColor Gray
     Write-Host "    -Help                Show this help" -ForegroundColor Gray
     Write-Host ""
@@ -44,8 +44,8 @@ if ($Help -or (-not $List -and -not $Remove -and -not $Purge)) {
     Write-Host "    pwsh scripts/Manage-Registry.ps1 -Purge" -ForegroundColor Gray
     Write-Host ""
     Write-Host "  Options:" -ForegroundColor White
-    Write-Host "    -StorageAccount <name>  Override storage account (default: stformsec4zlsle)" -ForegroundColor Gray
-    Write-Host "    -Container <name>       Override blob container (default: form-registry)" -ForegroundColor Gray
+    Write-Host '    -StorageAccount "x"  Override storage account (default: stformsec4zlsle)' -ForegroundColor Gray
+    Write-Host '    -Container "x"       Override blob container (default: form-registry)' -ForegroundColor Gray
     Write-Host ""
     exit 0
 }
@@ -94,7 +94,7 @@ if ($List) {
         $i = 1
         foreach ($form in $forms) {
             $idShort = if ($form.form_id.Length -gt 30) { $form.form_id.Substring(0,30) + "..." } else { $form.form_id }
-            $flowName = "Forms to Fabric — $($form.form_name)"
+            $flowName = "Forms to Fabric - $($form.form_name)"
             $flowStatus = if ($deployedFlows.ContainsKey($flowName)) { $deployedFlows[$flowName] } else { "Not deployed" }
             $flowColor = if ($flowStatus -eq "Started") { "Green" } elseif ($flowStatus -eq "Stopped") { "Yellow" } else { "Red" }
 
@@ -160,7 +160,7 @@ if ($Remove) {
 
     # Clean up the auto-created PA flow
     if ($formName) {
-        $flowDisplayName = "Forms to Fabric — $formName"
+        $flowDisplayName = "Forms to Fabric - $formName"
         Write-Host "Looking for PA flow: '$flowDisplayName'..." -ForegroundColor Cyan
         try {
             $token = az account get-access-token --resource "https://service.flow.microsoft.com" --query "accessToken" -o tsv 2>$null
@@ -223,7 +223,7 @@ if ($Purge) {
             $flowHeaders = @{ "Authorization" = "Bearer $token"; "Accept" = "application/json" }
             $flowsResp = Invoke-RestMethod -Uri "https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/$envId/flows" -Headers $flowHeaders -Method GET
             foreach ($form in $registry.forms) {
-                $flowDisplayName = "Forms to Fabric — $($form.form_name)"
+                $flowDisplayName = "Forms to Fabric - $($form.form_name)"
                 $matchingFlow = $flowsResp.value | Where-Object { $_.properties.displayName -eq $flowDisplayName }
                 if ($matchingFlow) {
                     $flowId = $matchingFlow.name
@@ -234,7 +234,7 @@ if ($Purge) {
         }
     } catch {
         Write-Host "  Could not clean up flows: $($_.Exception.Message)" -ForegroundColor Yellow
-        Write-Host "  Delete 'Forms to Fabric — ...' flows manually in Power Automate." -ForegroundColor Yellow
+        Write-Host "  Delete 'Forms to Fabric - ...' flows manually in Power Automate." -ForegroundColor Yellow
     }
 
     # Save table names before purging (for the reminder)

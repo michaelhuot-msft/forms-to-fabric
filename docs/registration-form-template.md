@@ -81,7 +81,7 @@ Once the form is saved in Microsoft Forms, complete these steps to connect it to
 
 ### Step 2 — Create the Power Automate Flow
 
-The registration flow is simple — 5 actions total. The Azure Function registers the form and returns the `flow_create_body` payload, and the Power Automate flow uses that payload to create the per-form data pipeline flow.
+The registration flow is simple — 5 core steps plus an error email branch. The Azure Function registers the form and returns the `flow_create_body` payload, and the Power Automate flow uses that payload to create the per-form data pipeline flow.
 
 ```mermaid
 flowchart TD

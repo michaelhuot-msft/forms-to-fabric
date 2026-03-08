@@ -31,7 +31,9 @@ def test_registration_docs_match_current_flow_creation_workflow() -> None:
 
 def test_user_docs_do_not_ship_registration_link_placeholder() -> None:
     for relative_path in ("docs/clinician-guide.md", "docs/faq.md"):
-        assert "[registration form link placeholder]" not in _read(relative_path)
+        content = _read(relative_path)
+        message = f"Found shipped registration placeholder in {relative_path}"
+        assert "[registration form link placeholder]" not in content, message
 
 
 def test_future_workspace_doc_is_clearly_marked_not_current() -> None:
@@ -47,8 +49,14 @@ def test_updated_mermaid_blocks_do_not_use_html_breaks() -> None:
         "docs/registration-form-template.md",
     ):
         content = _read(relative_path)
-        mermaid_blocks = re.findall(r"```mermaid\n(.*?)```", content, flags=re.DOTALL)
+        mermaid_blocks = re.findall(
+            r"```mermaid\s*\n(.*?)\n\s*```",
+            content,
+            flags=re.DOTALL,
+        )
 
         assert mermaid_blocks
         for block in mermaid_blocks:
-            assert "<br" not in block.lower()
+            assert "<br" not in block.lower(), (
+                f"Found HTML line break in Mermaid block from {relative_path}"
+            )

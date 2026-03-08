@@ -15,7 +15,7 @@
 #>
 
 param(
-    [string]$FlowName = "Forms to Fabric - Registration Intake",
+    [string]$FlowName = "",
     [string]$EnvironmentId = ""
 )
 
@@ -34,19 +34,24 @@ if (-not $EnvironmentId) {
     $EnvironmentId = $envResp.value[0].name
 }
 
-# Find the flow
+# Find the flow (fuzzy match on "Registration" if no name specified)
 $flowsResp = Invoke-RestMethod -Uri "https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/$EnvironmentId/flows" -Headers $headers
-$flow = $flowsResp.value | Where-Object { $_.properties.displayName -eq $FlowName }
+if ($FlowName) {
+    $flow = $flowsResp.value | Where-Object { $_.properties.displayName -eq $FlowName }
+} else {
+    $flow = $flowsResp.value | Where-Object { $_.properties.displayName -match "Registration" }
+}
 
 if (-not $flow) {
-    Write-Host "FAIL: Flow '$FlowName' not found" -ForegroundColor Red
+    Write-Host "FAIL: Registration flow not found" -ForegroundColor Red
     Write-Host "Available flows:" -ForegroundColor Yellow
     $flowsResp.value | ForEach-Object { Write-Host "  - $($_.properties.displayName)" }
     exit 1
 }
 
 $flowId = $flow.name
-Write-Host "Found flow: $FlowName (ID: $flowId)" -ForegroundColor Green
+$actualName = $flow.properties.displayName
+Write-Host "Found flow: $actualName (ID: $flowId)" -ForegroundColor Green
 
 # Get full definition
 $detail = Invoke-RestMethod -Uri "https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple/environments/$EnvironmentId/flows/$flowId" -Headers $headers

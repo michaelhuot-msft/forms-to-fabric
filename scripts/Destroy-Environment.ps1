@@ -43,6 +43,7 @@ param(
     [string]$ResourceGroup     = "rg-forms-to-fabric-dev",
     [string]$EnvironmentId     = "Default-6dd0fc78-2408-43d6-a255-4383fbda3f76",
     [string]$FabricWorkspaceId = "",
+    [string]$FabricCapacityName = "",
     [string]$AzdEnvironment    = "dev",
     [switch]$Force,
     [switch]$SkipAzure,
@@ -161,6 +162,32 @@ if (-not $SkipFabric) {
         $results += @{ Step = "Fabric Workspace"; Status = "SKIPPED"; Detail = "No workspace ID" }
     } else {
         Write-Host "  Workspace ID: $FabricWorkspaceId" -ForegroundColor Gray
+
+        # Resume Fabric capacity if suspended (required before workspace deletion)
+        $capacityResumed = $false
+        if (-not $FabricCapacityName) {
+            try {
+                $rgResources = az resource list --resource-group $ResourceGroup --resource-type "Microsoft.Fabric/capacities" --query "[0].name" -o tsv 2>$null
+                if ($rgResources) { $FabricCapacityName = $rgResources }
+            } catch {}
+        }
+        if ($FabricCapacityName) {
+            try {
+                $subId = az account show --query "id" -o tsv 2>$null
+                $capUrl = "https://management.azure.com/subscriptions/$subId/resourceGroups/$ResourceGroup/providers/Microsoft.Fabric/capacities/$FabricCapacityName"
+                $capState = az rest --method get --url "$capUrl`?api-version=2023-11-01" --query "properties.state" -o tsv 2>$null
+                if ($capState -and $capState -ne "Active") {
+                    Write-Host "  Resuming Fabric capacity (was $capState) for workspace deletion..." -ForegroundColor Gray
+                    az rest --method post --url "$capUrl/resume?api-version=2023-11-01" 2>$null | Out-Null
+                    Start-Sleep -Seconds 10
+                    $capacityResumed = $true
+                    Write-Host "  Capacity resumed." -ForegroundColor Gray
+                }
+            } catch {
+                Write-Host "  Could not resume capacity: $($_.Exception.Message)" -ForegroundColor Yellow
+            }
+        }
+
         try {
             $fabricToken = az account get-access-token --resource "https://api.fabric.microsoft.com" --query "accessToken" -o tsv 2>$null
             if ($fabricToken) {
@@ -175,12 +202,17 @@ if (-not $SkipFabric) {
                 $results += @{ Step = "Fabric Workspace"; Status = "SKIPPED"; Detail = "No token" }
             }
         } catch {
-            if ($_.Exception.Message -like "*404*" -or $_.Exception.Message -like "*NotFound*") {
+            $errMsg = $_.Exception.Message
+            if ($errMsg -like "*404*" -or $errMsg -like "*NotFound*") {
                 Write-Host "  Workspace already deleted or not found." -ForegroundColor Gray
                 $results += @{ Step = "Fabric Workspace"; Status = "OK"; Detail = "Already gone" }
+            } elseif ($errMsg -like "*400*" -or $errMsg -like "*Bad Request*") {
+                Write-Host "  Workspace deletion returned 400 (capacity may still be starting)." -ForegroundColor Yellow
+                Write-Host "  Delete it manually: Fabric Portal > Workspace Settings > Remove this workspace" -ForegroundColor Yellow
+                $results += @{ Step = "Fabric Workspace"; Status = "FAILED"; Detail = "400 Bad Request - delete manually from Fabric Portal" }
             } else {
-                Write-Host "  Error: $($_.Exception.Message)" -ForegroundColor Red
-                $results += @{ Step = "Fabric Workspace"; Status = "FAILED"; Detail = $_.Exception.Message }
+                Write-Host "  Error: $errMsg" -ForegroundColor Red
+                $results += @{ Step = "Fabric Workspace"; Status = "FAILED"; Detail = $errMsg }
             }
         }
     }

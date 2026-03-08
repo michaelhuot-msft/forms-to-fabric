@@ -7,6 +7,8 @@
 
 ## Prerequisites
 
+For a comprehensive list of all tools, packages, APIs, and configurations, see [Deployment Prerequisites](deployment-prerequisites.md).
+
 | Requirement | Details |
 |---|---|
 | **Azure subscription** | Contributor access |

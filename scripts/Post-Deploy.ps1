@@ -141,11 +141,26 @@ if (-not $functionKey) {
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 
-Write-Host "`n========================================" -ForegroundColor Green
-Write-Host "  Post-deploy setup complete!" -ForegroundColor Green
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Green
+Write-Host "  Deployment Complete" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "Function App URL:  https://$funcAppUrl" -ForegroundColor White
-Write-Host "Function Key:      (stored in Key Vault)" -ForegroundColor White
+Write-Host "  Resources deployed:" -ForegroundColor White
+Write-Host "    Function App:      https://$funcAppUrl" -ForegroundColor White
+if ($kvName) {
+    Write-Host "    Key Vault:         $kvName" -ForegroundColor White
+}
+if ($workspaceId) {
+    Write-Host "    Fabric Workspace:  $workspaceId" -ForegroundColor White
+}
+Write-Host "    Resource Group:    $ResourceGroup" -ForegroundColor White
 Write-Host ""
-Write-Host "Next: Create a Power Automate flow (Step 4 in setup guide)." -ForegroundColor Yellow
+Write-Host "  Next steps:" -ForegroundColor Yellow
+Write-Host "    1. Create the registration Microsoft Form" -ForegroundColor White
+Write-Host "       See: docs/registration-form-template.md" -ForegroundColor DarkGray
+Write-Host "    2. Create the registration Power Automate flow" -ForegroundColor White
+Write-Host "       Run: pwsh scripts/Create-RegistrationFlow.ps1" -ForegroundColor DarkGray
+Write-Host "    3. Test by submitting a registration and verifying data in Fabric" -ForegroundColor White
+Write-Host "       See: docs/setup-guide.md (Step 4.3)" -ForegroundColor DarkGray
+Write-Host ""

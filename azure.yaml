@@ -1,6 +1,12 @@
 name: forms-to-fabric
 metadata:
   template: forms-to-fabric
+hooks:
+  postup:
+    shell: pwsh
+    run: ./scripts/Post-Deploy.ps1
+    interactive: true
+    continueOnError: true
 services:
   functions:
     project: ./src/functions

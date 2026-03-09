@@ -156,7 +156,7 @@ if (-not $AlertEmail) {
 }
 Write-Host "  Alert Email:  $AlertEmail" -ForegroundColor Green
 
-# ── Step 4: Resolve Power Platform environment ID ───────────────────────────
+# ── Step 4: Resolve Power Platform environment & connections ─────────────────
 
 Write-Host "`nStep 3: Resolving Power Platform environment..." -ForegroundColor Yellow
 $tenantId = az account show --query "tenantId" -o tsv 2>$null
@@ -165,6 +165,59 @@ if (-not $tenantId) {
 }
 $flowEnvironmentId = "Default-$tenantId"
 Write-Host "  Flow Environment: $flowEnvironmentId" -ForegroundColor Green
+
+# Auto-discover connection names from the environment
+Write-Host "`n  Discovering Power Automate connections..." -ForegroundColor Yellow
+try {
+    $ppToken = az account get-access-token --resource "https://service.powerapps.com/" --query "accessToken" -o tsv 2>$null
+    if ($ppToken) {
+        $ppHeaders = @{ "Authorization" = "Bearer $ppToken" }
+        $conns = Invoke-RestMethod -Uri "https://api.powerapps.com/providers/Microsoft.PowerApps/connections?api-version=2020-06-01&`$filter=environment eq '$flowEnvironmentId'" -Headers $ppHeaders
+        foreach ($c in $conns.value) {
+            $apiName = $c.properties.apiId.Split('/')[-1]
+            $connName = $c.name
+            $status = $c.properties.statuses[0].status
+            switch ($apiName) {
+                "shared_microsoftforms" {
+                    if ($FormsConnectionName -eq "shared_microsoftforms" -and $status -eq "Connected") {
+                        $FormsConnectionName = $connName
+                        Write-Host "    Forms:       $connName (auto-detected)" -ForegroundColor Green
+                    }
+                }
+                "shared_office365" {
+                    if ($OutlookConnectionName -eq "shared_office365" -and $status -eq "Connected") {
+                        $OutlookConnectionName = $connName
+                        Write-Host "    Outlook:     $connName (auto-detected)" -ForegroundColor Green
+                    }
+                }
+                "shared_webcontents" {
+                    if ($WebContentsConnectionName -eq "shared_webcontents" -and $status -eq "Connected") {
+                        $WebContentsConnectionName = $connName
+                        Write-Host "    WebContents: $connName (auto-detected)" -ForegroundColor Green
+                    }
+                }
+            }
+        }
+    }
+} catch {
+    Write-Host "    Could not auto-detect connections: $_" -ForegroundColor Yellow
+    Write-Host "    Using defaults (override with -FormsConnectionName, -OutlookConnectionName, -WebContentsConnectionName)" -ForegroundColor Yellow
+}
+
+# Warn about missing connections
+$missing = @()
+if ($FormsConnectionName -eq "shared_microsoftforms") { $missing += "Microsoft Forms (shared_microsoftforms)" }
+if ($OutlookConnectionName -eq "shared_office365") { $missing += "Office 365 Outlook (shared_office365)" }
+if ($WebContentsConnectionName -eq "shared_webcontents") { $missing += "HTTP with Entra ID / Web Contents (shared_webcontents)" }
+
+if ($missing.Count -gt 0) {
+    Write-Host "`n  WARNING: The following connections were not found:" -ForegroundColor Red
+    foreach ($m in $missing) {
+        Write-Host "    - $m" -ForegroundColor Red
+    }
+    Write-Host "  Create them at: https://make.powerautomate.com > Data > Connections" -ForegroundColor Yellow
+    Write-Host "  Then re-run this script, or pass the connection names explicitly.`n" -ForegroundColor Yellow
+}
 
 # ── Step 5: Confirm configuration ──────────────────────────────────────────
 

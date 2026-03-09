@@ -172,7 +172,7 @@ The flow is created under the identity of whoever runs the script, so it must be
 ```powershell
 az login  # Sign in as forms-pipeline@yourdomain.com
 pwsh scripts/Create-RegistrationFlow.ps1 `
-  -RegistrationFormId "<form-id-from-step-2.2>" `
+  -RegistrationFormUrl "https://forms.office.com/Pages/DesignPageV2.aspx?...&id=..." `
   -FunctionAppUrl "https://<func-app-name>.azurewebsites.net" `
   -FunctionAppKey "<function-key>"
 ```

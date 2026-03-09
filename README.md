@@ -58,8 +58,9 @@ git clone <repo-url>
 cd forms-to-fabric
 pwsh scripts/Setup-Environment.ps1
 azd up
-pwsh scripts/Post-Deploy.ps1
 ```
+
+> **Service account recommended.** Power Automate flows run under the identity that creates them. Use a dedicated service account (not a personal account) for `Create-RegistrationFlow.ps1` and any flow connections so flows don't break when staff leave. See [Service Account Guide](docs/service-account-guide.md).
 
 Then follow:
 

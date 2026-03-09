@@ -132,16 +132,27 @@ This connection is used to send failure alert emails from auto-created data flow
 
 `[Screenshot placeholder: Office 365 Outlook connection in Power Automate]`
 
-### 3.4 Note the connection names
+### 3.4 Discover connection names
 
-1. Click on the newly created Forms connection
-2. The URL will contain the connection ID, e.g., `shared-microsoftform-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
-3. Do the same for the Outlook connection
-4. Copy both — you'll need them for the environment variables:
-   - `FORMS_CONNECTION_NAME` — the Forms connection ID
-   - `OUTLOOK_CONNECTION_NAME` — the Outlook connection ID
+The service account doesn't have an Azure subscription, so use `--allow-no-subscriptions` when logging in:
 
-`[Screenshot placeholder: Connection details showing connection ID in URL]`
+```powershell
+az login --allow-no-subscriptions
+# Sign in as forms-pipeline@yourdomain.com
+```
+
+> **Important:** Without `--allow-no-subscriptions`, the SA login will fail with "No subscriptions found" and fall back to your personal account.
+
+Then run the connection discovery script to list all connections and get the exact instance names:
+
+```powershell
+pwsh scripts/List-Connections.ps1
+```
+
+The script will output a ready-to-use `Create-RegistrationFlow.ps1` command with the correct connection names. You need all three to show `Connected`:
+- `shared_microsoftforms` — Microsoft Forms connector
+- `shared_office365` — Office 365 Outlook connector  
+- `shared_webcontents` — HTTP with Microsoft Entra ID (preauthorized) connector
 
 ---
 
@@ -167,17 +178,28 @@ flowchart LR
 
 ### 4.1 While signed in as the service account
 
-The flow is created under the identity of whoever runs the script, so it must be the service account. Sign in to `az login` as the SA, then pass the Function App details explicitly (the SA doesn't need Azure resource access):
+The flow is created under the identity of whoever runs the script, so it must be the service account.
 
 ```powershell
-az login  # Sign in as forms-pipeline@yourdomain.com
+# Sign in as the SA (no Azure subscription needed)
+az login --allow-no-subscriptions
+# Sign in as forms-pipeline@yourdomain.com
+
+# Get the Function App details from an admin who has Azure subscription access:
+#   az functionapp show -n <func-name> -g <rg-name> --query defaultHostName -o tsv
+#   az functionapp keys list -n <func-name> -g <rg-name> --query functionKeys.default -o tsv
+
+# Discover connection names (all three must show Connected)
+pwsh scripts/List-Connections.ps1
+
+# Create the flow — pass Function App info explicitly since the SA can't auto-detect it
 pwsh scripts/Create-RegistrationFlow.ps1 `
   -RegistrationFormUrl "https://forms.office.com/Pages/DesignPageV2.aspx?...&id=..." `
   -FunctionAppUrl "https://<func-app-name>.azurewebsites.net" `
   -FunctionAppKey "<function-key>"
 ```
 
-> **Tip:** The admin can get the Function App URL and key from the `azd up` output or by running `az functionapp keys list` under their own account, then hand them to the SA operator.
+> **Note:** The SA doesn't have Azure subscription access, so the script cannot auto-detect the Function App URL and key. An admin with subscription access should provide these values. The script will prompt for them if not passed as parameters.
 
 Key points:
 - The flow is created under the service account's identity

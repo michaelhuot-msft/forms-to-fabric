@@ -57,6 +57,16 @@ Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "  Forms to Fabric - Create Registration Flow" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
 
+# ── Pre-flight: Verify az login ─────────────────────────────────────────────
+$currentUser = az account show --query "user.name" -o tsv 2>$null
+if (-not $currentUser) {
+    Write-Host "  ERROR: Not logged into Azure CLI." -ForegroundColor Red
+    Write-Host "  For the service account (no Azure subscription), run:" -ForegroundColor Yellow
+    Write-Host "    az login --allow-no-subscriptions" -ForegroundColor Yellow
+    Write-Host "  Then sign in as forms-pipeline@yourdomain.com`n" -ForegroundColor Yellow
+    exit 1
+}
+
 # ── Step 1: Resolve Registration Form ID ────────────────────────────────────
 
 if (-not $RegistrationFormId -and $RegistrationFormUrl) {
@@ -93,11 +103,19 @@ $funcAppName = $null
 
 if (-not $FunctionAppUrl -or -not $FunctionAppKey) {
     Write-Host "`nStep 2: Detecting Function App..." -ForegroundColor Yellow
-    try {
-        $funcAppName = az functionapp list --resource-group $ResourceGroup --query "[0].name" -o tsv 2>$null
-    } catch {}
 
-    if ($funcAppName) {
+    # Check if we have subscription access (SA with --allow-no-subscriptions won't)
+    $hasSub = az account show --query "id" -o tsv 2>$null
+    $canListResources = $false
+
+    if ($hasSub -and $hasSub -ne "null") {
+        try {
+            $funcAppName = az functionapp list --resource-group $ResourceGroup --query "[0].name" -o tsv 2>$null
+            if ($funcAppName) { $canListResources = $true }
+        } catch {}
+    }
+
+    if ($canListResources) {
         if (-not $FunctionAppUrl) {
             $hostName = az functionapp show --name $funcAppName --resource-group $ResourceGroup --query "defaultHostName" -o tsv 2>$null
             if ($hostName) {
@@ -107,6 +125,12 @@ if (-not $FunctionAppUrl -or -not $FunctionAppKey) {
         if (-not $FunctionAppKey) {
             $FunctionAppKey = az functionapp keys list --name $funcAppName --resource-group $ResourceGroup --query "functionKeys.default" -o tsv 2>$null
         }
+    } else {
+        Write-Host "  No Azure subscription access (expected for service accounts)." -ForegroundColor Yellow
+        Write-Host "  Provide Function App details with -FunctionAppUrl and -FunctionAppKey." -ForegroundColor Yellow
+        Write-Host "  Tip: An admin can get these by running:" -ForegroundColor DarkGray
+        Write-Host "    az functionapp show -n <name> -g $ResourceGroup --query defaultHostName -o tsv" -ForegroundColor DarkGray
+        Write-Host "    az functionapp keys list -n <name> -g $ResourceGroup --query functionKeys.default -o tsv`n" -ForegroundColor DarkGray
     }
 }
 

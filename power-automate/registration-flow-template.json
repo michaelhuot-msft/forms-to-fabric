@@ -10,7 +10,8 @@
     ],
     "notes": [
       "The registration form asks three questions: form share link, short description/name, and whether the form collects patient information.",
-      "The HTTP action should be renamed to RegisterForm so the flow_create_body expression can be copied exactly.",
+      "Preferred setup: run pwsh scripts/Create-RegistrationFlow.ps1 to create this flow programmatically via the Flow Management API.",
+      "Manual alternative: build the flow in the Power Automate UI using the steps in this template. The HTTP action should be renamed to RegisterForm so the flow_create_body expression can be copied exactly.",
       "On success, the flow posts body('RegisterForm')?['flow_create_body'] to the Flow API to create the per-form response-processing flow.",
       "Non-PHI forms are stored as active. PHI forms are stored as pending_review; the per-form flow can still be created, but /api/process-response returns 403 until IT activates the form.",
       "Current implementation does not send Teams review notifications or clinician confirmation emails from this flow.",
@@ -138,13 +139,17 @@
   "setup_instructions": [
     "1. Create the registration Microsoft Form using docs/registration-form-template.md.",
     "2. Set FUNCTION_APP_KEY, FORMS_CONNECTION_NAME, OUTLOOK_CONNECTION_NAME, and ALERT_EMAIL on the Function App before clinicians start registering forms.",
-    "3. Create a new Automated Cloud Flow in Power Automate and choose the registration form in the trigger.",
-    "4. Add 'Get response details'.",
-    "5. Add an HTTP action to POST to <function-app>/api/register-form, and rename that action to RegisterForm.",
-    "6. Use the raw_response body shape shown in this template or generate it with pwsh scripts/Generate-FlowBody.ps1 -Registration.",
-    "7. Add a condition that checks for status code 200.",
-    "8. In the success branch, add 'Invoke an HTTP request' with HTTP with Microsoft Entra ID and set the body to body('RegisterForm')?['flow_create_body'].",
-    "9. In the error branch, add an Outlook email action for admin alerting.",
-    "10. Save the flow and test with both a non-PHI and PHI registration."
+    "3. Run: pwsh scripts/Create-RegistrationFlow.ps1 — the script auto-detects your Function App URL, key, tenant ID, and alert email, prompts for the registration form ID, and creates the flow via the Flow Management API.",
+    "4. Verify the flow in Power Automate portal and authorize any connection prompts.",
+    "5. Test with both a non-PHI and PHI registration submission.",
+    "--- Manual fallback (if programmatic creation is not available) ---",
+    "3a. Create a new Automated Cloud Flow in Power Automate and choose the registration form in the trigger.",
+    "4a. Add 'Get response details'.",
+    "5a. Add an HTTP action to POST to <function-app>/api/register-form, and rename that action to RegisterForm.",
+    "6a. Use the raw_response body shape shown in this template or generate it with pwsh scripts/Generate-FlowBody.ps1 -Registration.",
+    "7a. Add a condition that checks for status code 200.",
+    "8a. In the success branch, add 'Invoke an HTTP request' with HTTP with Microsoft Entra ID and set the body to body('RegisterForm')?['flow_create_body'].",
+    "9a. In the error branch, add an Outlook email action for admin alerting.",
+    "10a. Save the flow and test with both a non-PHI and PHI registration."
   ]
 }

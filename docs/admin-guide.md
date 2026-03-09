@@ -209,7 +209,7 @@ git push
 
 ### Step 5: Create the Power Automate Flow
 
-For the normal path, skip this section: the **registration flow creates the per-form data flow automatically** by posting `body('RegisterForm')?['flow_create_body']` to the Flow API.
+For the normal path, skip this section: the **registration flow creates the per-form data flow automatically** by posting `body('RegisterForm')?['flow_create_body']` to the Flow API. The registration flow itself is created during initial setup with `pwsh scripts/Create-RegistrationFlow.ps1`.
 
 If you need a manual fallback, use the helper script and build the flow yourself:
 

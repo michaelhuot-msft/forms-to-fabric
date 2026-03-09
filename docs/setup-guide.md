@@ -221,13 +221,32 @@ Follow [Registration Form Template](registration-form-template.md) to create a "
 
 ### 4.2 Create the registration Power Automate flow
 
-Run the helper script to get the current HTTP action values:
+Run the creation script to programmatically build and deploy the registration flow:
+
+```powershell
+pwsh scripts/Create-RegistrationFlow.ps1
+```
+
+The script auto-detects your Function App URL, function key, tenant ID, and admin email. It prompts for the registration form ID (paste the URL or ID from step 4.1), shows a configuration summary for confirmation, and creates the flow via the Flow Management API.
+
+Use `-DryRun` to preview the flow definition without creating it:
+
+```powershell
+pwsh scripts/Create-RegistrationFlow.ps1 -DryRun
+```
+
+> ⚠️ **The normal path does not call `GET /api/generate-flow`.** The `register-form` response already contains `flow_create_body`, which the Flow API step posts directly.
+
+<details>
+<summary>Manual alternative (if programmatic creation is not available)</summary>
+
+Run the helper script to get the HTTP action values:
 
 ```powershell
 pwsh scripts/Generate-FlowBody.ps1 -Registration
 ```
 
-Then build the flow with these steps:
+Then build the flow manually:
 
 1. **Trigger**: When a new response is submitted → select "Register Your Form for Analytics"
 2. **Get response details** → same form, Response Id from trigger
@@ -244,7 +263,7 @@ Then build the flow with these steps:
 6. **If yes** (error): Add **Send an email V2** to notify the admin or support mailbox
 7. **Save** and enable the flow
 
-> ⚠️ **The normal path does not call `GET /api/generate-flow`.** The `register-form` response already contains `flow_create_body`, which the Flow API step posts directly.
+</details>
 
 ### 4.3 Test the registration flow
 

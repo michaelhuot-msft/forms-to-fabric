@@ -85,6 +85,16 @@ The registration flow is simple — 5 core steps plus an error email branch. The
 
 > Before clinicians use the registration form, set `FUNCTION_APP_KEY`, `FORMS_CONNECTION_NAME`, `OUTLOOK_CONNECTION_NAME`, and `ALERT_EMAIL` on the Function App. The generated per-form flows embed those values when `flow_create_body` is created. See [Setup Guide](setup-guide.md#31-configure-app-settings-for-auto-created-flows) and [Service Account Guide](service-account-guide.md).
 
+#### Recommended: Create the flow with the script
+
+```powershell
+pwsh scripts/Create-RegistrationFlow.ps1
+```
+
+The script auto-detects your Function App URL, function key, tenant ID, and admin email. It prompts for the registration form ID (paste the URL from step 1), shows a configuration summary, and creates the flow via the Flow Management API.
+
+Use `-DryRun` to preview the flow definition without creating it.
+
 ```mermaid
 flowchart TD
     T[1. Trigger: When a new response is submitted]
@@ -110,6 +120,9 @@ flowchart TD
     OK:::success
     ERR:::danger
 ```
+
+<details>
+<summary>Manual alternative (if programmatic creation is not available)</summary>
 
 **Footnotes — configuration values:**
 
@@ -178,6 +191,8 @@ Then build the flow:
 7. **Save** and enable
 
 > **Note:** The flow creation step runs inside the success branch of the condition. If registration fails, no flow is created. If you skip the flow creation step entirely, the form is still registered — clinicians can create the flow manually using `Generate-FlowBody.ps1`.
+
+</details>
 
 ### Step 3 — Test End-to-End
 

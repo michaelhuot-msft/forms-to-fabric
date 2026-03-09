@@ -295,7 +295,7 @@ Use the **self-service registration flow** instead of building a per-form flow b
 4. Power Automate posts `body('RegisterForm')?['flow_create_body']` to the Flow API
 5. A per-form data flow is created automatically
 
-If you need a manual fallback, use `pwsh scripts/Generate-FlowBody.ps1 -FormUrl "https://forms.office.com/..."` and build the flow manually.
+The registration flow itself is created during setup with `pwsh scripts/Create-RegistrationFlow.ps1`. If you need a manual fallback for per-form flows, use `pwsh scripts/Generate-FlowBody.ps1 -FormUrl "https://forms.office.com/..."` and build the flow manually.
 
 ---
 

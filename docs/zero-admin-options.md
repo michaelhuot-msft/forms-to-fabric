@@ -113,7 +113,9 @@ Microsoft Forms has **no public API for webhooks or subscriptions**. The only wa
 
 ## Implementation for Option A
 
-The registration PA flow needs one additional success-path step after the `/api/register-form` call:
+This is now automated via `pwsh scripts/Create-RegistrationFlow.ps1`, which programmatically creates the registration flow via the Flow Management API. The script builds the full workflow definition including the Entra ID connector step below.
+
+For reference, the registration PA flow includes one success-path step after the `/api/register-form` call:
 
 1. **Invoke an HTTP request** using **HTTP with Microsoft Entra ID**
    - Resource URI: `https://service.flow.microsoft.com`

@@ -68,7 +68,9 @@ In the form settings, enable **Customize thank you message** and paste:
 
 ## After Creating the Form
 
-Once the form is saved in Microsoft Forms, complete these steps to connect it to the pipeline.
+Once the form is saved in Microsoft Forms, connect it to the pipeline.
+
+> **Using a service account?** If you followed [Service Account Guide](service-account-guide.md) Step 2, **stop here and return to the SA guide** for Steps 3–4 (connections and flow creation). The steps below are the non-SA path.
 
 ### Step 1 — Copy the Form URL
 

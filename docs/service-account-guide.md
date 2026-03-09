@@ -92,7 +92,9 @@ The registration Microsoft Form should be owned by the service account so it sta
 
 ### 2.2 Create the registration form
 
-Follow the instructions in [Registration Form Template](registration-form-template.md) to create the 3-question "Register Your Form for Analytics" form. Copy the full URL from the browser — you'll paste it when running `Create-RegistrationFlow.ps1` (the script extracts the form ID automatically).
+Follow the **"Questions to Create"** and **"Form Settings"** sections in [Registration Form Template](registration-form-template.md), then return here. Do not follow the "After Creating the Form" steps — those are for the non-SA path.
+
+Copy the full URL from the browser — you'll paste it when running `Create-RegistrationFlow.ps1` (the script extracts the form ID automatically).
 
 ### 2.3 Share the registration form
 

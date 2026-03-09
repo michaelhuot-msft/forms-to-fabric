@@ -77,7 +77,7 @@ az login
 pwsh scripts/Setup-Environment.ps1
 ```
 
-Subscription ID and admin email are auto-detected from your Azure CLI login. If you do not pass `-Location`, the script uses its built-in default of `canadaeast`, selects the target Azure subscription explicitly, and runs a preflight validation before it tells you to run `azd up`.
+Subscription ID and admin email are auto-detected from your Azure CLI login. If you do not pass `-Location`, the script uses its built-in default of `centralus`, selects the target Azure subscription explicitly, and runs a preflight validation before it tells you to run `azd up`.
 
 **Common options:**
 
@@ -100,7 +100,7 @@ pwsh scripts/Setup-Environment.ps1 -SkipValidation
 | `-SubscriptionId` | Auto-detected | Azure subscription ID |
 | `-AdminEmail` | Auto-detected | Fabric admin + notification email |
 | `-EnvironmentName` | `dev` | azd environment name |
-| `-Location` | `canadaeast` | Azure region |
+| `-Location` | `centralus` | Azure region |
 | `-SkipCapacity` | off | Skip Fabric capacity creation. You must attach the workspace to an existing capacity yourself. |
 | `-SkipValidation` | off | Skip the final `Validate-Environment.ps1` preflight check before `azd up` |
 | `-CapacityName` | `formstofabric{env}` | Capacity name (alphanumeric only) |
@@ -117,7 +117,7 @@ If the automated script doesn't work in your environment:
 
 ```powershell
 azd env new dev
-azd env set AZURE_LOCATION canadaeast
+azd env set AZURE_LOCATION centralus
 azd env set AZURE_SUBSCRIPTION_ID <your-subscription-id>
 azd env set ADMIN_EMAIL you@yourdomain.com
 ```
@@ -125,7 +125,7 @@ azd env set ADMIN_EMAIL you@yourdomain.com
 **2b. Create resource group + Fabric capacity:**
 
 ```powershell
-az group create --name rg-forms-to-fabric-dev --location canadaeast
+az group create --name rg-forms-to-fabric-dev --location centralus
 
 $adminEmail = azd env get-value ADMIN_EMAIL
 az deployment group create `

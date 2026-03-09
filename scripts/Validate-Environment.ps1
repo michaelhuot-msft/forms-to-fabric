@@ -17,7 +17,7 @@
 .PARAMETER SubscriptionId
     Azure subscription ID. Defaults to AZURE_SUBSCRIPTION_ID from azd env or the current Azure CLI context.
 .PARAMETER Location
-    Azure region name such as canadaeast or eastus. Defaults to AZURE_LOCATION from azd env.
+    Azure region name such as centralus or eastus. Defaults to AZURE_LOCATION from azd env.
 .PARAMETER FabricWorkspaceId
     Fabric workspace ID. Defaults to FABRIC_WORKSPACE_ID from azd env.
 .PARAMETER FabricLakehouseId

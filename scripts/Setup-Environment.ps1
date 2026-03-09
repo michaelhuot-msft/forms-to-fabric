@@ -13,7 +13,7 @@
 .PARAMETER EnvironmentName
     azd environment name (e.g., dev, staging, prod)
 .PARAMETER Location
-    Azure region (e.g., canadaeast, eastus)
+    Azure region (e.g., centralus, eastus)
 .PARAMETER SubscriptionId
     Azure subscription ID
 .PARAMETER AdminEmail
@@ -36,7 +36,7 @@
 
 param(
     [string]$EnvironmentName = "dev",
-    [string]$Location        = "canadaeast",
+    [string]$Location        = "centralus",
     [string]$SubscriptionId  = "",
     [string]$AdminEmail      = "",
     [switch]$SkipCapacity,
@@ -109,7 +109,7 @@ if ($confirm -and $confirm.Trim().ToLower() -notin @("y", "yes", "")) {
     Write-Host "  pwsh scripts/Setup-Environment.ps1 -Location eastus -AdminEmail you@org.com" -ForegroundColor White
     Write-Host "`nAvailable parameters:" -ForegroundColor White
     Write-Host "  -EnvironmentName <name>    azd environment (default: dev)" -ForegroundColor White
-    Write-Host "  -Location <region>         Azure region (default: canadaeast)" -ForegroundColor White
+    Write-Host "  -Location <region>         Azure region (default: centralus)" -ForegroundColor White
     Write-Host "  -SubscriptionId <id>       Azure subscription ID" -ForegroundColor White
     Write-Host "  -AdminEmail <email>        Admin email for alerts and capacity" -ForegroundColor White
     Write-Host "  -SkipCapacity              Skip Fabric capacity creation" -ForegroundColor White

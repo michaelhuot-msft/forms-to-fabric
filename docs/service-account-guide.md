@@ -185,7 +185,7 @@ Key points:
 - The Entra HTTP connector authenticates as the service account
 - The registration form ID comes from step 2.2
 
-Alternatively, follow the manual steps in [Registration Form Template](registration-form-template.md) while signed in as the service account.
+Alternatively, follow the manual steps in the collapsed "Manual alternative" section of [Registration Form Template — Step 2](registration-form-template.md#step-2--create-the-power-automate-flow) while signed in as the service account.
 
 ---
 

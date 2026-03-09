@@ -130,10 +130,10 @@ def build_registration_flow_definition(
                         "type": "OpenApiConnection",
                         "inputs": {
                             "parameters": {
-                                "url": flow_api_path,
-                                "method": "POST",
-                                "body": "@body('RegisterForm')?['flow_create_body']",
-                                "headers": {
+                                "request/method": "POST",
+                                "request/url": flow_api_path,
+                                "request/body": "@body('RegisterForm')?['flow_create_body']",
+                                "request/headers": {
                                     "Content-Type": "application/json",
                                 },
                             },

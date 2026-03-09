@@ -70,14 +70,13 @@ In the form settings, enable **Customize thank you message** and paste:
 
 Once the form is saved in Microsoft Forms, complete these steps to connect it to the pipeline.
 
-### Step 1 — Note the Form ID
+### Step 1 — Copy the Form URL
 
 1. Open the registration form in the Forms editor.
-2. Look at the browser URL — it contains an `id=` parameter:
+2. Copy the full URL from the browser address bar — you'll paste this when running `Create-RegistrationFlow.ps1`. The script extracts the form ID automatically.
    ```
    https://forms.office.com/Pages/DesignPageV2.aspx?...&id=ePzQbQgk1kOiVUOD-9o_dsPlwRCEj...
    ```
-3. Copy the value after `id=` (it's a long base64 string, not a short GUID). This is the form ID you will select in the Power Automate trigger.
 
 ### Step 2 — Create the Power Automate Flow
 

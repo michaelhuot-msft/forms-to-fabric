@@ -190,6 +190,19 @@ if (-not $SkipFabric) {
         Write-Host "  Provide -FabricWorkspaceId or set FABRIC_WORKSPACE_ID env var." -ForegroundColor Yellow
         $results += @{ Step = "Fabric Workspace"; Status = "SKIPPED"; Detail = "No workspace ID" }
     } else {
+        # Look up workspace display name if we don't already have it
+        if (-not $discoveredName) {
+            try {
+                if (-not $fabricToken) {
+                    $fabricToken = az account get-access-token --resource "https://api.fabric.microsoft.com" --query "accessToken" -o tsv 2>$null
+                }
+                if ($fabricToken) {
+                    $fabricHeaders = @{ "Authorization" = "Bearer $fabricToken"; "Content-Type" = "application/json" }
+                    $wsDetail = Invoke-RestMethod -Uri "https://api.fabric.microsoft.com/v1/workspaces/$FabricWorkspaceId" -Headers $fabricHeaders -Method GET 2>$null
+                    if ($wsDetail.displayName) { $discoveredName = $wsDetail.displayName }
+                }
+            } catch {}
+        }
         $wsLabel = if ($discoveredName) { "$discoveredName ($FabricWorkspaceId)" } else { $FabricWorkspaceId }
         Write-Host "  Workspace: $wsLabel" -ForegroundColor Gray
         Write-Host "  This will permanently delete the workspace and all Lakehouse data." -ForegroundColor Yellow

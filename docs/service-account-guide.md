@@ -60,6 +60,9 @@ Go to Microsoft Entra ID → Users → `forms-pipeline@yourdomain.com` → **Lic
 ### 1.4 Set password to not expire
 
 ```powershell
+# Install the Microsoft Graph PowerShell module (one-time)
+Install-Module Microsoft.Graph -Scope CurrentUser
+
 # Connect to Microsoft Graph PowerShell
 Connect-MgGraph -Scopes "User.ReadWrite.All"
 

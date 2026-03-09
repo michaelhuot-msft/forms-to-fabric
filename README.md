@@ -66,7 +66,6 @@ Then follow:
 
 - [docs/setup-guide.md](docs/setup-guide.md) for the full deployment runbook
 - [docs/deployment-prerequisites.md](docs/deployment-prerequisites.md) for tool, API, and environment requirements
-- [docs/service-account-guide.md](docs/service-account-guide.md) for the recommended Power Automate service account setup
 
 ## Documentation
 

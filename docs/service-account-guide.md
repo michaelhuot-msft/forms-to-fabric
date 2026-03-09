@@ -80,15 +80,37 @@ Even for service accounts, enable MFA or use Conditional Access policies to rest
 
 ---
 
-## Step 2: Create Forms Connection Under Service Account
+## Step 2: Create the Registration Form Under Service Account
 
-### 2.1 Sign in to Power Automate as the service account
+The registration Microsoft Form should be owned by the service account so it stays active regardless of staff changes.
+
+### 2.1 Sign in as the service account
 
 1. Open an incognito/private browser window
-2. Go to [flow.microsoft.com](https://flow.microsoft.com)
+2. Go to [forms.office.com](https://forms.office.com)
 3. Sign in as `forms-pipeline@yourdomain.com`
 
-### 2.2 Create a Microsoft Forms connection
+### 2.2 Create the registration form
+
+Follow the instructions in [Registration Form Template](registration-form-template.md) to create the 3-question "Register Your Form for Analytics" form. Note the form ID from the browser URL (`?id=` parameter) — you'll need it for the registration flow.
+
+### 2.3 Share the registration form
+
+1. Click **Share** → **Only people in my organization can respond**
+2. Copy the share link to distribute to clinicians
+
+`[Screenshot placeholder: Forms sharing settings]`
+
+---
+
+## Step 3: Create Connections Under Service Account
+
+### 3.1 Sign in to Power Automate as the service account
+
+1. Go to [flow.microsoft.com](https://flow.microsoft.com) (still in the SA browser session)
+2. Verify you are signed in as `forms-pipeline@yourdomain.com`
+
+### 3.2 Create a Microsoft Forms connection
 
 1. Go to **Data** → **Connections** → **+ New connection**
 2. Search for **Microsoft Forms**
@@ -97,7 +119,7 @@ Even for service accounts, enable MFA or use Conditional Access policies to rest
 
 `[Screenshot placeholder: Power Automate Connections page with Forms connection]`
 
-### 2.3 Create an Office 365 Outlook connection
+### 3.3 Create an Office 365 Outlook connection
 
 This connection is used to send failure alert emails from auto-created data flows:
 
@@ -108,7 +130,7 @@ This connection is used to send failure alert emails from auto-created data flow
 
 `[Screenshot placeholder: Office 365 Outlook connection in Power Automate]`
 
-### 2.4 Note the connection names
+### 3.4 Note the connection names
 
 1. Click on the newly created Forms connection
 2. The URL will contain the connection ID, e.g., `shared-microsoftform-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`
@@ -118,28 +140,6 @@ This connection is used to send failure alert emails from auto-created data flow
    - `OUTLOOK_CONNECTION_NAME` — the Outlook connection ID
 
 `[Screenshot placeholder: Connection details showing connection ID in URL]`
-
----
-
-## Step 3: Create the Registration Form Under Service Account
-
-The registration Microsoft Form should be owned by the service account so it stays active regardless of staff changes.
-
-### 3.1 While signed in as the service account
-
-1. Open an incognito/private browser window (if not already signed in as the SA)
-2. Go to [forms.office.com](https://forms.office.com)
-3. Follow the instructions in [Registration Form Template](registration-form-template.md) to create the 3-question "Register Your Form for Analytics" form
-4. Note the form ID from the browser URL (`?id=` parameter) — you'll need it for the registration flow
-
-### 3.2 Share the registration form
-
-The registration form must be accessible to clinicians:
-
-1. Click **Share** → **Only people in my organization can respond**
-2. Copy the share link to distribute to clinicians
-
-`[Screenshot placeholder: Forms sharing settings]`
 
 ---
 
@@ -172,7 +172,7 @@ az login  # Sign in as forms-pipeline@yourdomain.com
 pwsh scripts/Create-RegistrationFlow.ps1
 ```
 
-The script will prompt for the registration form ID from step 3.1.
+The script will prompt for the registration form ID from step 2.2.
 
 Key points:
 - The flow is created under the service account's identity
@@ -311,9 +311,10 @@ So other admins can edit flows without the service account password:
 - [ ] M365 license assigned
 - [ ] Password set to not expire
 - [ ] MFA configured
+- [ ] Registration Microsoft Form created under service account
+- [ ] Registration form shared with organization
 - [ ] Forms connection created under service account
 - [ ] Outlook connection created under service account
-- [ ] Registration Microsoft Form created under service account
 - [ ] Registration flow created under service account (`Create-RegistrationFlow.ps1`)
 - [ ] `FORMS_CONNECTION_NAME` updated in Function App
 - [ ] `OUTLOOK_CONNECTION_NAME` updated in Function App

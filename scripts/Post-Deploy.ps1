@@ -68,7 +68,14 @@ Write-Host "  Principal ID:  $principalId" -ForegroundColor Green
 
 Write-Host "`nStep 2: Granting Function App access to Fabric workspace..." -ForegroundColor Cyan
 
-$workspaceId = azd env get-value FABRIC_WORKSPACE_ID 2>$null
+$workspaceId = $null
+try {
+    $workspaceId = azd env get-value FABRIC_WORKSPACE_ID 2>$null
+    if ($LASTEXITCODE -ne 0) { $workspaceId = $null }
+} catch { $workspaceId = $null }
+if (-not $workspaceId) {
+    $workspaceId = $env:FABRIC_WORKSPACE_ID
+}
 if (-not $workspaceId) {
     Write-Host "  FABRIC_WORKSPACE_ID not set — skipping." -ForegroundColor Yellow
     Write-Host "  Run Setup-Environment.ps1 first, then re-run this script." -ForegroundColor Yellow
@@ -81,10 +88,12 @@ if (-not $workspaceId) {
     $baseUrl = "https://api.fabric.microsoft.com/v1"
 
     $roleBody = @{
-        identifier           = $principalId
-        groupUserAccessRight = "Contributor"
-        principalType        = "ServicePrincipal"
-    } | ConvertTo-Json
+        principal = @{
+            id   = $principalId
+            type = "ServicePrincipal"
+        }
+        role = "Contributor"
+    } | ConvertTo-Json -Depth 3
 
     try {
         Invoke-RestMethod -Uri "$baseUrl/workspaces/$workspaceId/roleAssignments" `
@@ -93,10 +102,10 @@ if (-not $workspaceId) {
     } catch {
         $statusCode = $null
         try { $statusCode = $_.Exception.Response.StatusCode.value__ } catch {}
-        if ($statusCode -eq 409) {
+        if ($statusCode -in @(400, 409)) {
             Write-Host "  Role assignment already exists." -ForegroundColor Yellow
         } else {
-            Write-Host "  Warning: Could not assign role: $($_.Exception.Message)" -ForegroundColor Yellow
+            Write-Host "  Warning: Could not assign role (HTTP $statusCode): $($_.Exception.Message)" -ForegroundColor Yellow
             Write-Host "  You may need to grant access manually in the Fabric portal." -ForegroundColor Yellow
         }
     }
@@ -132,7 +141,25 @@ if (-not $functionKey) {
         if ($LASTEXITCODE -eq 0) {
             Write-Host "  Function key stored in Key Vault '$kvName' as 'function-app-key'." -ForegroundColor Green
         } else {
-            Write-Host "  Warning: Could not store key in Key Vault." -ForegroundColor Yellow
+            # Try granting the current user access policy and retry
+            Write-Host "  Access denied — adding access policy for current user..." -ForegroundColor Yellow
+            $currentUpn = az account show --query "user.name" -o tsv 2>$null
+            if ($currentUpn) {
+                az keyvault set-policy --name $kvName --upn $currentUpn --secret-permissions get set list --output none 2>$null
+                if ($LASTEXITCODE -eq 0) {
+                    az keyvault secret set --vault-name $kvName --name "function-app-key" --value $functionKey --output none 2>$null
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Host "  Function key stored in Key Vault '$kvName' as 'function-app-key'." -ForegroundColor Green
+                    } else {
+                        Write-Host "  Warning: Still could not store key after adding policy." -ForegroundColor Yellow
+                        Write-Host "  Grant yourself 'Key Vault Secrets Officer' or add a secrets set access policy." -ForegroundColor Yellow
+                    }
+                } else {
+                    Write-Host "  Warning: Could not add access policy. Grant yourself secrets set permission on '$kvName'." -ForegroundColor Yellow
+                }
+            } else {
+                Write-Host "  Warning: Could not store key in Key Vault. Grant secrets set permission on '$kvName'." -ForegroundColor Yellow
+            }
         }
     } else {
         Write-Host "  Warning: Key Vault not found — key not stored." -ForegroundColor Yellow

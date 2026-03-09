@@ -132,7 +132,27 @@ This connection is used to send failure alert emails from auto-created data flow
 
 `[Screenshot placeholder: Office 365 Outlook connection in Power Automate]`
 
-### 3.4 Discover connection names
+### 3.4 Create an HTTP with Microsoft Entra ID (preauthorized) connection
+
+This **Premium** connector is used by the registration flow to call the Flow Management API (creating per-form data flows). It requires a **Power Automate Premium** license.
+
+1. Go to **Data** → **Connections** → **+ New connection**
+2. Search for **HTTP with Microsoft Entra ID (preauthorized)**
+3. Fill in the connection fields:
+
+   | Field | Value |
+   |-------|-------|
+   | **Authentication type** | Log in with Microsoft Entra ID |
+   | **Base Resource URL** | `https://api.flow.microsoft.com` |
+   | **Microsoft Entra ID Resource URI (Application ID URI)** | `https://service.flow.microsoft.com` |
+
+4. Click **Create** → sign in with the service account
+
+![HTTP with Entra ID connection setup](images/http-entra-id-connection.png)
+
+> **Important:** Both URL fields are required. The Base Resource URL is the API endpoint the connector will call, and the Resource URI is the Entra ID audience for the OAuth token.
+
+### 3.5 Discover connection names
 
 The service account doesn't have an Azure subscription, so use `--allow-no-subscriptions` when logging in:
 

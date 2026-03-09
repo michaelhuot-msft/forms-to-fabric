@@ -121,7 +121,29 @@ This connection is used to send failure alert emails from auto-created data flow
 
 ---
 
-## Step 3: Create the Registration Flow Under Service Account
+## Step 3: Create the Registration Form Under Service Account
+
+The registration Microsoft Form should be owned by the service account so it stays active regardless of staff changes.
+
+### 3.1 While signed in as the service account
+
+1. Open an incognito/private browser window (if not already signed in as the SA)
+2. Go to [forms.office.com](https://forms.office.com)
+3. Follow the instructions in [Registration Form Template](registration-form-template.md) to create the 3-question "Register Your Form for Analytics" form
+4. Note the form ID from the browser URL (`?id=` parameter) — you'll need it for the registration flow
+
+### 3.2 Share the registration form
+
+The registration form must be accessible to clinicians:
+
+1. Click **Share** → **Only people in my organization can respond**
+2. Copy the share link to distribute to clinicians
+
+`[Screenshot placeholder: Forms sharing settings]`
+
+---
+
+## Step 4: Create the Registration Flow Under Service Account
 
 ```mermaid
 flowchart LR
@@ -141,27 +163,27 @@ flowchart LR
     class DataFlows,Alerts success
 ```
 
-### 3.1 While signed in as the service account
+### 4.1 While signed in as the service account
 
-Follow the instructions in [Registration Form Template](registration-form-template.md) to create the registration PA flow. All steps are the same, but done under the service account's identity.
+Run the creation script (sign in to `az login` as the service account first):
+
+```powershell
+az login  # Sign in as forms-pipeline@yourdomain.com
+pwsh scripts/Create-RegistrationFlow.ps1
+```
+
+The script will prompt for the registration form ID from step 3.1.
 
 Key points:
-- The trigger connection should use the service account's Forms connection
-- The Entra HTTP connector should be signed in as the service account
-- Name the flow: **"Forms to Fabric - Registration Intake"**
+- The flow is created under the service account's identity
+- The trigger connection uses the service account's Forms connection
+- The Entra HTTP connector authenticates as the service account
 
-### 3.2 Share the registration form
-
-The registration Microsoft Form must be accessible to clinicians:
-1. Open the registration form as the service account (or the original creator)
-2. **Share** → **Only people in my organization can respond**
-3. If the form was created by a different user, share editing access with the service account
-
-`[Screenshot placeholder: Forms sharing settings]`
+Alternatively, follow the manual steps in [Registration Form Template](registration-form-template.md) while signed in as the service account.
 
 ---
 
-## Step 4: Update Environment Variables
+## Step 5: Update Environment Variables
 
 Update the Function App with the service account's connection names and alert settings:
 
@@ -192,7 +214,7 @@ For app-setting-only changes, a redeploy is usually not required.
 
 ---
 
-## Step 5: Transfer Existing Flows (if applicable)
+## Step 6: Transfer Existing Flows (if applicable)
 
 If flows were previously created under a personal account:
 
@@ -218,7 +240,7 @@ pwsh scripts/Manage-Registry.ps1 -Purge
 
 ---
 
-## Step 6: Grant Service Account Access
+## Step 7: Grant Service Account Access
 
 ### 6.1 Fabric workspace access
 
@@ -240,7 +262,7 @@ az role assignment create `
 
 ---
 
-## Step 7: Document the Service Account
+## Step 8: Document the Service Account
 
 Add the service account details to your organization's IT documentation:
 
@@ -291,7 +313,8 @@ So other admins can edit flows without the service account password:
 - [ ] MFA configured
 - [ ] Forms connection created under service account
 - [ ] Outlook connection created under service account
-- [ ] Registration flow created/transferred to service account
+- [ ] Registration Microsoft Form created under service account
+- [ ] Registration flow created under service account (`Create-RegistrationFlow.ps1`)
 - [ ] `FORMS_CONNECTION_NAME` updated in Function App
 - [ ] `OUTLOOK_CONNECTION_NAME` updated in Function App
 - [ ] `ALERT_EMAIL` updated in Function App

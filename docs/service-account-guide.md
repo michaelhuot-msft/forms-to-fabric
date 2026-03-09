@@ -165,19 +165,23 @@ flowchart LR
 
 ### 4.1 While signed in as the service account
 
-Run the creation script (sign in to `az login` as the service account first):
+The flow is created under the identity of whoever runs the script, so it must be the service account. Sign in to `az login` as the SA, then pass the Function App details explicitly (the SA doesn't need Azure resource access):
 
 ```powershell
 az login  # Sign in as forms-pipeline@yourdomain.com
-pwsh scripts/Create-RegistrationFlow.ps1
+pwsh scripts/Create-RegistrationFlow.ps1 `
+  -RegistrationFormId "<form-id-from-step-2.2>" `
+  -FunctionAppUrl "https://<func-app-name>.azurewebsites.net" `
+  -FunctionAppKey "<function-key>"
 ```
 
-The script will prompt for the registration form ID from step 2.2.
+> **Tip:** The admin can get the Function App URL and key from the `azd up` output or by running `az functionapp keys list` under their own account, then hand them to the SA operator.
 
 Key points:
 - The flow is created under the service account's identity
 - The trigger connection uses the service account's Forms connection
 - The Entra HTTP connector authenticates as the service account
+- The registration form ID comes from step 2.2
 
 Alternatively, follow the manual steps in [Registration Form Template](registration-form-template.md) while signed in as the service account.
 

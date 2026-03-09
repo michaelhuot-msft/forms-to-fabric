@@ -219,7 +219,33 @@ Follow [Registration Form Template](registration-form-template.md) to create a "
 2. Give your form a short name
 3. Does this form collect any patient information? (Yes / No)
 
-### 4.2 Create the registration Power Automate flow
+### 4.2 Create Power Automate connections
+
+Before creating the flow, you need three connections in Power Automate. Go to [make.powerautomate.com](https://make.powerautomate.com) → **Data** → **Connections** → **+ New connection** and create each:
+
+1. **Microsoft Forms** — Click **Create** → sign in
+2. **Office 365 Outlook** — Click **Create** → sign in
+3. **HTTP with Microsoft Entra ID (preauthorized)** ⚡ *Premium* — Fill in:
+
+   | Field | Value |
+   |-------|-------|
+   | **Authentication type** | Log in with Microsoft Entra ID |
+   | **Base Resource URL** | `https://api.flow.microsoft.com` |
+   | **Microsoft Entra ID Resource URI (Application ID URI)** | `https://service.flow.microsoft.com` |
+
+   Then click **Create** → sign in.
+
+   ![HTTP with Entra ID connection setup](images/http-entra-id-connection.png)
+
+After creating all three, run the discovery script to get instance names:
+
+```powershell
+pwsh scripts/List-Connections.ps1
+```
+
+> **Tip:** If using a service account, see [Service Account Guide — Step 3](service-account-guide.md#step-3-create-connections-under-service-account) for the full walkthrough.
+
+### 4.3 Create the registration Power Automate flow
 
 Run the creation script to programmatically build and deploy the registration flow:
 
@@ -265,7 +291,7 @@ Then build the flow manually:
 
 </details>
 
-### 4.3 Test the registration flow
+### 4.4 Test the registration flow
 
 1. Submit a test entry via the registration form with a real form URL
 2. Check Power Automate flow run history → should show Succeeded

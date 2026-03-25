@@ -16,22 +16,25 @@ All infrastructure is defined as code using Bicep and deployed via the Azure Dev
 
 ```mermaid
 flowchart TB
-    subgraph Control["Onboarding and control plane"]
-        RegForm["Registration form"]
-        RegFlow["Registration flow"]
-        Register["register-form endpoint"]
-        Activate["activate-form endpoint"]
-        FlowApi["Flow API"]
+    subgraph M365["Microsoft 365"]
+        RegForm["📋 Microsoft Forms (Registration intake)"]
+        Survey["📋 Microsoft Forms (Data collection)"]
+        RegFlow["⚡ Power Automate (Registration flow)"]
+        PerFlow["⚡ Power Automate (Per-form data flows)"]
+        Alerts["✉️ Outlook (Failure alert email)"]
     end
 
-    subgraph Data["Data plane"]
-        Survey["Data collection forms"]
-        PerFlow["Per-form data flows"]
-        Process["process-response endpoint"]
-        Registry["Blob registry"]
-        Lakehouse["Fabric Lakehouse"]
-        Alerts["Failure alert email"]
-        PowerBI["Power BI DirectLake"]
+    subgraph Azure["Azure Platform"]
+        Register["⚙️ Azure Functions (/api/register-form)"]
+        Activate["⚙️ Azure Functions (/api/activate-form)"]
+        Process["⚙️ Azure Functions (/api/process-response)"]
+        FlowApi["⚙️ Power Platform API (Flow creation)"]
+        Registry["🗄️ Azure Blob Storage (Form registry)"]
+    end
+
+    subgraph Fabric["Microsoft Fabric"]
+        Lakehouse["📊 Fabric Lakehouse (Raw + Curated)"]
+        PowerBI["📊 Power BI (DirectLake dashboards)"]
     end
 
     RegForm --> RegFlow --> Register
@@ -48,11 +51,12 @@ flowchart TB
     classDef warning fill:#ffd43b,stroke:#e67700,color:#1a1a2e
     classDef danger fill:#ff8787,stroke:#c92a2a,color:#1a1a2e
     classDef info fill:#b197fc,stroke:#6741d9,color:#1a1a2e
+    classDef neutral fill:#ced4da,stroke:#495057,color:#1a1a2e
 
     class RegForm,Survey primary
-    class RegFlow,Register,Activate,FlowApi,PerFlow,Process,Registry info
+    class RegFlow,PerFlow,Alerts warning
+    class Register,Activate,Process,FlowApi,Registry info
     class Lakehouse,PowerBI success
-    class Alerts warning
 ```
 
 ---

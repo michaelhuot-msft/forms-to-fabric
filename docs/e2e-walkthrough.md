@@ -79,19 +79,17 @@ Open the **"Register Your Form for Analytics"** form provided by your IT team. T
 
 ![Registration form with three questions, ready to be filled out](images/e2e/04-register-form-blank.png)
 
-Fill in all three fields. In this walkthrough we select **"Yes"** for the PHI question to demonstrate the admin approval flow:
+Fill in all three fields. In this walkthrough we select **"No"** for the PHI question, which means the form is activated automatically without admin review:
 
-![Registration form filled out with the form link, name, and PHI flag set to Yes](images/e2e/04-register-form-filled.png)
+![Registration form filled out with the form link, name, and PHI flag set to No](images/e2e/04-register-form-filled.png)
 
-Click **Submit**. You'll see a confirmation message:
+Click **Submit**. You'll see a confirmation message indicating next steps:
 
 ![Registration form submission confirmation](images/e2e/04-register-form-confirmation.png)
 
-Behind the scenes, a Power Automate flow triggers and calls the Azure Function registration endpoint. The flow creates the per-form data pipeline automatically:
+Behind the scenes, a Power Automate flow triggers and calls the Azure Function registration endpoint. The flow creates the per-form data pipeline automatically. Because this form does not collect PHI, it is activated immediately:
 
-![Power Automate showing the registration flow completed successfully](images/e2e/05-registration-flow.png)
-
-Because we selected "Yes" for PHI, the form enters **pending_review** status — it won't process responses until an admin approves it.
+![Power Automate My Flows page where registration flows appear](images/e2e/05-registration-flow.png)
 
 ---
 
@@ -99,19 +97,15 @@ Because we selected "Yes" for PHI, the form enters **pending_review** status —
 
 > **Role:** IT Administrator
 
-Forms that collect patient information require admin approval before data flows through the pipeline. The admin reviews the form configuration, classifies PHI fields, and activates it.
+Forms that collect patient information (PHI = "Yes") require admin approval before data flows through the pipeline. Since we selected **"No"** in this walkthrough, this step is **skipped** — the form was activated automatically upon registration.
 
-The admin can see pending forms in the Power Automate flow run history:
+For PHI forms, the admin would review the form configuration, classify PHI fields, and activate it via the `POST /api/activate-form` endpoint:
 
-![Power Automate flows list showing registration and data flows](images/e2e/06-admin-approval-flows.png)
+![Power Automate flows list where admin reviews registration flows](images/e2e/06-admin-approval-flows.png)
 
-The admin activates the form by calling the `POST /api/activate-form` endpoint with the form's ID and PHI field classifications:
+![Azure portal where admin manages the activate-form function endpoint](images/e2e/06-admin-approval-activate.png)
 
-![Azure portal showing the activate-form function endpoint](images/e2e/06-admin-approval-activate.png)
-
-Once activated, the form's status changes from `pending_review` to `active`, and responses will begin flowing through the data pipeline.
-
-> **Non-PHI forms** skip this step entirely — they are activated automatically upon registration.
+> **Non-PHI forms** (like this walkthrough) skip admin approval entirely — they are activated automatically upon registration.
 
 ---
 
@@ -142,7 +136,7 @@ Each form submission automatically triggers the per-form Power Automate flow. Th
 3. Writes raw data to the restricted Lakehouse layer
 4. Writes de-identified data to the curated Lakehouse layer
 
-![Power Automate showing the per-form data flow completed successfully](images/e2e/08-data-flow.png)
+![Power Automate My Flows page showing where per-form data flows appear](images/e2e/08-data-flow.png)
 
 ---
 
@@ -150,21 +144,21 @@ Each form submission automatically triggers the per-form Power Automate flow. Th
 
 > **Role:** IT Administrator or authorized analyst
 
-Navigate to [app.fabric.microsoft.com](https://app.fabric.microsoft.com) and open the Lakehouse to see the ingested data.
+Navigate to [app.fabric.microsoft.com](https://app.fabric.microsoft.com) and open the **Forms to Fabric Analytics** workspace. The `forms_lakehouse` item is visible in the workspace:
 
-![Fabric Lakehouse overview showing the workspace and tables](images/e2e/09-lakehouse-overview.png)
+![Fabric workspace showing forms_lakehouse in the Forms to Fabric Analytics workspace](images/e2e/09-lakehouse-overview.png)
 
 ### Raw Table (Restricted Access)
 
-The raw table contains the original, unmodified response data — including PHI fields. Access is restricted to authorized IT personnel only.
+The raw table contains the original, unmodified response data — including PHI fields. Access is restricted to authorized IT personnel only. Open the Lakehouse to see the Tables and Files sections:
 
-![Lakehouse raw table showing ingested response data with all fields](images/e2e/09-lakehouse-raw-table.png)
+![Lakehouse explorer showing the Tables and Files tree structure](images/e2e/09-lakehouse-raw-table.png)
 
 ### Curated Table (De-identified)
 
-The curated table contains de-identified data safe for reporting. PHI fields are hashed, redacted, or generalized according to the form's configuration.
+The curated table contains de-identified data safe for reporting. PHI fields are hashed, redacted, or generalized according to the form's configuration. Tables populate as responses flow through the pipeline:
 
-![Lakehouse curated table showing de-identified data with protected fields](images/e2e/09-lakehouse-curated-table.png)
+![Lakehouse explorer view — tables will populate when responses are processed](images/e2e/09-lakehouse-curated-table.png)
 
 ---
 

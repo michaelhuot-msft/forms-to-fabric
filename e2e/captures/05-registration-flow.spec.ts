@@ -3,26 +3,16 @@ import { capture, URLS } from "../helpers";
 
 test("05 — Registration flow run in Power Automate", async ({ authedPage: page }) => {
   await page.goto(URLS.powerAutomate);
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("load");
+  await page.waitForTimeout(5_000);
 
-  // Navigate to My flows
-  const myFlows = page.getByRole("link", { name: /my flows/i }).first();
+  // Navigate to My flows via the left nav
+  const myFlows = page.getByRole("menuitem", { name: "My flows" });
   if (await myFlows.isVisible()) {
     await myFlows.click();
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("load");
+    await page.waitForTimeout(3_000);
   }
 
-  // Find the registration flow
-  const regFlow = page
-    .getByRole("link", { name: /registration intake/i })
-    .first();
-  if (await regFlow.isVisible()) {
-    await regFlow.click();
-    await page.waitForLoadState("networkidle");
-  }
-
-  await page.waitForTimeout(3_000);
-
-  // The flow detail page shows run history
   await capture(page, "05-registration-flow.png");
 });

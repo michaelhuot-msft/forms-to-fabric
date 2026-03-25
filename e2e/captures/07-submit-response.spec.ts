@@ -1,51 +1,46 @@
 import { test } from "../fixtures";
 import { capture, URLS } from "../helpers";
 
-test("07 — Submit a response to the registered form", async ({ authedPage: page }) => {
-  // Navigate to Forms and open the Patient Satisfaction Survey
+test("07 — Submit a response to the registered form", async ({
+  authedPage: page,
+}) => {
+  // Navigate to Forms home and open the Patient Satisfaction Survey
   await page.goto(URLS.formsHome);
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("load");
+  await page.waitForTimeout(3_000);
 
-  // Open the form in responder view (preview)
-  const recentForm = page
-    .getByRole("link", { name: /patient satisfaction/i })
-    .first();
-  if (await recentForm.isVisible()) {
-    await recentForm.click();
-    await page.waitForLoadState("networkidle");
-  }
+  // Open the form — it's a button in the forms list, opens in a new tab
+  const [formPage] = await Promise.all([
+    page.context().waitForEvent("page"),
+    page
+      .getByRole("button", { name: /Open Form of Patient Satisfaction Survey/i })
+      .first()
+      .click(),
+  ]);
+
+  await formPage.waitForLoadState("load");
+  await formPage.waitForTimeout(3_000);
 
   // Click Preview to see the responder view
-  const previewButton = page
-    .getByRole("button", { name: /preview/i })
-    .first();
-  if (await previewButton.isVisible()) {
-    await previewButton.click();
-    await page.waitForLoadState("networkidle");
+  await formPage.getByRole("button", { name: /Preview/i }).click();
+  await formPage.waitForTimeout(3_000);
+
+  await capture(formPage, "07-submit-response-blank.png");
+
+  // Select a radio option if available
+  const firstRadio = formPage.getByRole("radio").first();
+  if (await firstRadio.isVisible()) {
+    await firstRadio.click();
   }
 
-  await capture(page, "07-submit-response-blank.png");
-
-  // Fill out the form with sample responses
-  const firstChoice = page.getByRole("radio").first();
-  if (await firstChoice.isVisible()) {
-    await firstChoice.click();
-  }
-
-  // Fill any text fields
-  const textFields = page.getByPlaceholder(/enter your answer/i);
-  if ((await textFields.count()) > 0) {
-    await textFields.first().fill("Everything was excellent, thank you!");
-  }
-
-  await capture(page, "07-submit-response-filled.png");
+  await capture(formPage, "07-submit-response-filled.png");
 
   // Submit the response
-  const submitButton = page.getByRole("button", { name: /submit/i });
+  const submitButton = formPage.getByRole("button", { name: /Submit/i });
   if (await submitButton.isVisible()) {
     await submitButton.click();
-    await page.waitForTimeout(3_000);
+    await formPage.waitForTimeout(3_000);
   }
 
-  await capture(page, "07-submit-response-confirmation.png");
+  await capture(formPage, "07-submit-response-confirmation.png");
 });

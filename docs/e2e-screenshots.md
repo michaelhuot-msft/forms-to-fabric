@@ -37,29 +37,29 @@
 
 ### Filled Registration Form
 
-![Registration form filled with form link and name](images/e2e/04-register-form-filled.png)
+![Registration form filled with form link, name, and "No" selected for PHI](images/e2e/04-register-form-filled.png)
 
 ### Submission Confirmation
 
-![Registration form confirmation](images/e2e/04-register-form-confirmation.png)
+![Registration form confirmation — form registered successfully](images/e2e/04-register-form-confirmation.png)
 
 ---
 
 ## 5. Registration Flow (Power Automate)
 
-![Power Automate registration flow run](images/e2e/05-registration-flow.png)
+![Power Automate My Flows page](images/e2e/05-registration-flow.png)
 
 ---
 
-## 6. Admin Approval
+## 6. Admin Approval (Skipped for Non-PHI)
 
 ### Flow List
 
 ![Power Automate flows list](images/e2e/06-admin-approval-flows.png)
 
-### Activate Form
+### Azure Portal
 
-![Activate form endpoint](images/e2e/06-admin-approval-activate.png)
+![Azure portal home](images/e2e/06-admin-approval-activate.png)
 
 ---
 
@@ -67,15 +67,15 @@
 
 ### Blank Form
 
-![Blank form in responder view](images/e2e/07-submit-response-blank.png)
+![Patient Satisfaction Survey in responder preview view](images/e2e/07-submit-response-blank.png)
 
 ### Filled Form
 
-![Form filled with sample responses](images/e2e/07-submit-response-filled.png)
+![Survey with Option 1 selected](images/e2e/07-submit-response-filled.png)
 
 ### Confirmation
 
-![Response submission confirmation](images/e2e/07-submit-response-confirmation.png)
+![Response submitted confirmation page](images/e2e/07-submit-response-confirmation.png)
 
 ---
 
@@ -89,12 +89,12 @@
 
 ### Workspace Overview
 
-![Lakehouse workspace overview](images/e2e/09-lakehouse-overview.png)
+![Fabric workspace showing forms_lakehouse](images/e2e/09-lakehouse-overview.png)
 
-### Raw Table (Restricted)
+### Lakehouse Explorer
 
-![Raw table with full response data](images/e2e/09-lakehouse-raw-table.png)
+![Lakehouse explorer with Tables and Files tree](images/e2e/09-lakehouse-raw-table.png)
 
-### Curated Table (De-identified)
+### Lakehouse Tables (Empty — Awaiting Data)
 
-![Curated table with de-identified data](images/e2e/09-lakehouse-curated-table.png)
+![Lakehouse explorer view — tables will populate when data flows](images/e2e/09-lakehouse-curated-table.png)

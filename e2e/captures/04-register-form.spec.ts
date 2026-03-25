@@ -14,7 +14,8 @@ test("04 — Register form via self-service registration", async ({
   authedPage: page,
 }) => {
   await page.goto(URLS.formsHome);
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("load");
+  await page.waitForTimeout(3_000);
 
   // Open the registration form — opens in a new tab
   const [formPage] = await Promise.all([
@@ -25,8 +26,14 @@ test("04 — Register form via self-service registration", async ({
       .click(),
   ]);
 
-  await formPage.waitForLoadState("networkidle");
-  await formPage.waitForTimeout(2_000);
+  await formPage.waitForLoadState("load");
+  await formPage.waitForTimeout(3_000);
+
+  // Dismiss any "Got it" banner if present
+  const gotIt = formPage.getByRole("button", { name: "Got it" });
+  if (await gotIt.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    await gotIt.click();
+  }
 
   // Click Preview to see the responder view
   await formPage.getByRole("button", { name: /Preview/i }).click();
@@ -34,16 +41,37 @@ test("04 — Register form via self-service registration", async ({
 
   await capture(formPage, "04-register-form-blank.png");
 
-  // Fill in text fields if visible
-  const textInputs = formPage.getByRole("textbox");
-  const textCount = await textInputs.count();
-  if (textCount > 0) {
-    await textInputs.first().fill("https://forms.office.com/Pages/ResponsePage.aspx?id=example");
+  // Fill in text fields
+  const shareLink = formPage.getByRole("textbox", {
+    name: /Paste your form's share link/i,
+  });
+  if (await shareLink.isVisible()) {
+    await shareLink.fill(
+      "https://forms.office.com/Pages/ResponsePage.aspx?id=example-patient-survey"
+    );
   }
-  if (textCount > 1) {
-    await textInputs.nth(1).fill("Patient Satisfaction Survey");
+
+  const formName = formPage.getByRole("textbox", {
+    name: /Give your form a short name/i,
+  });
+  if (await formName.isVisible()) {
+    await formName.fill("Patient Satisfaction Survey");
+  }
+
+  // Select "No" for the PHI question
+  const noRadio = formPage.getByRole("radio", { name: "No" });
+  if (await noRadio.isVisible()) {
+    await noRadio.click();
   }
 
   await capture(formPage, "04-register-form-filled.png");
+
+  // Submit the form
+  const submitButton = formPage.getByRole("button", { name: /Submit/i });
+  if (await submitButton.isVisible()) {
+    await submitButton.click();
+    await formPage.waitForTimeout(3_000);
+  }
+
   await capture(formPage, "04-register-form-confirmation.png");
 });

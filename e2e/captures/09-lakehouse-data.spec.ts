@@ -3,45 +3,50 @@ import { capture, URLS } from "../helpers";
 
 test("09 — Fabric Lakehouse raw and curated tables", async ({ authedPage: page }) => {
   await page.goto(URLS.fabric);
-  await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(5_000);
+  await page.waitForLoadState("load");
+  await page.waitForTimeout(10_000);
 
-  // Navigate to the Lakehouse
-  // Look for the workspace or Lakehouse link in the Fabric portal
-  const lakehouses = page.getByRole("link", { name: /lakehouse/i }).first();
-  if (await lakehouses.isVisible()) {
-    await lakehouses.click();
-    await page.waitForLoadState("networkidle");
+  // If "Pick an account" page appears, select the first account
+  const pickAccount = page.getByRole("heading", { name: /Pick an account/i });
+  if (await pickAccount.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await page.getByRole("listitem").first().click();
+    await page.waitForLoadState("load");
+    await page.waitForTimeout(10_000);
   }
 
-  await page.waitForTimeout(3_000);
+  // Navigate to Workspaces in the left nav
+  const workspaces = page.getByRole("menuitem", { name: "Workspaces" });
+  if (await workspaces.isVisible()) {
+    await workspaces.click();
+    await page.waitForTimeout(3_000);
+  }
+
+  // Click the Forms to Fabric Analytics workspace
+  const workspace = page.getByRole("button", {
+    name: /Forms to Fabric Analytics/i,
+  });
+  if (await workspace.isVisible()) {
+    await workspace.click();
+    await page.waitForLoadState("load");
+    await page.waitForTimeout(5_000);
+  }
 
   await capture(page, "09-lakehouse-overview.png");
 
-  // Navigate to the Tables section to show raw and curated data
-  const tablesSection = page.getByRole("treeitem", { name: /tables/i }).first();
-  if (await tablesSection.isVisible()) {
-    await tablesSection.click();
-    await page.waitForTimeout(2_000);
-  }
-
-  // Expand and show the raw table
-  const rawTable = page
-    .getByRole("treeitem", { name: /patient_satisfaction$/i })
-    .first();
-  if (await rawTable.isVisible()) {
-    await rawTable.click();
-    await page.waitForTimeout(3_000);
+  // Open the Lakehouse
+  const lakehouse = page.getByRole("link", { name: "forms_lakehouse" });
+  if (await lakehouse.isVisible()) {
+    await lakehouse.click();
+    await page.waitForLoadState("load");
+    await page.waitForTimeout(10_000);
   }
 
   await capture(page, "09-lakehouse-raw-table.png");
 
-  // Show the curated (de-identified) table
-  const curatedTable = page
-    .getByRole("treeitem", { name: /patient_satisfaction_curated/i })
-    .first();
-  if (await curatedTable.isVisible()) {
-    await curatedTable.click();
+  // Expand the Tables tree item if visible
+  const tablesTree = page.getByRole("treeitem", { name: /Tables/i }).first();
+  if (await tablesTree.isVisible()) {
+    await tablesTree.click();
     await page.waitForTimeout(3_000);
   }
 

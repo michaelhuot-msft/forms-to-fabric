@@ -75,6 +75,7 @@ Then follow:
 | [E2E Walkthrough](docs/e2e-walkthrough.md) | Everyone | Visual end-to-end pipeline walkthrough with screenshots |
 | [Admin Guide](docs/admin-guide.md) | IT / Admins | Register forms, configure de-id, manage access |
 | [Architecture](docs/architecture.md) | IT Leadership | Data flow, security, and compliance |
+| [Architecture Overview](docs/architecture-overview.md) | Everyone | Visual Mermaid diagrams of component integration |
 | [Setup Guide](docs/setup-guide.md) | DevOps | Step-by-step deployment instructions |
 | [Deployment Prerequisites](docs/deployment-prerequisites.md) | DevOps / Admins | Required tools, packages, APIs, and environment variables |
 | [Service Account Guide](docs/service-account-guide.md) | IT / Admins | Recommended ownership model for flows, connectors, and alert mailbox |

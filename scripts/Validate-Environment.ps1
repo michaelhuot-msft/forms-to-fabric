@@ -94,6 +94,9 @@ if (-not $EnvironmentName) {
     if (-not $EnvironmentName) { $EnvironmentName = "dev" }
 }
 if (-not $ResourceGroup) {
+    $ResourceGroup = Get-AzdEnvValue -Name "AZURE_RESOURCE_GROUP"
+}
+if (-not $ResourceGroup) {
     $ResourceGroup = "rg-forms-to-fabric-$EnvironmentName"
 }
 if (-not $SubscriptionId) {

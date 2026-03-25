@@ -74,6 +74,7 @@ if (-not $AdminEmail) {
 }
 
 if (-not $CapacityName) { $CapacityName = "formstofabric$EnvironmentName" }
+if (-not $ResourceGroup) { $ResourceGroup = (azd env get-value AZURE_RESOURCE_GROUP 2>$null) }
 if (-not $ResourceGroup) { $ResourceGroup = "rg-forms-to-fabric-$EnvironmentName" }
 
 Write-Host "Selecting Azure subscription..." -ForegroundColor White

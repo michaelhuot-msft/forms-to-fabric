@@ -33,6 +33,9 @@ if (-not $EnvironmentName) {
     if (-not $EnvironmentName) { $EnvironmentName = "dev" }
 }
 if (-not $ResourceGroup) {
+    $ResourceGroup = (azd env get-value AZURE_RESOURCE_GROUP 2>$null)
+}
+if (-not $ResourceGroup) {
     $ResourceGroup = "rg-forms-to-fabric-$EnvironmentName"
 }
 

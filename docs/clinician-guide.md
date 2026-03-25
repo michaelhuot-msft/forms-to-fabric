@@ -25,7 +25,7 @@ No software to install. No special permissions to request.
 1. Go to [forms.microsoft.com](https://forms.microsoft.com) in your web browser
 2. Sign in with your work email and password (the same ones you use for Outlook)
 
-`[Screenshot: Forms home page after signing in]`
+![Microsoft Forms home page after signing in, showing recent forms and the New Form button](images/e2e/01-forms-home.png)
 
 ### Create a New Form
 
@@ -33,7 +33,7 @@ No software to install. No special permissions to request.
 2. Give your form a name (for example, "Patient Intake Questionnaire" or "Staff Feedback Survey")
 3. Add a short description if you'd like — this helps respondents understand the purpose
 
-`[Screenshot: New form with title and description fields highlighted]`
+![New form with title and description fields highlighted in the form builder](images/e2e/02-create-form-title.png)
 
 ### Add Your Questions
 
@@ -49,9 +49,9 @@ No software to install. No special permissions to request.
 4. Add answer options if needed
 5. Repeat for each question
 
-`[Screenshot: Question type selection menu]`
+![Question type selection menu showing Choice, Text, Rating, and Date options](images/e2e/02-create-form-question.png)
 
-`[Screenshot: Example choice question being created]`
+![Choice question being configured with answer options](images/e2e/02-create-form-question.png)
 
 ### Tips for Great Forms
 
@@ -78,7 +78,7 @@ Before your form data can appear in a dashboard, you need to register it. This i
 
 That's it! No email required.
 
-`[Screenshot: Where to find the Share button and copy the form link]`
+![Share dialog showing the form link and copy button](images/e2e/03-share-form.png)
 
 ### What Happens Next
 
@@ -122,6 +122,7 @@ graph LR
 1. Go to [app.powerbi.com](https://app.powerbi.com) in your web browser
 2. Sign in with your work email and password
 
+<!-- Screenshots for Power BI views will be added in a future update -->
 `[Screenshot: Power BI home page]`
 
 ### Find Your Dashboard

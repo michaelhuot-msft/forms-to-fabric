@@ -17,7 +17,7 @@ local.settings.json
 .func/
 
 # IDE
-.vscode/
+
 .idea/
 *.swp
 *.swo
@@ -42,6 +42,11 @@ htmlcov/
 
 # Power BI
 *.pbix
+
+# E2E Screenshot Pipeline
+e2e/node_modules/
+e2e/.auth/
+e2e/dist/
 
 # Logs
 *.log

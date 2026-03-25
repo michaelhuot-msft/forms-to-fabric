@@ -72,6 +72,7 @@ Then follow:
 | Document | Audience | Description |
 |----------|----------|-------------|
 | [Clinician Guide](docs/clinician-guide.md) | Clinicians | How to create forms and view your data |
+| [E2E Walkthrough](docs/e2e-walkthrough.md) | Everyone | Visual end-to-end pipeline walkthrough with screenshots |
 | [Admin Guide](docs/admin-guide.md) | IT / Admins | Register forms, configure de-id, manage access |
 | [Architecture](docs/architecture.md) | IT Leadership | Data flow, security, and compliance |
 | [Setup Guide](docs/setup-guide.md) | DevOps | Step-by-step deployment instructions |
@@ -109,6 +110,7 @@ forms-to-fabric/
 │   └── install-hooks.sh        # Install local git hooks
 ├── config/             # Form registry configuration + JSON schema
 ├── power-automate/     # Power Automate flow templates
+├── e2e/                # Playwright E2E screenshot pipeline (Edge)
 ├── docs/               # Documentation
 │   └── diagrams/       # Excalidraw source diagrams
 ├── hooks/              # Shared git hooks installed by install-hooks.sh

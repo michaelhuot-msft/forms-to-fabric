@@ -1,5 +1,5 @@
 // ──────────────────────────────────────────────
-// Function App module – Linux Consumption (Python 3.11)
+// Function App module – Linux App Service Plan (Python 3.11)
 // ──────────────────────────────────────────────
 
 @description('Environment name used in resource naming.')
@@ -47,7 +47,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing 
 var suffix = take(uniqueString(resourceGroup().id), 6)
 
 // ──────────────────────────────────────────────
-// Consumption plan (Y1)
+// App Service Plan (B1 Basic – supports managed identity storage)
 // ──────────────────────────────────────────────
 
 resource hostingPlan 'Microsoft.Web/serverfarms@2023-12-01' = {
@@ -59,8 +59,8 @@ resource hostingPlan 'Microsoft.Web/serverfarms@2023-12-01' = {
     reserved: true
   }
   sku: {
-    name: 'Y1'
-    tier: 'Dynamic'
+    name: 'B1'
+    tier: 'Basic'
   }
 }
 
@@ -94,16 +94,32 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         }
         {
           name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
-          value: 'true'
+          value: 'false'
         }
         {
           name: 'ENABLE_ORYX_BUILD'
-          value: 'true'
+          value: 'false'
+        }
+        {
+          name: 'AzureWebJobsFeatureFlags'
+          value: 'EnableWorkerIndexing'
         }
         {
           // Use managed identity for storage — no shared keys needed
           name: 'AzureWebJobsStorage__accountName'
           value: storageAccount.name
+        }
+        {
+          name: 'AzureWebJobsStorage__blobServiceUri'
+          value: 'https://${storageAccount.name}.blob.${environment().suffixes.storage}'
+        }
+        {
+          name: 'AzureWebJobsStorage__queueServiceUri'
+          value: 'https://${storageAccount.name}.queue.${environment().suffixes.storage}'
+        }
+        {
+          name: 'AzureWebJobsStorage__tableServiceUri'
+          value: 'https://${storageAccount.name}.table.${environment().suffixes.storage}'
         }
         {
           name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
@@ -176,6 +192,17 @@ resource storageQueueDataContributor 'Microsoft.Authorization/roleAssignments@20
     principalId: functionApp.identity.principalId
     principalType: 'ServicePrincipal'
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '974c5e8b-45b9-4653-ba55-5f855dd0fb88')
+  }
+}
+
+// Storage Table Data Contributor (Azure Functions uses tables for internal state)
+resource storageTableDataContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storageAccount.id, functionApp.id, 'StorageTableDataContributor')
+  scope: storageAccount
+  properties: {
+    principalId: functionApp.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3')
   }
 }
 

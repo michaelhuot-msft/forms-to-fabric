@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.41.2.15936",
-      "templateHash": "4442288236089621601"
+      "templateHash": "15580888958213003461"
     }
   },
   "parameters": {
@@ -382,7 +382,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.41.2.15936",
-              "templateHash": "13797037047490187530"
+              "templateHash": "13848035985808147201"
             }
           },
           "parameters": {
@@ -472,8 +472,8 @@
                 "reserved": true
               },
               "sku": {
-                "name": "Y1",
-                "tier": "Dynamic"
+                "name": "B1",
+                "tier": "Basic"
               }
             },
             {
@@ -504,15 +504,31 @@
                     },
                     {
                       "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
-                      "value": "true"
+                      "value": "false"
                     },
                     {
                       "name": "ENABLE_ORYX_BUILD",
-                      "value": "true"
+                      "value": "false"
+                    },
+                    {
+                      "name": "AzureWebJobsFeatureFlags",
+                      "value": "EnableWorkerIndexing"
                     },
                     {
                       "name": "AzureWebJobsStorage__accountName",
                       "value": "[parameters('storageAccountName')]"
+                    },
+                    {
+                      "name": "AzureWebJobsStorage__blobServiceUri",
+                      "value": "[format('https://{0}.blob.{1}', parameters('storageAccountName'), environment().suffixes.storage)]"
+                    },
+                    {
+                      "name": "AzureWebJobsStorage__queueServiceUri",
+                      "value": "[format('https://{0}.queue.{1}', parameters('storageAccountName'), environment().suffixes.storage)]"
+                    },
+                    {
+                      "name": "AzureWebJobsStorage__tableServiceUri",
+                      "value": "[format('https://{0}.table.{1}', parameters('storageAccountName'), environment().suffixes.storage)]"
                     },
                     {
                       "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
@@ -590,6 +606,20 @@
                 "principalId": "[reference(resourceId('Microsoft.Web/sites', format('func-forms-{0}-{1}', parameters('environmentName'), variables('suffix'))), '2023-12-01', 'full').identity.principalId]",
                 "principalType": "ServicePrincipal",
                 "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '974c5e8b-45b9-4653-ba55-5f855dd0fb88')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', format('func-forms-{0}-{1}', parameters('environmentName'), variables('suffix')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+              "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), resourceId('Microsoft.Web/sites', format('func-forms-{0}-{1}', parameters('environmentName'), variables('suffix'))), 'StorageTableDataContributor')]",
+              "properties": {
+                "principalId": "[reference(resourceId('Microsoft.Web/sites', format('func-forms-{0}-{1}', parameters('environmentName'), variables('suffix'))), '2023-12-01', 'full').identity.principalId]",
+                "principalType": "ServicePrincipal",
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3')]"
               },
               "dependsOn": [
                 "[resourceId('Microsoft.Web/sites', format('func-forms-{0}-{1}', parameters('environmentName'), variables('suffix')))]"

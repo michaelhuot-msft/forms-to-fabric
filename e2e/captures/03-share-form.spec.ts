@@ -1,25 +1,24 @@
-import { test } from "@playwright/test";
-import { capture } from "../helpers";
+import { test } from "../fixtures";
+import { capture, URLS } from "../helpers";
 
-test("03 — Share form and copy link", async ({ page }) => {
-  // Navigate to the most recently created form (should be on the Forms home)
-  // The user should have just created a form in step 02
-  await page.goto("https://forms.office.com");
+test("03 — Share form and copy link", async ({ authedPage: page }) => {
+  await page.goto(URLS.formsHome);
   await page.waitForLoadState("networkidle");
 
-  // Click the most recent form to open it
-  const recentForm = page
-    .getByRole("link", { name: /patient satisfaction/i })
-    .first();
-  if (await recentForm.isVisible()) {
-    await recentForm.click();
-    await page.waitForLoadState("networkidle");
-  }
+  // Open the most recent form — opens in a new tab
+  const [formPage] = await Promise.all([
+    page.context().waitForEvent("page"),
+    page.getByRole("button", { name: /Open Form of/i }).first().click(),
+  ]);
 
-  // Click Share button
-  const shareButton = page.getByRole("button", { name: /share/i }).first();
-  await shareButton.click();
-  await page.waitForTimeout(2_000);
+  await formPage.waitForLoadState("networkidle");
+  await formPage.waitForTimeout(2_000);
 
-  await capture(page, "03-share-form.png");
+  // Click "Collect responses" (the share button in Forms)
+  await formPage
+    .getByRole("button", { name: /Collect responses/i })
+    .click();
+  await formPage.waitForTimeout(2_000);
+
+  await capture(formPage, "03-share-form.png");
 });

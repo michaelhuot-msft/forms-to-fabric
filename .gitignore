@@ -55,3 +55,12 @@ power-automate-body.json
 deploy-source.zip
 src/deploy-source.zip
 infra/main.json
+
+# Playwright CLI snapshots
+.playwright-cli/
+
+# VS Code settings (user-specific)
+.vscode/
+
+# E2E test results
+e2e/test-results/

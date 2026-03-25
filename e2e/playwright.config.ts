@@ -2,17 +2,18 @@ import { defineConfig } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
 
-const authStatePath = path.resolve(__dirname, ".auth/state.json");
+const profileDir = path.resolve(__dirname, ".auth/profile");
 
-function validateAuthState(): string {
-  if (!fs.existsSync(authStatePath)) {
+function validateProfile(): void {
+  if (!fs.existsSync(profileDir)) {
     throw new Error(
-      `Auth state not found at ${authStatePath}.\n` +
+      `Auth profile not found at ${profileDir}.\n` +
         `Run "npm run auth-setup" to authenticate with M365 first.`
     );
   }
-  return authStatePath;
 }
+
+validateProfile();
 
 const screenshotDir = path.resolve(__dirname, "../docs/images/e2e");
 
@@ -25,11 +26,13 @@ export default defineConfig({
   expect: { timeout: 30_000 },
   use: {
     channel: "msedge",
-    storageState: validateAuthState(),
     viewport: { width: 1440, height: 900 },
     actionTimeout: 30_000,
     navigationTimeout: 60_000,
     screenshot: "off",
+    launchOptions: {
+      channel: "msedge",
+    },
   },
   projects: [
     {
@@ -39,4 +42,4 @@ export default defineConfig({
   ],
 });
 
-export { screenshotDir };
+export { screenshotDir, profileDir };

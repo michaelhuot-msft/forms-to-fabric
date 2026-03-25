@@ -1,43 +1,47 @@
-import { test } from "@playwright/test";
+import { test } from "../fixtures";
 import { capture, URLS } from "../helpers";
 
-test("02 — Create a new form as a clinician", async ({ page }) => {
+test("02 — Create a new form as a clinician", async ({ authedPage: page }) => {
   await page.goto(URLS.formsHome);
   await page.waitForLoadState("networkidle");
 
-  // Click "New Form" to start creating
-  await page.getByRole("button", { name: /new form/i }).click();
-  await page.waitForLoadState("networkidle");
+  // Click "Create a new form" — opens in a new tab
+  const [newPage] = await Promise.all([
+    page.context().waitForEvent("page"),
+    page.getByRole("button", { name: "Create a new form" }).click(),
+  ]);
 
-  // Add a title
-  await page.getByPlaceholder(/untitled form/i).click();
-  await page.keyboard.type("Patient Satisfaction Survey");
+  await newPage.waitForLoadState("networkidle");
+  await newPage.waitForTimeout(3_000);
 
-  // Add a description
-  await page.getByPlaceholder(/description/i).click();
-  await page.keyboard.type(
-    "Please help us improve by sharing your experience."
-  );
+  // Click the form title heading to edit it
+  const titleButton = newPage.getByRole("heading", {
+    name: /Form title/i,
+  });
+  await titleButton.click();
+  await newPage.waitForTimeout(500);
 
-  await capture(page, "02-create-form-title.png");
+  // Clear and type new title
+  await newPage.keyboard.press("Control+A");
+  await newPage.keyboard.type("Patient Satisfaction Survey");
+  // Dismiss title editing
+  await newPage.keyboard.press("Escape");
+  await newPage.waitForTimeout(2_000);
 
-  // Add a Choice question
-  await page.getByRole("button", { name: /add new/i }).click();
-  await page.waitForTimeout(1_000);
+  await capture(newPage, "02-create-form-title.png");
 
-  // Select "Choice" question type
-  const choiceOption = page.getByRole("button", { name: /choice/i }).first();
-  if (await choiceOption.isVisible()) {
-    await choiceOption.click();
+  // After title edit, question type buttons collapse — expand via "Quick start with"
+  const quickStart = newPage.getByRole("button", { name: "Quick start with" });
+  if (await quickStart.isVisible()) {
+    await quickStart.click();
+    await newPage.waitForTimeout(1_000);
   }
 
-  await page.waitForTimeout(1_000);
+  // Add a Choice question
+  const choiceBtn = newPage.getByRole("button", { name: "Choice" }).first();
+  await choiceBtn.waitFor({ state: "visible", timeout: 10_000 });
+  await choiceBtn.click();
+  await newPage.waitForTimeout(3_000);
 
-  // Type the question
-  await page.getByPlaceholder(/question/i).first().click();
-  await page.keyboard.type(
-    "How would you rate your overall experience today?"
-  );
-
-  await capture(page, "02-create-form-question.png");
+  await capture(newPage, "02-create-form-question.png");
 });

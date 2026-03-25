@@ -1,7 +1,7 @@
-import { test } from "@playwright/test";
+import { test } from "../fixtures";
 import { capture, URLS } from "../helpers";
 
-test("09 — Fabric Lakehouse raw and curated tables", async ({ page }) => {
+test("09 — Fabric Lakehouse raw and curated tables", async ({ authedPage: page }) => {
   await page.goto(URLS.fabric);
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(5_000);

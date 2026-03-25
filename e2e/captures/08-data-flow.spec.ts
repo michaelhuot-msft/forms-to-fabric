@@ -1,7 +1,7 @@
-import { test } from "@playwright/test";
+import { test } from "../fixtures";
 import { capture, URLS } from "../helpers";
 
-test("08 — Per-form data flow run in Power Automate", async ({ page }) => {
+test("08 — Per-form data flow run in Power Automate", async ({ authedPage: page }) => {
   await page.goto(URLS.powerAutomate);
   await page.waitForLoadState("networkidle");
 

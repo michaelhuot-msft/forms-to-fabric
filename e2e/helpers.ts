@@ -28,7 +28,7 @@ export async function capture(
 
 /** M365 URLs used across capture scripts. */
 export const URLS = {
-  formsHome: "https://forms.office.com",
+  formsHome: "https://forms.office.com/Pages/DesignPageV2.aspx",
   powerAutomate: "https://make.powerautomate.com",
   fabric: "https://app.fabric.microsoft.com",
 } as const;

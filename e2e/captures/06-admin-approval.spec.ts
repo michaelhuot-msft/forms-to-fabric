@@ -1,4 +1,4 @@
-import { test } from "@playwright/test";
+import { test } from "../fixtures";
 import { capture, URLS } from "../helpers";
 
 /**

@@ -1,7 +1,7 @@
-import { test } from "@playwright/test";
+import { test } from "../fixtures";
 import { capture, URLS } from "../helpers";
 
-test("07 — Submit a response to the registered form", async ({ page }) => {
+test("07 — Submit a response to the registered form", async ({ authedPage: page }) => {
   // Navigate to Forms and open the Patient Satisfaction Survey
   await page.goto(URLS.formsHome);
   await page.waitForLoadState("networkidle");

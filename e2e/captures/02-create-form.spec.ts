@@ -11,7 +11,7 @@ test("02 — Create a new form as a clinician", async ({ authedPage: page }) => 
     page.getByRole("button", { name: "Create a new form" }).click(),
   ]);
 
-  await newPage.waitForLoadState("networkidle");
+  await newPage.waitForLoadState("load");
   await newPage.waitForTimeout(3_000);
 
   // Click the form title heading to edit it
